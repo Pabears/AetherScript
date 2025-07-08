@@ -92,5 +92,10 @@ We believe this is the future of AI-assisted development—structured, predictab
     ```bash
     bun index.ts
     ```
+5.  **Run the test code:**
+    This will execute the application logic using the generated code.
+    ```bash
+    bun index.ts
+    ```
 
 This project was created using `bun init` in bun v1.2.16. [Bun](https://bun.sh) is a fast all-in-one JavaScript runtime.

@@ -16,6 +16,8 @@
     "verbatimModuleSyntax": true,
     "noEmit": true,
 
+    "types": ["bun-types"],
+
     // Best practices
     "strict": true,
     "skipLibCheck": true,
