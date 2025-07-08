@@ -6,8 +6,7 @@ export class User {
     }
 }
 export interface UserService {
-    // 3<name.len()<15
-    // 0<=age<=120
+    // check: 3<name.len()<15 and 0<=age<=120
     // save user to users
     create(user: User, users: Map<string, User>): void;
 
