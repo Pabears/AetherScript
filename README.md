@@ -25,32 +25,33 @@ export class User {
     constructor(public name: string, public age: number) {}
 }
 
-// Define an abstract class for the database
+// Define an abstract class for the database layer
 export abstract class DB {
     protected users = new Map<string, User>();
     abstract save(user: User): void;
     abstract find(name: string): User | undefined;
 }
 
-// Define an interface for the user service
-export interface UserService {
-    create(user: User, users: DB): void;
-    findByName(name: string, users: DB): User | undefined;
-}
-
-// The controller uses @AutoGen on both an interface and an abstract class
-export class UserController {
-    @AutoGen
-    public userService?: UserService;
+// UserService is now an abstract class with its own auto-generated dependency
+export abstract class UserService {
     @AutoGen
     public db?: DB;
 
+    abstract create(user: User): void;
+    abstract findByName(name: string): User | undefined;
+}
+
+// The controller now only needs the user service
+export class UserController {
+    @AutoGen
+    public userService?: UserService;
+
     create(user: User): void {
-        this.userService!.create(user, this.db!);
+        this.userService!.create(user);
     }
 
     find(name: string): User | undefined {
-        return this.userService!.findByName(name, this.db!)
+        return this.userService!.findByName(name);
     }
 }
 ```
@@ -76,12 +77,11 @@ console.log('--- Application Start ---');
 // 1. Create an instance of the controller
 const userController = new UserController();
 
-// 2. Use the container to get the generated service implementations
-// The container handles dependency injection automatically
+// 2. Use the container to get the generated UserService.
+// The container will automatically resolve the nested dependency (DB -> UserService).
 userController.userService = container.get('UserService');
-userController.db = container.get('DB');
 
-console.log('Services have been injected into UserController.');
+console.log('UserService has been injected into UserController.');
 
 // 3. Create some data and use the controller
 const newUser = new User('Alice', 30);
