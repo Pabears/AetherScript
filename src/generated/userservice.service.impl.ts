@@ -2,15 +2,21 @@
 import { User } from "../user";
 
 export class UserServiceImpl implements UserService {
-  create(user: User): void {
-    const username = user.name;
-    const age = user.age;
-    if (username.length < 3 || username.length > 15) {
-      throw new Error("Username must be between 3 and 15 characters long");
+    create(user: User, users: Map<string, User>): void {
+        if (3 < user.name.length && user.name.length <= 15) {
+            users.set(user.name, user);
+        } else {
+            throw new Error("Invalid name");
+        }
+
+        if (0 <= user.age && user.age <= 120) {
+            users.set(user.name + "_" + user.age, user);
+        } else {
+            throw new Error("Invalid age");
+        }
     }
-    if (age < 0 || age > 120) {
-      throw new Error("Age must be between 0 and 120");
+
+    findByName(name: string, users: Map<string, User>): User | undefined {
+        return users.get(name);
     }
-    // save user to db...
-  }
 }

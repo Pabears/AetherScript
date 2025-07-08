@@ -16,5 +16,5 @@ console.log('UserService has been injected into UserController.');
 const newUser = new User('Alice', 30);
 console.log(`Calling create with user: ${newUser.name}`);
 userController.create(newUser);
-
+console.log(userController.find(newUser.name))
 console.log('--- Application End ---');
