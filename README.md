@@ -69,28 +69,48 @@ We believe this is the future of AI-assisted development—structured, predictab
 
 ## How to Run This Prototype
 
-1.  **Install dependencies:**
-    ```bash
-    bun install
-    ```
-2.  **Install ollama and codellama:**
+### Prerequisites
 
-    1. download ollama: https://ollama.com/download
-    2. install codellama
-        ```bash
-        ollama run codellama
-        ```
+Before you begin, ensure you have the following installed:
+- [Bun](https://bun.sh/) (v1.2.16 or later)
+- [Ollama](https://ollama.com/download)
 
-3.  **Run the code generation script:**
-    This will scan the `src` directory and create the `src/generated` files.
+### Step 1: Install Dependencies
+
+Navigate to the project directory and install the necessary packages.
+
+```bash
+bun install
+```
+
+### Step 2: Set Up the AI Model
+
+This prototype uses the `codellama` model running locally via Ollama.
+
+1.  **Download the model:**
     ```bash
-    bun aesc.ts
+    ollama pull codellama
     ```
 
-4.  **Run the main application:**
-    This will execute the application logic using the generated code.
-    ```bash
-    bun index.ts
-    ```
+2.  **Ensure Ollama is running:**
+    Make sure the Ollama application is running in the background. You should see its icon in your system's menu bar or taskbar.
+
+### Step 3: Generate Code
+
+Run the AetherScript code generation script. This will scan for `@AutoGen` decorators, interact with the LLM, and create the service implementation files in the `src/generated` directory.
+
+```bash
+bun aesc.ts
+```
+
+### Step 4: Run the Application
+
+Execute the main application logic to see the generated code in action.
+
+```bash
+bun index.ts
+```
+
+You will see output showing that the `UserController` is using the `UserService` to create and find a user.
 
 This project was created using `bun init` in bun v1.2.16. [Bun](https://bun.sh) is a fast all-in-one JavaScript runtime.
