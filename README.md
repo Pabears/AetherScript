@@ -20,16 +20,37 @@ In standard TypeScript files, you write your high-level architecture, interfaces
 // You write this in src/user.ts
 import { AutoGen } from "./decorators";
 
-export interface UserService {
-    create(user: User): void;
+// Define a User class
+export class User {
+    constructor(public name: string, public age: number) {}
 }
 
+// Define an abstract class for the database
+export abstract class DB {
+    protected users = new Map<string, User>();
+    abstract save(user: User): void;
+    abstract find(name: string): User | undefined;
+}
+
+// Define an interface for the user service
+export interface UserService {
+    create(user: User, users: DB): void;
+    findByName(name: string, users: DB): User | undefined;
+}
+
+// The controller uses @AutoGen on both an interface and an abstract class
 export class UserController {
     @AutoGen
     public userService?: UserService;
+    @AutoGen
+    public db?: DB;
 
-    public create(user: User): void {
-        this.userService?.create(user);
+    create(user: User): void {
+        this.userService!.create(user, this.db!);
+    }
+
+    find(name: string): User | undefined {
+        return this.userService!.findByName(name, this.db!)
     }
 }
 ```
@@ -47,15 +68,27 @@ The AI's code never touches your main source files. You explicitly use the gener
 
 ```typescript
 // In your application entry point (index.ts)
-import { UserController } from './src/user';
+import { UserController, User } from './src/user';
 import { container } from './src/generated/container';
 
-// You decide when and how to inject the AI-generated code
-const userController = new UserController();
-userController.userService = container.get('UserService');
+console.log('--- Application Start ---');
 
-// Now you can use the controller, powered by AI-generated logic
-userController.create(new User('Alice', 30));
+// 1. Create an instance of the controller
+const userController = new UserController();
+
+// 2. Use the container to get the generated service implementations
+// The container handles dependency injection automatically
+userController.userService = container.get('UserService');
+userController.db = container.get('DB');
+
+console.log('Services have been injected into UserController.');
+
+// 3. Create some data and use the controller
+const newUser = new User('Alice', 30);
+userController.create(newUser);
+console.log('Found user:', userController.find(newUser.name));
+
+console.log('--- Application End ---');
 ```
 
 ## Why This Approach?

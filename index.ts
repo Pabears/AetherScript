@@ -9,6 +9,7 @@ const userController = new UserController();
 // 2. Use the container to get the generated service implementation
 // This is the "autowiring" or "injection" step
 userController.userService = container.get('UserService');
+userController.db = container.get('DB');
 
 console.log('UserService has been injected into UserController.');
 
