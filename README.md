@@ -75,11 +75,11 @@ We believe this is the future of AI-assisted development—structured, predictab
     ```
 2.  **Install ollama and codellama:**
 
-    1. download ollama at: https://ollama.com/download
+    1. download ollama: https://ollama.com/download
     2. install codellama
-    ```bash
-    ollama run codellama
-    ```
+        ```bash
+        ollama run codellama
+        ```
 
 3.  **Run the code generation script:**
     This will scan the `src` directory and create the `src/generated` files.
