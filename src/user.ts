@@ -6,6 +6,9 @@ export class User {
     }
 }
 export interface UserService {
+    //save user to db and check the user's name and age
+    //3<username.length()<15
+    //0<=age<=120
     create(user: User): void;
 }
 export class UserController {

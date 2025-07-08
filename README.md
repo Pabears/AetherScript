@@ -73,14 +73,21 @@ We believe this is the future of AI-assisted development—structured, predictab
     ```bash
     bun install
     ```
+2.  **Install ollama and codellama:**
 
-2.  **Run the code generation script:**
+    1. download ollama at: https://ollama.com/download
+    2. install codellama
+    ```bash
+    ollama run codellama
+    ```
+
+3.  **Run the code generation script:**
     This will scan the `src` directory and create the `src/generated` files.
     ```bash
     bun aesc.ts
     ```
 
-3.  **Run the main application:**
+4.  **Run the main application:**
     This will execute the application logic using the generated code.
     ```bash
     bun index.ts
