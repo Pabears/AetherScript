@@ -4,11 +4,11 @@ import { DB } from "../user";
 import { User } from '../user';
 
 export class DBImpl extends DB {
-    public save(user: User): void {
+    save(user: User): void {
         this.users.set(user.name, user);
     }
 
-    public find(name: string): User | undefined {
+    find(name: string): User | undefined {
         return this.users.get(name);
     }
 }

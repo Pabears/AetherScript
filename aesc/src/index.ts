@@ -148,7 +148,7 @@ export async function handleGenerate(force: boolean, files:string[], verbose: bo
         tsConfigFilePath: "tsconfig.json",
     });
 
-    const outputDir = path.join(__dirname, OUTPUT_DIR);
+    const outputDir = path.join(process.cwd(), OUTPUT_DIR);
     if (force) {
         console.log(`--force specified, cleaning directory: ${outputDir}`);
         fs.rmSync(outputDir, { recursive: true, force: true });
@@ -222,6 +222,12 @@ export async function handleGenerate(force: boolean, files:string[], verbose: bo
 
         console.log(`  -> Generating implementation for ${interfaceName}...`);
         const generatedCode = await callOllama(declaration, path.relative(outputDir, sourceFile.getFilePath()).replace(/\\/g, '/').replace(/\.ts$/, ''), implFilePath, verbose);
+
+        // If generation failed, callOllama returns an error comment. Skip file writing.
+        if (generatedCode.startsWith('// ERROR:')) {
+            continue;
+        }
+
         fs.writeFileSync(implFilePath, generatedCode);
         console.log(`  -> Wrote to ${implFilePath}`);
 
@@ -375,6 +381,11 @@ CRITICAL:
         if (!isValid && errors.length > 0) {
             console.error(`  -> ERROR: Generated code for ${interfaceName} failed validation. Skipping.`);
             errors.forEach(err => console.error(`    - ${err}`));
+            if (verbose) {
+                console.log("--- RAW OLLAMA RESPONSE ---");
+                console.log(rawCode);
+                console.log("---------------------------");
+            }
             return `// ERROR: Generated code for ${interfaceName} failed validation.\n${errors.join('\n// ')}`;
         }
 
