@@ -39,9 +39,9 @@ To see AetherScript in action, follow these steps to set up the local developmen
 
     ```bash
     cd aesc
-bun install
-cd ../demo
-bun install
+    bun install
+    cd ../demo
+    bun install
     ```
 
 2.  **Build the `aesc` Tool**
@@ -50,20 +50,24 @@ bun install
 
     ```bash
     cd ../aesc
-bun run build
+    bun run build
     ```
 
 3.  **Link the `aesc` Tool for Local Development**
 
     This is the key step. We'll first create a global link for the `aesc` package, and then consume that link in the `demo` project.
 
+    First, in the `aesc/` directory (where you should be after the previous step), create the global link:
     ```bash
     # In the aesc/ directory, create the global link
-bun link
+    bun link
+    ```
 
-# In the demo/ directory, use the link
-cd ../demo
-bun link aesc
+    Then, switch to the `demo/` directory and use the link:
+    ```bash
+    # In the demo/ directory, use the link
+    cd ../demo
+    bun link aesc
     ```
 
 4.  **Run Code Generation in the Demo Project**
@@ -72,7 +76,7 @@ bun link aesc
 
     ```bash
     # Make sure you are in the demo/ directory
-bunx aesc gen src/user.ts
+    bunx aesc gen src/user.ts
     ```
 
     This command will read `src/user.ts`, find the `@AutoGen` decorators, and generate the necessary implementation files inside `src/generated`.
