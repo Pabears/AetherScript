@@ -76,7 +76,7 @@ To see AetherScript in action, follow these steps to set up the local developmen
 
     ```bash
     # Make sure you are in the demo/ directory
-    bunx aesc gen src/user.ts
+    bunx aesc gen -vf
     ```
 
     This command will read `src/user.ts`, find the `@AutoGen` decorators, and generate the necessary implementation files inside `src/generated`.
