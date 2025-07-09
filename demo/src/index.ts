@@ -1,5 +1,5 @@
-import { UserController, User } from './src/user';
-import { container } from './src/generated/container';
+import { UserController, User } from './user';
+import { container } from './generated/container';
 
 console.log('--- Application Start ---');
 
@@ -9,7 +9,6 @@ const userController = new UserController();
 // 2. Use the container to get the generated service implementation
 // This is the "autowiring" or "injection" step
 userController.userService = container.get('UserService');
-userController.db = container.get('DB');
 
 console.log('UserService has been injected into UserController.');
 

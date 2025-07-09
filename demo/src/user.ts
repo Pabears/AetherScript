@@ -1,4 +1,4 @@
-import { AutoGen } from "./decorators";
+import { AutoGen } from "aesc";
 
 export class User {
     constructor(public name: string, public age: number) {

@@ -8,87 +8,137 @@ This is the vision behind this project, a prototype for what we'll call **Aether
 
 AetherScript introduces a new, structured workflow for human-AI collaboration, built on a simple yet powerful philosophy: **separate human intent from AI implementation.**
 
+## Project Structure
+
+This repository is organized into two main parts:
+
+*   `aesc/`: The core AetherScript library and command-line tool.
+*   `demo/`: A simple example project that demonstrates how to use the `aesc` tool.
+
+## Getting Started: Running the Demo
+
+### Prerequisites
+
+Before you begin, ensure you have the following installed:
+
+- **Bun**: Follow the instructions on the [official Bun website](https://bun.sh/) to install it.
+- **Ollama**: Download and install Ollama from the [official Ollama website](https://ollama.com/download). After installation, you must pull the model that `aesc` will use and ensure the Ollama application is running.
+
+  ```bash
+  # Download the model
+  ollama pull codellama
+
+  # Make sure the Ollama application is running in the background
+  ```
+
+### Setup and Execution
+
+To see AetherScript in action, follow these steps to set up the local development environment. This process uses `bun link` to simulate how a user would consume the `aesc` package.
+
+1.  **Install Dependencies for Both Projects**
+
+    ```bash
+    cd aesc
+bun install
+cd ../demo
+bun install
+    ```
+
+2.  **Build the `aesc` Tool**
+
+    The `aesc` tool needs to be built once initially.
+
+    ```bash
+    cd ../aesc
+bun run build
+    ```
+
+3.  **Link the `aesc` Tool for Local Development**
+
+    This is the key step. We'll first create a global link for the `aesc` package, and then consume that link in the `demo` project.
+
+    ```bash
+    # In the aesc/ directory, create the global link
+bun link
+
+# In the demo/ directory, use the link
+cd ../demo
+bun link aesc
+    ```
+
+4.  **Run Code Generation in the Demo Project**
+
+    Now, from the `demo` directory, you can use the `aesc` command-line tool just like a published package.
+
+    ```bash
+    # Make sure you are in the demo/ directory
+bunx aesc gen src/user.ts
+    ```
+
+    This command will read `src/user.ts`, find the `@AutoGen` decorators, and generate the necessary implementation files inside `src/generated`.
+
+5.  **Run the Demo Application**
+
+    ```bash
+    bun src/index.ts
+    ```
+
+    You should see the output of the program, confirming that the generated code was correctly injected and used.
+
 ## How It Works: The `@AutoGen` Model
 
-This prototype demonstrates the core concept using TypeScript decorators and compile-time code generation.
+The core philosophy is to **separate human intent from AI implementation.**
 
-#### 1. You Define the Intent (in your source code)
+#### 1. You Define the Intent (in `demo/src/user.ts`)
 
-In standard TypeScript files, you write your high-level architecture, interfaces, and method signatures. You define the "what." For the parts you want to delegate to an AI, you simply apply the `@AutoGen` decorator to an interface property.
+You write your high-level architecture using abstract classes and interfaces. You mark the properties you want the AI to implement with the `@AutoGen` decorator.
 
 ```typescript
-// You write this in src/user.ts
-import { AutoGen } from "./decorators";
+// demo/src/user.ts
+import { AutoGen } from "aesc"; // Note: importing from the 'aesc' package
 
-// Define a User class
-export class User {
-    constructor(public name: string, public age: number) {}
-}
+export class User { /* ... */ }
+export abstract class DB { /* ... */ }
 
-// Define an abstract class for the database layer
-export abstract class DB {
-    protected users = new Map<string, User>();
-    abstract save(user: User): void;
-    abstract find(name: string): User | undefined;
-}
-
-// UserService is now an abstract class with its own auto-generated dependency
 export abstract class UserService {
-    @AutoGen
+    @AutoGen // You're telling AetherScript to generate the implementation for this
     public db?: DB;
 
     abstract create(user: User): void;
     abstract findByName(name: string): User | undefined;
 }
 
-// The controller now only needs the user service
 export class UserController {
-    @AutoGen
+    @AutoGen // And for this one too
     public userService?: UserService;
 
-    create(user: User): void {
-        this.userService!.create(user);
-    }
-
-    find(name: string): User | undefined {
-        return this.userService!.findByName(name);
-    }
+    create(user: User): void { /* ... */ }
+    find(name: string): User | undefined { /* ... */ }
 }
 ```
 
-#### 2. AI Fills the Implementation (`aesc.ts` script)
+#### 2. AI Fills the Implementation (via `bunx aesc gen`)
 
-The AetherScript engine (represented by our `aesc.ts` script) scans your code for `@AutoGen` decorators. For each decorated property, it:
-1.  Finds the associated interface (`UserService`).
-2.  Generates a concrete implementation (`UserServiceImpl`) in a separate, sandboxed directory (`src/generated`). This is the "how."
-3.  Generates a dependency injection container to make the implementation available at runtime.
+The AetherScript engine (`aesc`) scans your code for `@AutoGen` decorators. For each one, it generates a concrete implementation (`UserServiceImpl`, `DBImpl`, etc.) in a separate, sandboxed `generated/` directory. It also creates a dependency injection container to manage these implementations.
 
-#### 3. You Use the Generated Code (with full control)
+#### 3. You Use the Generated Code (in `demo/src/index.ts`)
 
-The AI's code never touches your main source files. You explicitly use the generated container to inject the implementation where needed. It's like a pull request from your AI partner, which you merge by writing the wiring code yourself.
+The AI's code never touches your handwritten files. You explicitly use the generated container to inject the implementations where needed. It's like a pull request from your AI partner, which you "merge" by writing the wiring code yourself.
 
 ```typescript
-// In your application entry point (index.ts)
-import { UserController, User } from './src/user';
-import { container } from './src/generated/container';
+// demo/src/index.ts
+import { UserController, User } from './user';
+import { container } from './generated/container'; // You import the AI's work
 
-console.log('--- Application Start ---');
-
-// 1. Create an instance of the controller
 const userController = new UserController();
 
-// 2. Use the container to get the generated UserService.
-// The container will automatically resolve the nested dependency (DB -> UserService).
+// Use the container to get the generated implementation
 userController.userService = container.get('UserService');
 
 console.log('UserService has been injected into UserController.');
 
-// 3. Create some data and use the controller
 const newUser = new User('Alice', 30);
 userController.create(newUser);
-console.log('Found user:', userController.find(newUser.name));
-
-console.log('--- Application End ---');
 ```
 
 ## Why This Approach?
@@ -99,51 +149,3 @@ console.log('--- Application End ---');
 *   **A Structured Philosophy**: This isn't just a tool; it's a methodology for making AI a true, reliable partner in professional software engineering.
 
 We believe this is the future of AI-assisted development—structured, predictable, and always developer-led.
-
-## How to Run This Prototype
-
-### Prerequisites
-
-Before you begin, ensure you have the following installed:
-- [Bun](https://bun.sh/) (v1.2.16 or later)
-- [Ollama](https://ollama.com/download)
-
-### Step 1: Install Dependencies
-
-Navigate to the project directory and install the necessary packages.
-
-```bash
-bun install
-```
-
-### Step 2: Set Up the AI Model
-
-This prototype uses the `codellama` model running locally via Ollama.
-
-1.  **Download the model:**
-    ```bash
-    ollama pull codellama
-    ```
-
-2.  **Ensure Ollama is running:**
-    Make sure the Ollama application is running in the background. You should see its icon in your system's menu bar or taskbar.
-
-### Step 3: Generate Code
-
-Run the AetherScript code generation script. This will scan for `@AutoGen` decorators, interact with the LLM, and create the service implementation files in the `src/generated` directory.
-
-```bash
-bun aesc.ts
-```
-
-### Step 4: Run the Application
-
-Execute the main application logic to see the generated code in action.
-
-```bash
-bun index.ts
-```
-
-You will see output showing that the `UserController` is using the `UserService` to create and find a user.
-
-This project was created using `bun init` in bun v1.2.16. [Bun](https://bun.sh) is a fast all-in-one JavaScript runtime.
