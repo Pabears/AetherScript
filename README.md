@@ -84,7 +84,7 @@ To see AetherScript in action, follow these steps to set up the local developmen
 5.  **Run the Demo Application**
 
     ```bash
-    bun src/index.ts
+    bun run start
     ```
 
     You should see the output of the program, confirming that the generated code was correctly injected and used.
