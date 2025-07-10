@@ -4,27 +4,19 @@ import { UserService } from '../service/user-service';
 
 export class UserServiceImpl extends UserService {
     public create(user: User): void {
-        if (this.validateUser(user)) {
+        if (this.isValidUser(user)) {
             this.db?.save(user);
         }
     }
 
     public findByName(name: string): User | undefined {
-        if (this.isValidName(name)) {
+        if (name.length >= 3 && name.length <= 15) {
             return this.db?.find(name);
         }
         return undefined;
     }
 
-    private validateUser(user: User): boolean {
-        return this.isValidName(user.name) && this.isValidAge(user.age);
-    }
-
-    private isValidName(name: string): boolean {
-        return name.length > 3 && name.length < 15;
-    }
-
-    private isValidAge(age: number): boolean {
-        return age >= 0 && age <= 120;
+    private isValidUser(user: User): boolean {
+        return user.name.length > 3 && user.name.length < 15 && user.age >= 0 && user.age <= 120;
     }
 }

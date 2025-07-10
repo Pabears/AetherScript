@@ -118,16 +118,19 @@ export function getDependencies(cls: ClassDeclaration): { constructorDeps: strin
             processedClasses.add(name);
             currentClass.getProperties().forEach(prop => {
                 if (prop.getDecorator("AutoGen")) {
-                    const propType = prop.getType();
-                    let typeSymbol = propType.getSymbol();
+                    const typeNode = prop.getTypeNode();
+                    let typeName = typeNode?.getText();
 
-                    // If it's a union type (e.g., 'DB | undefined'), find the actual type symbol
-                    if (propType.isUnion()) {
-                        const nonUndefinedType = propType.getUnionTypes().find(t => !t.isUndefined());
-                        typeSymbol = nonUndefinedType?.getSymbol();
+                    // Handle optional types like 'DB | undefined' or 'DB?'
+                    if (typeName) {
+                        if (typeName.includes('|')) {
+                            typeName = typeName.split('|').map(s => s.trim()).find(s => s !== 'undefined' && s !== 'null') || typeName;
+                        }
+                        if (prop.hasQuestionToken()) {
+                            // This case is for 'prop?: Type' syntax, but getTypeNode already includes the text.
+                            // The check is implicit in how we extract the type name string.
+                        }
                     }
-
-                    const typeName = typeSymbol?.getName();
 
                     if (typeName && !propertyDeps.some(p => p.name === prop.getName())) {
                         propertyDeps.push({ name: prop.getName(), type: typeName });
