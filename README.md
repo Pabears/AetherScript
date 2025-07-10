@@ -25,8 +25,11 @@ Before you begin, ensure you have the following installed:
 - **Ollama**: Download and install Ollama from the [official Ollama website](https://ollama.com/download). After installation, you must pull the model that `aesc` will use and ensure the Ollama application is running.
 
   ```bash
-  # Download the model
+  # Download the default model
   ollama pull codellama
+
+  # You can also pull other models to use with the --model flag
+  ollama pull qwen2.5-coder:32b
 
   # Make sure the Ollama application is running in the background
   ```
@@ -76,10 +79,14 @@ To see AetherScript in action, follow these steps to set up the local developmen
 
     ```bash
     # Make sure you are in the demo/ directory
+    # This will use the default 'codellama' model
     bunx aesc gen -vf
+
+    # You can specify a different model using the -m or --model flag
+    # bunx aesc gen -vf -m qwen2.5-coder:32b
     ```
 
-    This command will read `src/user.ts`, find the `@AutoGen` decorators, and generate the necessary implementation files inside `src/generated`.
+    This command will scan your project for `@AutoGen` decorators and generate the necessary implementation files inside `src/generated`.
 
 5.  **Run the Demo Application**
 
@@ -93,31 +100,48 @@ To see AetherScript in action, follow these steps to set up the local developmen
 
 The core philosophy is to **separate human intent from AI implementation.**
 
-#### 1. You Define the Intent (in `demo/src/user.ts`)
+#### 1. You Define the Intent (e.g., in `demo/src/service/user-service.ts`)
 
 You write your high-level architecture using abstract classes and interfaces. You mark the properties you want the AI to implement with the `@AutoGen` decorator.
 
 ```typescript
-// demo/src/user.ts
-import { AutoGen } from "aesc"; // Note: importing from the 'aesc' package
-
-export class User { /* ... */ }
-export abstract class DB { /* ... */ }
+// demo/src/service/user-service.ts
+import { AutoGen } from "aesc";
+import { DB } from "./db-service";
+import { User } from "../entity/user";
 
 export abstract class UserService {
     @AutoGen // You're telling AetherScript to generate the implementation for this
     public db?: DB;
 
-    abstract create(user: User): void;
-    abstract findByName(name: string): User | undefined;
+    // 1. check: 3<name.len()<15 and 0<=age<=120
+    // 2. db.save(user)
+    public abstract create(user: User): void;
+
+    // 1. check name, 2. db.find(name)
+    public abstract findByName(name: string): User | undefined;
 }
+```
+
+And in another file, you might have a controller that depends on this service:
+
+```typescript
+// demo/src/controller/user-controller.ts
+import { AutoGen } from "aesc";
+import { UserService } from "../service/user-service";
+import { User } from "../entity/user";
 
 export class UserController {
     @AutoGen // And for this one too
     public userService?: UserService;
 
-    create(user: User): void { /* ... */ }
-    find(name: string): User | undefined { /* ... */ }
+    public create(user: User): void {
+        this.userService?.create(user);
+    }
+
+    public find(name: string): User | undefined {
+        return this.userService?.findByName(name);
+    }
 }
 ```
 
@@ -125,13 +149,14 @@ export class UserController {
 
 The AetherScript engine (`aesc`) scans your code for `@AutoGen` decorators. For each one, it generates a concrete implementation (`UserServiceImpl`, `DBImpl`, etc.) in a separate, sandboxed `generated/` directory. It also creates a dependency injection container to manage these implementations.
 
-#### 3. You Use the Generated Code (in `demo/src/index.ts`)
+#### 3. You Use the Generated Code (e.g., in `demo/src/index.ts`)
 
 The AI's code never touches your handwritten files. You explicitly use the generated container to inject the implementations where needed. It's like a pull request from your AI partner, which you "merge" by writing the wiring code yourself.
 
 ```typescript
 // demo/src/index.ts
-import { UserController, User } from './user';
+import { UserController } from './controller/user-controller';
+import { User } from './entity/user';
 import { container } from './generated/container'; // You import the AI's work
 
 const userController = new UserController();
@@ -139,10 +164,20 @@ const userController = new UserController();
 // Use the container to get the generated implementation
 userController.userService = container.get('UserService');
 
-console.log('UserService has been injected into UserController.');
+// The container also handles nested dependencies, like the DB for the UserService
+const dbInstance = container.get('DB');
+if (userController.userService) {
+    userController.userService.db = dbInstance;
+}
+
+console.log('UserService and its dependencies have been injected into UserController.');
 
 const newUser = new User('Alice', 30);
 userController.create(newUser);
+console.log(`User 'Alice' created.`);
+
+const foundUser = userController.find('Alice');
+console.log('Found user:', foundUser);
 ```
 
 ## Why This Approach?

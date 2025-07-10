@@ -143,7 +143,7 @@ export function getDependencies(cls: ClassDeclaration): { constructorDeps: strin
 
 // --- Core Generation Logic (User-provided) ---
 
-export async function handleGenerate(force: boolean, files:string[], verbose: boolean) {
+export async function handleGenerate(force: boolean, files:string[], verbose: boolean, model: string) {
     const project = new Project({
         tsConfigFilePath: "tsconfig.json",
     });
@@ -221,7 +221,7 @@ export async function handleGenerate(force: boolean, files:string[], verbose: bo
         }
 
         console.log(`  -> Generating implementation for ${interfaceName}...`);
-        const generatedCode = await callOllama(declaration, path.relative(outputDir, sourceFile.getFilePath()).replace(/\\/g, '/').replace(/\.ts$/, ''), implFilePath, verbose);
+        const generatedCode = await callOllama(declaration, path.relative(outputDir, declaration.getSourceFile().getFilePath()).replace(/\\/g, '/').replace(/\.ts$/, ''), implFilePath, verbose, model);
 
         // If generation failed, callOllama returns an error comment. Skip file writing.
         if (generatedCode.startsWith('// ERROR:')) {
@@ -257,7 +257,7 @@ export async function handleGenerate(force: boolean, files:string[], verbose: bo
     }
 }
 
-async function callOllama(declaration: InterfaceDeclaration | ClassDeclaration, originalImportPath: string, generatedFilePath: string, verbose: boolean): Promise<string> {
+async function callOllama(declaration: InterfaceDeclaration | ClassDeclaration, originalImportPath: string, generatedFilePath: string, verbose: boolean, model: string): Promise<string> {
     const interfaceName = declaration.getName()!;
     const interfaceCode = declaration.getFullText();
 
@@ -289,7 +289,7 @@ async function callOllama(declaration: InterfaceDeclaration | ClassDeclaration, 
             }
 
             if (!dependentTypesCode.has(typeName)) {
-                const importPath = path.relative(path.dirname(declaration.getSourceFile().getFilePath()), declarationFilePath).replace(/\.ts$/, '');
+                const importPath = path.relative(path.dirname(generatedFilePath), declarationFilePath).replace(/\.ts$/, '');
                 dependentTypesCode.set(typeName, { code: decl.getFullText(), path: importPath });
             }
         }
@@ -346,7 +346,7 @@ CRITICAL:
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                model: "codellama",
+                model: model,
                 prompt: prompt,
                 stream: false,
             }),
@@ -598,9 +598,10 @@ function main() {
         return yargs
             .positional('files', { describe: 'A list of interface/class names or filenames to generate.', type: 'string', array: true, default: [] })
             .option('force', { alias: 'f', type: 'boolean', description: 'Force overwrite of existing implementation files', default: false })
-            .option('verbose', { alias: 'v', type: 'boolean', description: 'Print the full prompt sent to Ollama for debugging', default: false });
+            .option('verbose', { alias: 'v', type: 'boolean', description: 'Print the full prompt sent to Ollama for debugging', default: false })
+            .option('model', { alias: 'm', type: 'string', description: 'Specify the Ollama model to use', default: 'codellama' });
     }, (argv) => {
-        handleGenerate(argv.force, argv.files as string[], argv.verbose).catch(err => console.error("An unexpected error occurred:", err));
+        handleGenerate(argv.force, argv.files as string[], argv.verbose, argv.model).catch(err => console.error("An unexpected error occurred:", err));
     })
     .command('lock <paths...>', 'Lock a file or a directory to prevent regeneration', (yargs) => {
         return yargs.positional('paths', { describe: 'File or directory paths to lock', type: 'string', demandOption: true, array: true });
