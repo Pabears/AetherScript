@@ -4,10 +4,8 @@ import { UserService } from '../service/user-service';
 
 export class UserServiceImpl extends UserService {
     public create(user: User): void {
-        if (this.isValidUser(user)) {
+        if (this.validateUser(user)) {
             this.db?.save(user);
-        } else {
-            throw new Error('Invalid user data');
         }
     }
 
@@ -18,7 +16,7 @@ export class UserServiceImpl extends UserService {
         return undefined;
     }
 
-    private isValidUser(user: User): boolean {
+    private validateUser(user: User): boolean {
         return this.isValidName(user.name) && this.isValidAge(user.age);
     }
 
