@@ -1,4 +1,5 @@
-import { UserController, User } from './user';
+import { UserController } from './controller/user-controller'
+import { User } from './entity/user';
 import { container } from './generated/container';
 
 console.log('--- Application Start ---');
