@@ -202,7 +202,8 @@ export async function handleGenerate(force: boolean, files:string[], verbose: bo
                 }
                 const interfaceName = decl.getName()!;
                 if (!servicesToGenerate.has(interfaceName)) {
-                    servicesToGenerate.set(interfaceName, { declaration: decl, sourceFile });
+                    const dependencySourceFile = decl.getSourceFile();
+                    servicesToGenerate.set(interfaceName, { declaration: decl, sourceFile: dependencySourceFile });
                 }
             }
         }
@@ -224,7 +225,8 @@ export async function handleGenerate(force: boolean, files:string[], verbose: bo
         }
 
         console.log(`  -> Generating implementation for ${interfaceName}...`);
-        const generatedCode = await callOllama(declaration, path.relative(outputDir, declaration.getSourceFile().getFilePath()).replace(/\\/g, '/').replace(/\.ts$/, ''), implFilePath, verbose, model);
+        const originalImportPath = path.relative(path.dirname(implFilePath), declaration.getSourceFile().getFilePath()).replace(/\\/g, '/').replace(/\.ts$/, '');
+        const generatedCode = await callOllama(declaration, originalImportPath, implFilePath, verbose, model);
 
         // If generation failed, callOllama returns an error comment. Skip file writing.
         if (generatedCode.startsWith('// ERROR:')) {
@@ -261,80 +263,65 @@ export async function handleGenerate(force: boolean, files:string[], verbose: bo
 }
 
 async function callOllama(declaration: InterfaceDeclaration | ClassDeclaration, originalImportPath: string, generatedFilePath: string, verbose: boolean, model: string): Promise<string> {
-    const interfaceName = declaration.getName()!;
-    const interfaceCode = declaration.getFullText();
-
-    const dependentTypesCode = new Map<string, { code: string, path: string }>();
-
-    const typesToProcess = [
-        ...declaration.getMethods().flatMap(m => [...m.getParameters().map(p => p.getType()), m.getReturnType()]),
-        ...declaration.getHeritageClauses().flatMap(hc => hc.getTypeNodes().map(tn => tn.getType()))
-    ];
-
-    const declarationType = declaration.getType();
-    typesToProcess.push(declarationType);
-
-    for (const type of typesToProcess) {
-        const symbol = type.getAliasSymbol() ?? type.getSymbol();
-        if (!symbol) continue;
-
-        for (const decl of symbol.getDeclarations()) {
-            const sourceFile = decl.getSourceFile();
-            const declarationFilePath = sourceFile.getFilePath();
-
-            if (sourceFile.isFromExternalLibrary() || sourceFile.isDeclarationFile()) {
-                continue;
-            }
-
-            const typeName = symbol.getName();
-            if (['Promise', 'void', 'string', 'number', 'boolean', 'any', 'unknown', 'never'].includes(typeName) || typeName === interfaceName) {
-                continue;
-            }
-
-            if (!dependentTypesCode.has(typeName)) {
-                const importPath = path.relative(path.dirname(generatedFilePath), declarationFilePath).replace(/\.ts$/, '');
-                dependentTypesCode.set(typeName, { code: decl.getFullText(), path: importPath });
-            }
-        }
+    const project = declaration.getProject();
+    const interfaceName = declaration.getName();
+    if (!interfaceName) {
+        throw new Error("Cannot generate implementation for an anonymous class or interface.");
     }
 
-    let dependentCodeBlock = '';
-    if (dependentTypesCode.size > 0) {
-        dependentCodeBlock += 'Here are the definitions of the types it depends on:\n\n';
-        for (const [typeName, { code, path: importPath }] of dependentTypesCode.entries()) {
-            dependentCodeBlock += `From '${importPath}':\n`;
-            dependentCodeBlock += `\`\`\`typescript\n${code}\n\`\`\`\n\n`;
-        }
-    }
+    const dependentTypes = new Map<string, { path: string, code: string }>();
 
-    const isAbstractClass = Node.isClassDeclaration(declaration) && declaration.isAbstract();
-    const action = isAbstractClass ? 'extend' : 'implement';
-    const heritageClause = `The generated class must ${action} the original '${interfaceName}'.`;
-    const propertyRule = isAbstractClass 
-        ? "CRITICAL: Do NOT redeclare properties (like 'db') that are already defined in the base abstract class. Access them directly using 'this'."
-        : "";
+    const addDependencies = (node: Node) => {
+        if (!node || !node.getSourceFile) return;
+        const sourceFile = node.getSourceFile();
+        if (sourceFile.isFromExternalLibrary() || sourceFile.isDeclarationFile()) return;
 
-    const prompt = `
-You are an expert TypeScript developer. Your task is to generate a concrete implementation for the following TypeScript ${isAbstractClass ? 'abstract class' : 'interface'}.
-The implementation should be a export public class named '${interfaceName}Impl'.
-${heritageClause}
-${propertyRule}
-Any helper functions you create should be defined as private methods within the implementation class. Use the inherited 'protected' or 'public' members directly.
-The generated code should start with a comment like '// Generated by AutoGen...' and include the necessary imports.
+        const types = node.getDescendantsOfKind(ts.SyntaxKind.TypeReference);
+        types.forEach(typeRef => {
+            const symbol = typeRef.getType().getSymbol();
+            if (symbol) {
+                const name = symbol.getName();
+                if (['Promise', 'void', 'string', 'number', 'boolean', 'any', 'unknown', 'never'].includes(name) || dependentTypes.has(name)) return;
+                for (const decl of symbol.getDeclarations()) {
+                    const declSourceFile = decl.getSourceFile();
+                    if (declSourceFile && !declSourceFile.isFromExternalLibrary()) {
+                        const importPath = path.relative(path.dirname(generatedFilePath), declSourceFile.getFilePath()).replace(/\\/g, '/').replace(/\.ts$/, '');
+                        dependentTypes.set(name, { path: importPath, code: decl.getText() });
+                        addDependencies(decl);
+                    }
+                }
+            }
+        });
+    };
 
-The original abstract class or interface is defined in '${originalImportPath}'.
+    addDependencies(declaration);
 
-${dependentCodeBlock}Here is the original code:
+    const dependenciesText = Array.from(dependentTypes.entries())
+        .map(([_, { path, code }]) => `// From: ${path}\n${code}`)
+        .join('\n\n');
+
+    const originalCode = declaration.getText();
+    const fixedOriginalCode = originalCode.replace(/\.len\b/g, '.length');
+
+    // This is the new, much stricter prompt
+    const prompt = `You are a TypeScript code generation engine.
+Your task is to implement the following abstract class.
+You must follow these rules strictly:
+1. The implementation class name must be '${interfaceName}Impl'.
+2. The implementation class MUST 'extend' the original abstract class '${interfaceName}'.
+3. You MUST implement all abstract methods.
+4. You MUST NOT redeclare any properties already present in the base class. Access them with 'this'.
+5. Your response MUST be only the raw TypeScript code. No explanations, no markdown.
+
+Here are the dependent type definitions:
 \`\`\`typescript
-${interfaceCode}
+${dependenciesText}
 \`\`\`
 
-CRITICAL: 
-1. You must respond with only the raw TypeScript code for the implementation file. 
-2. The response must contain nothing else.
-3. the TypeScript code must in \`\`\`typescript \`\`\` 
-4. the impl class must not contain constructor
-5. Provide only the TypeScript code for the class implementation, without any additional explanations, comments, or markdown formatting.
+Here is the abstract class you must implement:
+\`\`\`typescript
+${fixedOriginalCode}
+\`\`\`
 `;
 
     if (verbose) {
@@ -344,77 +331,67 @@ CRITICAL:
     }
 
     console.log(`  -> Sending prompt to Ollama for ${interfaceName}...`);
-    try {
-        const response = await fetch('http://localhost:11434/api/generate', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                model: model,
-                prompt: prompt,
-                stream: false,
-            }),
-        });
+    const response = await fetch('http://localhost:11434/api/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ model, prompt, stream: false }),
+    });
 
-        if (!response.ok) {
-            const errorBody = await response.text();
-            throw new Error(`Ollama API request failed with status ${response.status}: ${errorBody}`);
-        }
-
-        const result = (await response.json()) as OllamaResponse;
-
-        const rawCode = result.response || '';
-        // Attempt to extract from ```typescript block first
-        let cleanedCode = '';
-        const match = /```typescript\n([\s\S]*?)\n```/.exec(rawCode);
-        if (match && match[1]) {
-            cleanedCode = match[1].trim();
-        } else if (rawCode.includes('export class')) {
-            // Fallback: If no block is found, but the raw response contains a class export, use the whole response.
-            // This handles cases where the model doesn't follow the markdown block instruction.
-            cleanedCode = rawCode.trim();
-        }
-
-        if (!cleanedCode) {
-            if (verbose) {
-                console.error(`  -> ERROR: Ollama response for ${interfaceName} did not contain a valid TypeScript code block. Skipping.`);
-                console.log("--- RAW OLLAMA RESPONSE ---");
-                console.log(rawCode);
-                console.log("---------------------------");
-            }
-            return `// ERROR: Ollama response for ${interfaceName} did not contain a valid TypeScript code block.`;
-        }
-
-        cleanedCode = postProcessGeneratedCode(cleanedCode, declaration, generatedFilePath);
-
-        const { isValid, errors } = await validateGeneratedCode(cleanedCode, declaration, generatedFilePath);
-
-        if (!isValid && errors.length > 0) {
-            console.error(`  -> ERROR: Generated code for ${interfaceName} failed validation. Skipping.`);
-            errors.forEach(err => console.error(`    - ${err}`));
-            if (verbose) {
-                console.log("--- RAW OLLAMA RESPONSE ---");
-                console.log(rawCode);
-                console.log("---------------------------");
-            }
-            return `// ERROR: Generated code for ${interfaceName} failed validation.\n${errors.join('\n// ')}`;
-        }
-
-        console.log(`  -> result (post-processed): ${cleanedCode}`);
-
-        return cleanedCode;
-
-    } catch (error) {
-        console.error("  -> Error calling Ollama:", error);
-        console.error("  -> Falling back to mock implementation.");
-        return `// Generated by AutoGen (fallback) at ${new Date().toISOString()}
-import { ${interfaceName} } from '${originalImportPath}';
-
-// ERROR: Could not generate implementation from Ollama.
-export class ${interfaceName}Impl implements ${interfaceName} {
-    // TODO: Implement methods manually.
-}
-`;
+    if (!response.ok) {
+        throw new Error(`Ollama request failed with status ${response.status}`);
     }
+
+    const ollamaResponse = await response.json() as OllamaResponse;
+    
+    if (verbose) {
+        console.log("--- OLLAMA RESPONSE (RAW) ---");
+        console.log(ollamaResponse.response);
+        console.log("----------------------------");
+    }
+
+    let cleanedCode = ollamaResponse.response.trim();
+    const tsBlockRegex = /```typescript\s*([\s\S]*?)\s*```/;
+    const match = cleanedCode.match(tsBlockRegex);
+    if (match && match[1]) {
+        cleanedCode = match[1].trim();
+    } else {
+         // Fallback for when the model doesn't use markdown blocks
+        if (cleanedCode.startsWith("```")) {
+            cleanedCode = cleanedCode.substring(3);
+        }
+        if (cleanedCode.endsWith("```")) {
+            cleanedCode = cleanedCode.slice(0, -3);
+        }
+    }
+
+
+    if (verbose) {
+        console.log("--- CODE BEFORE POST-PROCESSING ---");
+        console.log(cleanedCode);
+        console.log("---------------------------------");
+    }
+
+    const processedCode = postProcessGeneratedCode(cleanedCode, declaration, generatedFilePath);
+
+    if (verbose) {
+        console.log("--- CODE AFTER POST-PROCESSING ---");
+        console.log(processedCode);
+        console.log("--------------------------------");
+    }
+
+    const { isValid, errors } = await validateGeneratedCode(processedCode, declaration, generatedFilePath);
+    if (!isValid) {
+        console.error(`  -> ERROR: Generated code for ${interfaceName} failed validation. Skipping.`);
+        errors.forEach(err => console.error(`    - ${err}`));
+        if (verbose) {
+            console.log("--- FAILED CODE --- ");
+            console.log(processedCode);
+            console.log("-------------------");
+        }
+        return '';
+    }
+
+    return processedCode;
 }
 
 async function validateGeneratedCode(code: string, originalDeclaration: InterfaceDeclaration | ClassDeclaration, generatedFilePath: string): Promise<{ isValid: boolean; errors: string[] }> {
@@ -457,87 +434,77 @@ async function validateGeneratedCode(code: string, originalDeclaration: Interfac
 }
 
 function postProcessGeneratedCode(code: string, declaration: InterfaceDeclaration | ClassDeclaration, generatedFilePath: string): string {
-    const project = declaration.getProject();
-    // Use a unique temporary name to avoid conflicts
-    const tempFilePath = `${generatedFilePath}.tmp.ts`; 
-    const tempSourceFile = project.createSourceFile(tempFilePath, code, { overwrite: true });
+    const project = new Project({ useInMemoryFileSystem: true });
+    const sourceFile = project.createSourceFile(generatedFilePath, code, { overwrite: true });
 
-    try {
-        // Manually and robustly fix imports instead of relying on the sometimes buggy fixMissingImports()
-        const diagnostics = tempSourceFile.getPreEmitDiagnostics();
-        const missingTypeNames = new Set<string>();
+    const interfaceName = declaration.getName()!;
+    const implName = `${interfaceName}Impl`;
+    const implClass = sourceFile.getClass(implName);
 
-        diagnostics.forEach(diagnostic => {
-            const message = diagnostic.getMessageText();
-            if (typeof message === 'string') {
-                const match = message.match(/Cannot find name '(\w+)'/);
-                if (match && match[1]) {
-                    missingTypeNames.add(match[1]);
-                }
-            }
-        });
-
-        const importDeclarations: { [moduleSpecifier: string]: string[] } = {};
-
-        missingTypeNames.forEach(typeName => {
-            let foundDeclaration: any;
-
-            project.getSourceFiles().forEach(sourceFile => {
-                if (foundDeclaration) return; // Optimization
-                const exportedDecl = sourceFile.getExportedDeclarations().get(typeName);
-                if (exportedDecl && exportedDecl.length > 0) {
-                    foundDeclaration = exportedDecl[0];
-                }
-            });
-
-            if (foundDeclaration) {
-                const sourceFile = foundDeclaration.getSourceFile();
-                if (!sourceFile.isFromExternalLibrary()) {
-                    const modulePath = path.relative(path.dirname(tempFilePath), sourceFile.getFilePath()).replace(/\.ts$/, '');
-                    const finalModulePath = modulePath.startsWith('.') ? modulePath : `./${modulePath}`;
-                    if (!importDeclarations[finalModulePath]) {
-                        importDeclarations[finalModulePath] = [];
-                    }
-                    importDeclarations[finalModulePath].push(typeName);
-                }
-            }
-        });
-
-        for (const moduleSpecifier in importDeclarations) {
-            tempSourceFile.insertImportDeclaration(0, {
-                namedImports: Array.from(new Set(importDeclarations[moduleSpecifier])),
-                moduleSpecifier: moduleSpecifier,
-            });
-        }
-
-        // Final robust fix: ensure 'extends' is used and remove redeclared properties.
-        if (Node.isClassDeclaration(declaration)) {
-            const implClass = tempSourceFile.getClass(c => c.isDefaultExport() || c.isExported());
-            if (implClass) {
-                const baseClassName = declaration.getName()!;
-
-                // 1. Force 'extends' instead of 'implements'
-                const implementsIndex = implClass.getImplements().findIndex(i => i.getText() === baseClassName);
-                if (implementsIndex !== -1) {
-                    implClass.setExtends(baseClassName);
-                    implClass.removeImplements(implementsIndex);
-                }
-
-                // 2. Now that we're sure it extends, safely remove redeclared properties.
-                const basePropertyNames = new Set(declaration.getProperties().map(p => p.getName()));
-                implClass.getProperties().forEach(prop => {
-                    if (basePropertyNames.has(prop.getName())) {
-                        prop.remove();
-                    }
-                });
-            }
-        }
-
-        return tempSourceFile.getFullText();
-    } finally {
-        // IMPORTANT: Clean up the temporary file from the project graph
-        project.removeSourceFile(tempSourceFile);
+    if (!implClass) {
+        return code; // Not much we can do if the class isn't found
     }
+
+    // --- 1. Fix Imports ---
+    const requiredImports = new Map<string, Set<string>>();
+
+    const addImport = (type: import("ts-morph").Type) => {
+        const symbol = type.getAliasSymbol() ?? type.getSymbol();
+        if (!symbol) return;
+
+        const typeName = symbol.getName();
+        if (['Promise', 'void', 'string', 'number', 'boolean', 'any', 'unknown', 'never'].includes(typeName)) return;
+
+        for (const decl of symbol.getDeclarations()) {
+            const depSourceFile = decl.getSourceFile();
+            if (depSourceFile.isFromExternalLibrary() || depSourceFile.isDeclarationFile()) continue;
+
+            const importPath = path.relative(path.dirname(generatedFilePath), depSourceFile.getFilePath()).replace(/\\/g, '/').replace(/\.ts$/, '');
+            const finalPath = importPath.startsWith('.') ? importPath : `./${importPath}`;
+
+            if (!requiredImports.has(finalPath)) {
+                requiredImports.set(finalPath, new Set());
+            }
+            requiredImports.get(finalPath)!.add(typeName);
+        }
+    };
+
+    // Add import for the base class/interface itself
+    addImport(declaration.getType());
+
+    // Add imports for all types used in properties, methods, and heritage clauses
+    declaration.getProperties().forEach(p => addImport(p.getType()));
+    declaration.getMethods().forEach(m => {
+        m.getParameters().forEach(p => addImport(p.getType()));
+        addImport(m.getReturnType());
+    });
+    declaration.getHeritageClauses().forEach(hc => {
+        hc.getTypeNodes().forEach(tn => addImport(tn.getType()));
+    });
+
+    // Remove all existing import declarations
+    sourceFile.getImportDeclarations().forEach(importDecl => importDecl.remove());
+
+    // Add the corrected and consolidated imports
+    for (const [moduleSpecifier, names] of requiredImports.entries()) {
+        sourceFile.insertImportDeclaration(0, {
+            moduleSpecifier,
+            namedImports: Array.from(names),
+        });
+    }
+
+    // --- 2. Clean Up Class Body ---
+    if (Node.isClassDeclaration(declaration) && declaration.isAbstract()) {
+        const baseProperties = new Set(declaration.getProperties().map(p => p.getName()));
+        implClass.getProperties().forEach(prop => {
+            if (baseProperties.has(prop.getName())) {
+                console.log(`  -> INFO: Removing redeclared property '${prop.getName()}' from '${implName}'`);
+                prop.remove();
+            }
+        });
+    }
+
+    return sourceFile.getFullText();
 }
 
 export async function generateContainer(outputDir: string, services: GeneratedService[]) {

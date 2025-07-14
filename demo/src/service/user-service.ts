@@ -11,6 +11,6 @@ export abstract class UserService {
     // 2. db.save(user)
     public abstract create(user: User): void;
 
-    // 1. check name, 2. db.find(name)
+    // find user by name from db
     public abstract findByName(name: string): User | undefined;
 }
