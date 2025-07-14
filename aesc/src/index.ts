@@ -309,7 +309,7 @@ Your task is to implement the following abstract class.
 You must follow these rules strictly:
 1. The implementation class name must be '${interfaceName}Impl'.
 2. The implementation class MUST 'extend' the original abstract class '${interfaceName}'.
-3. You MUST implement all abstract methods.
+3. You MUST implement all abstract methods directly. Do NOT create private helper methods for the core logic.
 4. You MUST NOT redeclare any properties already present in the base class. Access them with 'this'.
 5. Your response MUST be only the raw TypeScript code. No explanations, no markdown.
 
@@ -349,19 +349,30 @@ ${fixedOriginalCode}
         console.log("----------------------------");
     }
 
-    let cleanedCode = ollamaResponse.response.trim();
+    let rawResponse = ollamaResponse.response.trim();
     const tsBlockRegex = /```typescript\s*([\s\S]*?)\s*```/;
-    const match = cleanedCode.match(tsBlockRegex);
+    const match = rawResponse.match(tsBlockRegex);
     if (match && match[1]) {
-        cleanedCode = match[1].trim();
+        rawResponse = match[1].trim();
+    }
+
+    // New logic to extract only the desired Impl class
+    const implClassName = `${interfaceName}Impl`;
+    const classRegex = new RegExp(`(export\\s+class\\s+${implClassName}[\\s\\S]*?\\n\\})`, 'm');
+    const classMatch = rawResponse.match(classRegex);
+
+
+    let cleanedCode: string;
+    if (classMatch && classMatch[0]) {
+        cleanedCode = classMatch[0];
+        if (verbose) {
+            console.log(`  -> INFO: Extracted '${implClassName}' from response.`);
+        }
     } else {
-         // Fallback for when the model doesn't use markdown blocks
-        if (cleanedCode.startsWith("```")) {
-            cleanedCode = cleanedCode.substring(3);
+        if (verbose) {
+            console.log(`  -> WARN: Could not extract '${implClassName}' from response. Using the full response as fallback.`);
         }
-        if (cleanedCode.endsWith("```")) {
-            cleanedCode = cleanedCode.slice(0, -3);
-        }
+        cleanedCode = rawResponse; // Fallback to the old behavior
     }
 
 
@@ -439,6 +450,15 @@ function postProcessGeneratedCode(code: string, declaration: InterfaceDeclaratio
 
     const interfaceName = declaration.getName()!;
     const implName = `${interfaceName}Impl`;
+    // Conditionally replace 'implements' with 'extends' for abstract classes
+    if (Node.isClassDeclaration(declaration) && declaration.isAbstract()) {
+        const className = declaration.getName()!;
+        const implementsRegex = new RegExp(`(implements\\s+)${className}`, 'g');
+        code = code.replace(implementsRegex, `extends ${className}`);
+        // Re-parse the source file after modification
+        sourceFile.replaceWithText(code);
+    }
+
     const implClass = sourceFile.getClass(implName);
 
     if (!implClass) {
@@ -495,6 +515,13 @@ function postProcessGeneratedCode(code: string, declaration: InterfaceDeclaratio
 
     // --- 2. Clean Up Class Body ---
     if (Node.isClassDeclaration(declaration) && declaration.isAbstract()) {
+        // Ensure the implementation `extends` the base class, not `implements` it.
+        const interfaceName = declaration.getName();
+        if (interfaceName) {
+            const implementsRegex = new RegExp(`implements\\s+${interfaceName}`, 'g');
+            code = code.replace(implementsRegex, `extends ${interfaceName}`);
+        }
+
         const baseProperties = new Set(declaration.getProperties().map(p => p.getName()));
         implClass.getProperties().forEach(prop => {
             if (baseProperties.has(prop.getName())) {
