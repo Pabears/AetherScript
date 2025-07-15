@@ -107,18 +107,17 @@ You write your high-level architecture using abstract classes and interfaces. Yo
 ```typescript
 // demo/src/service/user-service.ts
 import { AutoGen } from "aesc";
-import { DB } from "./db-service";
 import { User } from "../entity/user";
+import { DB } from "./db-service";
 
 export abstract class UserService {
-    @AutoGen // You're telling AetherScript to generate the implementation for this
+    @AutoGen
     public db?: DB;
-
-    // 1. check: 3<name.len()<15 and 0<=age<=120
+    // 1. check: 3 < name.length < 15 and 0 <= age <= 120
     // 2. db.save(user)
     public abstract create(user: User): void;
 
-    // 1. check name, 2. db.find(name)
+    // find user by name from db
     public abstract findByName(name: string): User | undefined;
 }
 ```
@@ -128,19 +127,18 @@ And in another file, you might have a controller that depends on this service:
 ```typescript
 // demo/src/controller/user-controller.ts
 import { AutoGen } from "aesc";
-import { UserService } from "../service/user-service";
 import { User } from "../entity/user";
+import { UserService } from "../service/user-service";
 
 export class UserController {
-    @AutoGen // And for this one too
+    @AutoGen
     public userService?: UserService;
 
-    public create(user: User): void {
-        this.userService?.create(user);
+    create(user: User): void {
+        this.userService!.create(user);
     }
-
-    public find(name: string): User | undefined {
-        return this.userService?.findByName(name);
+    find(name: string): User | undefined {
+        return this.userService!.findByName(name)
     }
 }
 ```
@@ -155,29 +153,27 @@ The AI's code never touches your handwritten files. You explicitly use the gener
 
 ```typescript
 // demo/src/index.ts
-import { UserController } from './controller/user-controller';
+import { UserController } from './controller/user-controller'
 import { User } from './entity/user';
-import { container } from './generated/container'; // You import the AI's work
+import { container } from './generated/container';
 
+console.log('--- Application Start ---');
+
+// 1. Create an instance of the controller
 const userController = new UserController();
 
-// Use the container to get the generated implementation
+// 2. Use the container to get the generated service implementation
+// This is the "autowiring" or "injection" step
 userController.userService = container.get('UserService');
 
-// The container also handles nested dependencies, like the DB for the UserService
-const dbInstance = container.get('DB');
-if (userController.userService) {
-    userController.userService.db = dbInstance;
-}
+console.log('UserService has been injected into UserController.');
 
-console.log('UserService and its dependencies have been injected into UserController.');
-
+// 3. Create some data and call the controller's method
 const newUser = new User('Alice', 30);
+console.log(`Calling create with user: ${newUser.name}`);
 userController.create(newUser);
-console.log(`User 'Alice' created.`);
-
-const foundUser = userController.find('Alice');
-console.log('Found user:', foundUser);
+console.log(userController.find(newUser.name))
+console.log('--- Application End ---');
 ```
 
 ## Why This Approach?
