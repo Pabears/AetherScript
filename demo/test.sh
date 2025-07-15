@@ -10,11 +10,17 @@ echo "====================================================="
 # Default number of runs
 TOTAL_RUNS=1000
 
+# Default model
+MODEL="codellama"
+
 # Parse command-line options
-while getopts ":n:" opt; do
+while getopts ":n:m:" opt; do
   case $opt in
     n)
       TOTAL_RUNS=$OPTARG
+      ;;
+    m)
+      MODEL=$OPTARG
       ;;
     \?)
       echo "Invalid option: -$OPTARG" >&2
@@ -40,9 +46,9 @@ do
   ITERATION_FAILED=0
 
   # Step 1: Generate code
-  echo "-> Generating code..."
+  echo "-> Generating code with model: $MODEL..."
   # Capture stderr to check for errors, hide stdout
-  GEN_ERROR=$(bun aesc gen -vf 2>&1 >/dev/null)
+  GEN_ERROR=$(bun aesc gen -vf -m "$MODEL" 2>&1 >/dev/null)
   if [ $? -ne 0 ]; then
     echo "[ERROR] 'bun aesc gen -vf' failed at iteration $i."
     echo "--- Generation Log ---"
