@@ -28,6 +28,110 @@ AetherScript introduces a structured workflow centered around the concept of a "
 
 This model confines the AI's creativity within a well-defined sandbox, ensuring the final output strictly adheres to human-predefined specifications.
 
+**3. The AetherScript Orchestration Engine: A Look Under the Hood**
+
+The power of AetherScript lies in its orchestration engine, which transforms a developer's declarative intent into fully implemented, production-ready code. This process can be broken down into several automated steps, triggered by the `aesc gen` command. Let's walk through a concrete example from the `demo` project.
+
+**Step 1: The Human Contract**
+
+A developer first defines an `abstract class` as a contract. This includes method signatures and, crucially, can include natural language comments to guide the AI.
+
+```typescript
+// file: src/service/user-service.ts
+export abstract class UserService {
+    @AutoGen
+    public db?: DB; // Another contract to be fulfilled by AI
+
+    // 1. check: 3 < name.length < 15 and 0 <= age <= 120
+    // 2. db.save(user)
+    public abstract create(user: User): void;
+
+    // find user by name from db
+    public abstract findByName(name: string): User | undefined;
+}
+```
+
+**Step 2: Declaring Intent**
+
+In another part of the application, such as a controller, the developer declares a dependency on this contract using the `@AutoGen` decorator.
+
+```typescript
+// file: src/controller/user-controller.ts
+export class UserController {
+    @AutoGen
+    public userService?: UserService;
+
+    // ... methods that use this.userService
+}
+```
+
+**Step 3: Static Analysis**
+
+Upon running `aesc gen`, the engine uses `ts-morph` to parse the entire codebase's Abstract Syntax Tree (AST). It identifies `UserController.userService` as a target and resolves its type to the `UserService` contract.
+
+**Step 4: Context-Rich Prompt Generation**
+
+This is the most critical step. The engine gathers all necessary context and constructs a highly specific prompt for the LLM. It recursively finds all dependent types (`User`, `DB`) and includes their definitions. The final prompt looks like this:
+
+**Anatomy of an AetherScript Prompt**
+
+```
+You are a TypeScript code generation engine.
+Your task is to implement the following abstract class.
+You must follow these rules strictly:
+1. The implementation class name must be 'UserServiceImpl'.
+2. The implementation class MUST 'extend' the original abstract class 'UserService'.
+3. You MUST implement all abstract methods directly. Do NOT create private helper methods for the core logic.
+4. You MUST NOT redeclare any properties already present in the base class. Access them with 'this'.
+5. Your response MUST be only the raw TypeScript code. No explanations, no markdown.
+
+Here are the dependent type definitions:
+\`\`\`typescript
+// From: src/entity/user.ts
+export class User {
+    constructor(public name: string, public age: number) {
+
+    }
+}
+
+// From: src/service/db-service.ts
+export abstract class DB {
+    protected users = new Map<string, User>();
+
+    // save user to users
+    public abstract save(user: User): void;
+    // find user from users
+    public abstract find(name: string): User | undefined;
+}
+\`\`\`
+
+Here is the abstract class you must implement:
+\`\`\`typescript
+export abstract class UserService {
+    @AutoGen
+    public db?: DB;
+    // 1. check: 3 < name.length < 15 and 0 <= age <= 120
+    // 2. db.save(user)
+    public abstract create(user: User): void;
+
+    // find user by name from db
+    public abstract findByName(name: string): User | undefined;
+}
+\`\`\`
+```
+
+**Step 5: LLM Invocation and Post-Processing**
+
+The engine sends this prompt to the LLM via the Ollama API. The raw response is then parsed to extract *only* the `export class UserServiceImpl { ... }` block, discarding any conversational boilerplate. This ensures the output is clean, executable code.
+
+**Step 6: Code Generation and Dependency Injection**
+
+The cleaned code is written to a new file: `src/generated/userservice.service.impl.ts`. The engine then updates (or creates) a DI container, registering `UserServiceImpl` as the concrete implementation for the `UserService` contract. This container will also handle injecting the `DBImpl` dependency into the `UserServiceImpl` instance at runtime.
+
+This highly structured, automated process ensures that the generated code is not a "black box" but a predictable, reliable, and well-integrated component of the application architecture.
+
+**4. In-Depth Architectural Analysis**
+
 **3. In-Depth Architectural Analysis**
 
 AetherScript's reliability is not accidental but is built upon a sophisticated technical architecture.
@@ -40,7 +144,7 @@ AetherScript's reliability is not accidental but is built upon a sophisticated t
 
 *   **Human-in-the-Loop & Lock File Mechanism**: AetherScript fully acknowledges that AI is not perfect and that human oversight and intervention are crucial. To this end, it introduces an innovative `aesc.lock` file mechanism. When a developer is unsatisfied with an AI-generated file and modifies it manually, the file's path is recorded in `aesc.lock`. During the next run, AetherScript skips all locked files, thus protecting human modifications from being overwritten. This simple mechanism greatly enhances the workflow's practicality, allowing developers to fine-tune and optimize on top of the AI's foundation, enabling true human-AI collaboration.
 
-**4. Contributions to AI-Assisted Development**
+**5. Contributions to AI-Assisted Development**
 
 AetherScript's exploration offers several key contributions to the field of AI programming:
 
@@ -49,7 +153,7 @@ AetherScript's exploration offers several key contributions to the field of AI p
 *   **Promotion of Software Engineering Best Practices**: AetherScript encourages developers to write clear interfaces and automatically applies design patterns like dependency injection, helping to improve the overall quality and maintainability of the project.
 *   **A New Collaborative Paradigm**: It demonstrates a deeper mode of human-AI collaboration that goes beyond "code completion," pointing to a new direction for the future of AI programming tools.
 
-**5. Future Directions**
+**6. Future Directions**
 
 While AetherScript is currently a prototype, its potential is immense. Future development could focus on several areas:
 
@@ -60,6 +164,6 @@ While AetherScript is currently a prototype, its potential is immense. Future de
 
 *   **Synergy with Test-Driven Development (TDD)**: The combination of AetherScript and TDD can create a powerful "Test-Driven Generation" (TDG) workflow. A developer would first write a failing test and define the associated interface (the contract). Then, they would run AetherScript to generate an implementation that makes the test pass. The future vision is to feed the test case itself to the LLM as part of the prompt, instructing it to "implement this interface *so that this test passes*." This would provide the AI with a concrete, executable specification of the required behavior, dramatically improving the quality and reliability of the generated code and accelerating the Red-Green-Refactor cycle.
 
-**6. Conclusion**
+**7. Conclusion**
 
 AetherScript is not intended to replace developers but to create a more efficient and reliable human-AI collaborative environment. By incorporating the software engineering principle of "Design by Contract," it successfully places "reins" on the powerful capabilities of AI, turning it into a trustworthy and controllable tool in the hands of developers. We believe that this structure- and contract-based paradigm is a critical step in advancing AI programming from an "art" to an "engineering" discipline.
