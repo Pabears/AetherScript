@@ -188,3 +188,27 @@ console.log('Found user:', foundUser);
 *   **A Structured Philosophy**: This isn't just a tool; it's a methodology for making AI a true, reliable partner in professional software engineering.
 
 We believe this is the future of AI-assisted development—structured, predictable, and always developer-led.
+
+## Testing for Reliability
+
+To ensure the stability and reliability of the `aesc` code generator, a stress test was conducted using the `codellama:7b` model. This test involves running the generation and execution cycle repeatedly.
+
+A test script, `demo/test.sh`, was created to automate this process. It performs the following steps in a loop:
+1.  Force-generates the code using `bun aesc gen -vf`.
+2.  Runs the application using `bun run start`.
+3.  Compares the output against a known, correct result.
+4.  Logs successes and failures without stopping.
+
+### Test Results
+
+The script was run for 1,000 consecutive iterations. The final results were as follows:
+
+```
+--- Test Run Complete ---
+Total Iterations: 1000
+Successful Runs:  714
+Failed Runs:      286
+-------------------------
+```
+
+This result indicates that while the core functionality works, there is a significant failure rate under stress, highlighting areas for future improvement in the code generation's consistency and error handling.
