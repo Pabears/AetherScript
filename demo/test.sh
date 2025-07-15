@@ -1,22 +1,39 @@
 #!/bin/bash
 
-# The expected output from 'bun run start'
-EXPECTED_OUTPUT="$ bun src/index.ts
---- Application Start ---
-UserService has been injected into UserController.
-Calling create with user: Alice
-User {
-  name: \"Alice\",
-  age: 30,
-}
---- Application End ---"
+# Create a log file with a timestamp and redirect all output to it and the console.
+LOG_FILE="test_run_$(date +'%Y%m%d_%H%M%S').log"
+exec &> >(tee -a "$LOG_FILE")
+
+echo "Test run started. Output will be saved to: $LOG_FILE"
+echo "====================================================="
+
+# Default number of runs
+TOTAL_RUNS=1000
+
+# Parse command-line options
+while getopts ":n:" opt; do
+  case $opt in
+    n)
+      TOTAL_RUNS=$OPTARG
+      ;;
+    \?)
+      echo "Invalid option: -$OPTARG" >&2
+      exit 1
+      ;;
+    :)
+      echo "Option -$OPTARG requires an argument." >&2
+      exit 1
+      ;;
+  esac
+done
+
+echo "Starting test with $TOTAL_RUNS iterations..."
 
 # Counters for successful and failed runs
 SUCCESS_COUNT=0
 FAILURE_COUNT=0
-TOTAL_RUNS=1000
 
-# Loop 1000 times
+# Loop for the specified number of times
 for i in $(seq 1 $TOTAL_RUNS)
 do
   echo "--- Running Test Iteration: $i/$TOTAL_RUNS ---"
@@ -34,31 +51,17 @@ do
     ITERATION_FAILED=1
   fi
 
-  # Step 2: Run the application and capture the output (only if generation succeeded)
+  # Step 2: Run the application and check its exit code (only if generation succeeded)
+  # The test now relies on the exit code from index.ts, which contains assertions.
   if [ $ITERATION_FAILED -eq 0 ]; then
-    echo "-> Running application..."
-    ACTUAL_OUTPUT=$(bun run start 2>&1)
+    echo "-> Running application with assertions..."
+    # Capture output for logging in case of failure, but the success/failure is determined by the exit code.
+    RUN_LOG=$(bun run start 2>&1)
     if [ $? -ne 0 ]; then
-      echo "[ERROR] 'bun run start' failed at iteration $i."
+      echo "[ERROR] 'bun run start' exited with a non-zero status at iteration $i, indicating a test failure."
       echo "--- Run Log ---"
-      echo "$ACTUAL_OUTPUT"
-      echo "-------------"
-      ITERATION_FAILED=1
-    fi
-  fi
-
-  # Step 3: Compare the output (only if run succeeded)
-  if [ $ITERATION_FAILED -eq 0 ]; then
-    NORMALIZED_ACTUAL=$(echo "$ACTUAL_OUTPUT" | tr -d '\r' | tr -s '[:space:]')
-    NORMALIZED_EXPECTED=$(echo "$EXPECTED_OUTPUT" | tr -d '\r' | tr -s '[:space:]')
-
-    if [ "$NORMALIZED_ACTUAL" != "$NORMALIZED_EXPECTED" ]; then
-      echo "[FAILURE] Output mismatch at iteration $i."
-      echo "--- EXPECTED OUTPUT ---"
-      echo "$EXPECTED_OUTPUT"
-      echo "--- ACTUAL OUTPUT ---"
-      echo "$ACTUAL_OUTPUT"
-      echo "-----------------------"
+      echo "$RUN_LOG"
+      echo "--------------- "
       ITERATION_FAILED=1
     fi
   fi
@@ -74,7 +77,6 @@ do
 done
 
 echo "
-
 --- Test Run Complete ---"
 echo "Total Iterations: $TOTAL_RUNS"
 echo "Successful Runs:  $SUCCESS_COUNT"
