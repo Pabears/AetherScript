@@ -1,7 +1,7 @@
 import { User } from "../entity/user";
 import NodeCache from "node-cache";
 
-// 使用 NodeCache 作为第三方缓存库
+// Use NodeCache as third-party cache library
 export abstract class CacheService {
     protected redisLikeCache = new NodeCache({ 
         stdTTL: 3600,
@@ -9,12 +9,21 @@ export abstract class CacheService {
         useClones: false 
     });
 
-    // 缓存用户数据
+    // Cache user data
     public abstract cacheUser(key: string, user: User): Promise<void>;
     
-    // 获取缓存的用户数据
+    // Get cached user data
     public abstract getCachedUser(key: string): Promise<User | null>;
     
-    // 清除特定用户的缓存
+    // Clear cache for specific user
     public abstract clearUserCache(key: string): Promise<boolean>;
+    
+    // Cache arbitrary data
+    public abstract cacheData(key: string, data: any): Promise<void>;
+    
+    // Get cached data
+    public abstract getCachedData(key: string): Promise<any>;
+    
+    // Clear cache
+    public abstract clearCache(key: string): Promise<boolean>;
 }

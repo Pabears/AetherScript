@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 export * from './decorators';
-import { Project, Node } from "ts-morph";
+import { Project, Node, InterfaceDeclaration, ClassDeclaration } from "ts-morph";
 import * as fs from 'fs';
 import * as path from 'path';
 import yargs from 'yargs';
@@ -29,6 +29,113 @@ export type { PropertyDependency, GeneratedService } from './file-analysis';
 export type { OllamaResponse } from './model-caller';
 
 // --- Core Generation Logic (User-provided) ---
+
+/**
+ * Scan for all existing service implementation files and combine with newly generated services
+ * This ensures that skipped files are still registered in the container
+ * Uses AST analysis to extract real interface names and dependencies from implementation files
+ */
+async function getAllExistingServices(
+    outputDir: string, 
+    project: Project, 
+    newlyGeneratedServices: GeneratedService[]
+): Promise<GeneratedService[]> {
+    const allServices: GeneratedService[] = [...newlyGeneratedServices];
+    const processedInterfaces = new Set(newlyGeneratedServices.map(s => s.interfaceName));
+    
+    if (!fs.existsSync(outputDir)) {
+        return allServices;
+    }
+    
+    // Scan for existing service implementation files
+    const files = fs.readdirSync(outputDir);
+    const serviceImplFiles = files.filter(file => file.endsWith('.service.impl.ts'));
+    
+    for (const file of serviceImplFiles) {
+        const filePath = path.join(outputDir, file);
+        
+        try {
+            // Use AST analysis to extract the real interface name from the implementation file
+            const implSourceFile = project.addSourceFileAtPath(filePath);
+            const classes = implSourceFile.getClasses();
+            
+            if (classes.length === 0) {
+                console.log(`  -> Warning: No classes found in ${file}`);
+                continue;
+            }
+            
+            const implClass = classes[0]; // Should be the implementation class
+            if (!implClass) {
+                console.log(`  -> Warning: No implementation class found in ${file}`);
+                continue;
+            }
+            
+            const implClassName = implClass.getName();
+            
+            if (!implClassName || !implClassName.endsWith('Impl')) {
+                console.log(`  -> Warning: Invalid implementation class name in ${file}: ${implClassName}`);
+                continue;
+            }
+            
+            // Extract interface name by removing 'Impl' suffix
+            const interfaceName = implClassName.replace(/Impl$/, '');
+            
+            // Skip if already processed in current run
+            if (processedInterfaces.has(interfaceName)) {
+                continue;
+            }
+            
+            // Find the original interface/abstract class declaration
+            const sourceFiles = project.getSourceFiles();
+            let originalDeclaration: InterfaceDeclaration | ClassDeclaration | undefined;
+            
+            for (const sourceFile of sourceFiles) {
+                // Skip the implementation file itself
+                if (sourceFile.getFilePath() === filePath) {
+                    continue;
+                }
+                
+                const interfaces = sourceFile.getInterfaces();
+                const classes = sourceFile.getClasses();
+                
+                const foundInterface = interfaces.find(i => i.getName() === interfaceName);
+                if (foundInterface) {
+                    originalDeclaration = foundInterface;
+                    break;
+                }
+                
+                const foundClass = classes.find(c => c.getName() === interfaceName && c.isAbstract());
+                if (foundClass) {
+                    originalDeclaration = foundClass;
+                    break;
+                }
+            }
+            
+            if (originalDeclaration) {
+                // Extract dependencies from the original declaration using the same logic as handleGenerate
+                const { constructorDeps, propertyDeps } = Node.isClassDeclaration(originalDeclaration) 
+                    ? getDependencies(originalDeclaration as any)
+                    : { constructorDeps: [], propertyDeps: [] };
+                
+                allServices.push({
+                    interfaceName,
+                    implName: implClassName,
+                    implFilePath: `./${file}`,
+                    constructorDependencies: constructorDeps,
+                    propertyDependencies: propertyDeps,
+                });
+                
+                console.log(`  -> Found existing service: ${interfaceName}`);
+            } else {
+                console.log(`  -> Warning: Could not find original declaration for ${interfaceName}`);
+            }
+        } catch (error) {
+            console.error(`  -> Error processing existing service file ${file}:`, error);
+        }
+    }
+    
+    return allServices;
+}
 
 export async function handleGenerate(force: boolean, files: string[], verbose: boolean, model: string) {
     const project = new Project({
@@ -76,7 +183,7 @@ export async function handleGenerate(force: boolean, files: string[], verbose: b
         const cleanedCode = cleanGeneratedCode(rawResponse, interfaceName, verbose);
         
         // Step 5: Post Process
-        const processedCode = postProcessGeneratedCode(cleanedCode, declaration, implFilePath);
+        let processedCode = postProcessGeneratedCode(cleanedCode, declaration, implFilePath);
         
         if (verbose) {
             console.log("--- CODE AFTER POST-PROCESSING ---");
@@ -84,16 +191,83 @@ export async function handleGenerate(force: boolean, files: string[], verbose: b
             console.log("--------------------------------");
         }
 
-        const { isValid, errors } = await validateGeneratedCode(processedCode, declaration, implFilePath);
+        let { isValid, errors } = await validateGeneratedCode(processedCode, declaration, implFilePath);
+        
+        // If validation fails, try to fix the code using ollama (up to 3 attempts)
         if (!isValid) {
-            console.error(`  -> ERROR: Generated code for ${interfaceName} failed validation. Skipping.`);
-            errors.forEach(err => console.error(`    - ${err}`));
-            if (verbose) {
-                console.log("--- FAILED CODE --- ");
-                console.log(processedCode);
-                console.log("-------------------");
+            console.log(`  -> WARNING: Generated code for ${interfaceName} failed validation. Attempting to fix with ollama...`);
+            errors.forEach(err => console.log(`    - ${err}`));
+            
+            let retryCount = 0;
+            const maxRetries = 3;
+            let currentCode = processedCode;
+            
+            while (!isValid && retryCount < maxRetries) {
+                retryCount++;
+                console.log(`  -> Retry attempt ${retryCount}/${maxRetries} for ${interfaceName}...`);
+                
+                // Create a fix prompt with current code, error messages, and dependency information
+                // Re-generate the dependency information for the fix prompt
+                const dependencyPrompt = generatePrompt(declaration, originalImportPath, implFilePath);
+                
+                // Extract the dependency section from the original prompt
+                const dependencyMatch = dependencyPrompt.match(/Here are the dependent type definitions:[\s\S]*?```typescript([\s\S]*?)```[\s\S]*?Here is the abstract class/m);
+                const dependenciesText = dependencyMatch && dependencyMatch[1] ? dependencyMatch[1].trim() : '';
+                
+                const fixPrompt = `The following TypeScript code has validation errors. Please fix the code to resolve these issues.
+
+${dependenciesText ? `Here are the dependent type definitions:
+\`\`\`typescript
+${dependenciesText}
+\`\`\`
+
+` : ''}Current code with errors:
+\`\`\`typescript
+${currentCode}
+\`\`\`
+
+Validation errors:
+${errors.map(err => `- ${err}`).join('\n')}
+
+Please provide the corrected TypeScript code that fixes these validation errors. The corrected code should:
+1. Use the correct import syntax for dependencies (e.g., default imports vs named imports)
+2. Follow the provided type definitions and API documentation
+3. Return only the corrected code without any explanations.`;
+                
+                try {
+                    const fixedResponse = await callOllamaModel(fixPrompt, `${interfaceName}-fix-${retryCount}`, model, verbose);
+                    const fixedCode = cleanGeneratedCode(fixedResponse, interfaceName, verbose);
+                    const fixedProcessedCode = postProcessGeneratedCode(fixedCode, declaration, implFilePath);
+                    
+                    // Validate the fixed code
+                    const validationResult = await validateGeneratedCode(fixedProcessedCode, declaration, implFilePath);
+                    isValid = validationResult.isValid;
+                    errors = validationResult.errors;
+                    
+                    if (isValid) {
+                        console.log(`  -> SUCCESS: Code fixed on attempt ${retryCount}`);
+                        currentCode = fixedProcessedCode;
+                        processedCode = fixedProcessedCode; // Update the main processedCode variable
+                    } else {
+                        console.log(`  -> Attempt ${retryCount} failed. Errors:`);
+                        errors.forEach(err => console.log(`    - ${err}`));
+                        currentCode = fixedProcessedCode; // Use the latest attempt for next retry
+                    }
+                } catch (error) {
+                    console.error(`  -> Error during retry attempt ${retryCount}: ${error}`);
+                }
             }
-            continue;
+            
+            // If still not valid after all retries, skip this file
+            if (!isValid) {
+                console.error(`  -> ERROR: Generated code for ${interfaceName} failed validation after ${maxRetries} retry attempts. Skipping.`);
+                if (verbose) {
+                    console.log("--- FINAL FAILED CODE --- ");
+                    console.log(currentCode);
+                    console.log("-------------------------");
+                }
+                continue;
+            }
         }
 
         // Step 6: Save File
@@ -119,12 +293,17 @@ export async function handleGenerate(force: boolean, files: string[], verbose: b
         });
     }
 
-    if (generatedServices.length > 0) {
-        console.log("\nGenerating DI container...");
-        await generateContainer(outputDir, generatedServices);
-        console.log("DI container generated successfully.");
+    // Always generate container to include all existing services, not just newly processed ones
+    console.log("\nGenerating DI container...");
+    
+    // Scan for all existing service implementation files in the output directory
+    const allServices = await getAllExistingServices(outputDir, project, generatedServices);
+    
+    if (allServices.length > 0) {
+        await generateContainer(outputDir, allServices);
+        console.log(`DI container generated successfully with ${allServices.length} services.`);
     } else {
-        console.log("No @AutoGen decorators found. Nothing to generate.");
+        console.log("No services found to register in container.");
     }
 }
 

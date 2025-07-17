@@ -6,9 +6,9 @@ export abstract class CacheController {
     @AutoGen
     public cacheService?: CacheService;
 
-    // 缓存用户并返回结果
+    // Cache user and return result
     public abstract cacheUserData(userId: string, user: User): Promise<string>;
     
-    // 获取缓存的用户数据
+    // Get cached user data
     public abstract getUserFromCache(userId: string): Promise<User | null>;
 }

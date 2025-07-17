@@ -47,11 +47,11 @@ export class JSDocExtractor {
     }
 
     /**
-     * 提取指定第三方库的 JSDoc 信息
+     * Extract JSDoc information for specified third-party library
      */
     public extractLibraryJSDoc(libraryName: string): JSDocInfo | null {
         try {
-            // 尝试从缓存中读取
+            // Try to read from cache
             const cachedPath = path.join(this.jsdocDir, `${libraryName}.json`);
             if (fs.existsSync(cachedPath)) {
                 const cached = JSON.parse(fs.readFileSync(cachedPath, 'utf-8'));
@@ -59,17 +59,17 @@ export class JSDocExtractor {
                 return cached;
             }
 
-            // 查找库的类型定义文件
+            // Find library's type definition files
             const typeDefPaths = this.findTypeDefinitionFiles(libraryName);
             if (typeDefPaths.length === 0) {
                 console.log(`[JSDoc] No type definition files found for ${libraryName}`);
                 return null;
             }
 
-            // 提取 JSDoc 信息
+            // Extract JSDoc information
             const jsdocInfo = this.extractJSDocFromFiles(libraryName, typeDefPaths);
             
-            // 缓存结果
+            // Cache results
             if (jsdocInfo) {
                 fs.writeFileSync(cachedPath, JSON.stringify(jsdocInfo, null, 2));
                 console.log(`[JSDoc] Cached documentation for ${libraryName}`);
@@ -83,23 +83,23 @@ export class JSDocExtractor {
     }
 
     private findTypeDefinitionFiles(libraryName: string): string[] {
-        // 处理 scoped packages (如 @types/node)
+        // Handle scoped packages (like @types/node)
         const isScoped = libraryName.startsWith('@');
         const normalizedName = isScoped ? libraryName : libraryName;
         
         const possiblePaths = [
-            // 主包的类型定义文件
+            // Main package's type definition file
             `node_modules/${normalizedName}/index.d.ts`,
             `node_modules/${normalizedName}/lib/index.d.ts`,
             `node_modules/${normalizedName}/types/index.d.ts`,
             `node_modules/${normalizedName}/${normalizedName.split('/').pop()}.d.ts`,
             `node_modules/${normalizedName}/dist/index.d.ts`,
-            // @types 包的类型定义文件
+            // @types package's type definition file
             `node_modules/@types/${normalizedName}/index.d.ts`,
             `node_modules/@types/${normalizedName.replace('@', '').replace('/', '__')}/index.d.ts`,
         ];
 
-        // 如果不是 scoped package，也尝试查找对应的 @types 包
+        // If not a scoped package, also try to find corresponding @types package
         if (!isScoped) {
             possiblePaths.push(
                 `node_modules/@types/${normalizedName}/index.d.ts`,
@@ -139,27 +139,27 @@ export class JSDocExtractor {
                 
                 console.log(`[JSDoc] Processing file: ${filePath}`);
                 
-                // 查找主要的类或接口声明
+                // Find main class or interface declarations
                 const classes = sourceFile.getClasses();
                 const interfaces = sourceFile.getInterfaces();
                 
                 console.log(`[JSDoc] Found ${classes.length} classes and ${interfaces.length} interfaces`);
                 
-                // 处理所有类声明（不仅仅是匹配名称的）
+                // Process all class declarations (not just name-matching ones)
                 for (const classDecl of classes) {
                     const className = classDecl.getName();
                     console.log(`[JSDoc] Processing class: ${className}`);
                     this.extractFromClassDeclaration(classDecl, jsdocInfo);
                 }
 
-                // 处理所有接口声明
+                // Process all interface declarations
                 for (const interfaceDecl of interfaces) {
                     const interfaceName = interfaceDecl.getName();
                     console.log(`[JSDoc] Processing interface: ${interfaceName}`);
                     this.extractFromInterfaceDeclaration(interfaceDecl, jsdocInfo);
                 }
 
-                // 查找导出的声明
+                // Find exported declarations
                 const exportedDeclarations = sourceFile.getExportedDeclarations();
                 console.log(`[JSDoc] Found ${exportedDeclarations.size} exported declarations`);
                 
@@ -171,7 +171,7 @@ export class JSDocExtractor {
                         } else if (Node.isInterfaceDeclaration(decl)) {
                             this.extractFromInterfaceDeclaration(decl, jsdocInfo);
                         } else if (Node.isTypeAliasDeclaration(decl)) {
-                            // 处理类型别名声明
+                            // Process type alias declarations
                             this.extractFromTypeAliasDeclaration(decl, jsdocInfo);
                         }
                     }
@@ -186,13 +186,13 @@ export class JSDocExtractor {
     }
 
     private extractFromClassDeclaration(classDecl: any, jsdocInfo: JSDocInfo) {
-        // 提取类的描述
+        // Extract class description
         const classJSDoc = classDecl.getJsDocs();
         if (classJSDoc.length > 0) {
             jsdocInfo.description = this.extractDescription(classJSDoc[0]);
         }
 
-        // 提取构造函数
+        // Extract constructors
         const constructors = classDecl.getConstructors();
         for (const constructor of constructors) {
             const constructorInfo = this.extractConstructorInfo(constructor);
@@ -201,7 +201,7 @@ export class JSDocExtractor {
             }
         }
 
-        // 提取方法
+        // Extract methods
         const methods = classDecl.getMethods();
         for (const method of methods) {
             const methodInfo = this.extractMethodInfo(method);
@@ -210,7 +210,7 @@ export class JSDocExtractor {
             }
         }
 
-        // 提取属性
+        // Extract properties
         const properties = classDecl.getProperties();
         for (const property of properties) {
             const propertyInfo = this.extractPropertyInfo(property);
@@ -221,13 +221,13 @@ export class JSDocExtractor {
     }
 
     private extractFromInterfaceDeclaration(interfaceDecl: any, jsdocInfo: JSDocInfo) {
-        // 提取接口的描述
+        // Extract interface description
         const interfaceJSDoc = interfaceDecl.getJsDocs();
         if (interfaceJSDoc.length > 0) {
             jsdocInfo.description = this.extractDescription(interfaceJSDoc[0]);
         }
 
-        // 提取方法签名
+        // Extract method signatures
         const methods = interfaceDecl.getMethods();
         for (const method of methods) {
             const methodInfo = this.extractMethodInfo(method);
@@ -236,7 +236,7 @@ export class JSDocExtractor {
             }
         }
 
-        // 提取属性签名
+        // Extract property signatures
         const properties = interfaceDecl.getProperties();
         for (const property of properties) {
             const propertyInfo = this.extractPropertyInfo(property);
@@ -308,7 +308,7 @@ export class JSDocExtractor {
                     }
                 }
             } catch {
-                // 忽略错误
+                // Ignore errors
             }
         }
         return '';
@@ -324,14 +324,14 @@ export class JSDocExtractor {
                     }
                 }
             } catch {
-                // 忽略错误
+                // Ignore errors
             }
         }
         return '';
     }
 
     private extractFromTypeAliasDeclaration(typeAliasDecl: any, jsdocInfo: JSDocInfo) {
-        // 提取类型别名的描述
+        // Extract type alias description
         const typeAliasJSDoc = typeAliasDecl.getJsDocs();
         if (typeAliasJSDoc.length > 0) {
             if (!jsdocInfo.description) {
@@ -339,7 +339,7 @@ export class JSDocExtractor {
             }
         }
 
-        // 对于类型别名，我们可以提取其基本信息作为属性
+        // For type aliases, we can extract their basic information as properties
         const typeName = typeAliasDecl.getName();
         const typeText = typeAliasDecl.getTypeNode()?.getText() || 'any';
         

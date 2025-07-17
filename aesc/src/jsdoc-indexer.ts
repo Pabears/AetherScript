@@ -4,7 +4,7 @@ import { JSDocExtractor } from './jsdoc-extractor';
 import type { JSDocInfo } from './jsdoc-extractor';
 
 /**
- * JSDoc 索引器 - 批量处理 package.json 中的所有依赖
+ * JSDoc Indexer - Batch process all dependencies in package.json
  */
 export class JSDocIndexer {
     private projectPath: string;
@@ -25,7 +25,7 @@ export class JSDocIndexer {
     }
 
     /**
-     * 从 package.json 读取所有依赖并批量索引
+     * Read all dependencies from package.json and batch index them
      */
     public async indexAllDependencies(): Promise<void> {
         console.log('[JSDoc Indexer] Starting dependency indexing...');
@@ -49,7 +49,7 @@ export class JSDocIndexer {
         let skippedCount = 0;
 
         for (const dependencyName of dependencyNames) {
-            // 跳过 @types 包，因为它们通常是类型定义而不是主包
+            // Skip @types packages as they are usually type definitions, not main packages
             if (dependencyName.startsWith('@types/')) {
                 skippedCount++;
                 continue;
@@ -57,7 +57,7 @@ export class JSDocIndexer {
 
             const cachedPath = path.join(this.jsdocDir, `${dependencyName}.json`);
             
-            // 如果已经索引过，跳过
+            // Skip if already indexed
             if (fs.existsSync(cachedPath)) {
                 console.log(`[JSDoc Indexer] ${dependencyName} already indexed, skipping`);
                 skippedCount++;
@@ -86,7 +86,7 @@ export class JSDocIndexer {
     }
 
     /**
-     * 从 .jsdoc 目录加载指定库的文档
+     * Load documentation for specified library from .jsdoc directory
      */
     public loadLibraryJSDoc(libraryName: string): JSDocInfo | null {
         const cachedPath = path.join(this.jsdocDir, `${libraryName}.json`);
@@ -105,7 +105,7 @@ export class JSDocIndexer {
     }
 
     /**
-     * 获取所有已索引的库名称
+     * Get all indexed library names
      */
     public getIndexedLibraries(): string[] {
         if (!fs.existsSync(this.jsdocDir)) {
@@ -118,7 +118,7 @@ export class JSDocIndexer {
     }
 
     /**
-     * 清除所有索引缓存
+     * Clear all index cache
      */
     public clearIndex(): void {
         if (fs.existsSync(this.jsdocDir)) {

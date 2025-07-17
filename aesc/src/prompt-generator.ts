@@ -5,14 +5,14 @@ import { JSDocFormatter } from './jsdoc-formatter';
 import * as path from 'path';
 
 /**
- * 从代码上下文中提取第三方库信息
- * 通过解析 import 语句建立类名与包名的映射关系
+ * Extract third-party library information from code context
+ * Build mapping between class names and package names by parsing import statements
  */
 function extractThirdPartyLibraries(codeContext: string): { className: string; packageName: string }[] {
     const classToPackageMap = new Map<string, string>();
     const libraries: { className: string; packageName: string }[] = [];
     
-    // 1. 首先解析所有 import 语句，建立类名到包名的映射
+    // 1. First parse all import statements to build class name to package name mapping
     const importRegex = /import\s+(?:([A-Z][a-zA-Z0-9_]*)|\{([^}]+)\}|\*\s+as\s+([A-Z][a-zA-Z0-9_]*))\s+from\s+['"]([^'"]+)['"]/g;
     let match;
     
@@ -22,18 +22,18 @@ function extractThirdPartyLibraries(codeContext: string): { className: string; p
         const namespaceImport = match[3];
         const importPath = match[4];
         
-        // 只处理第三方库（非相对路径）
+        // Only handle third-party libraries (non-relative paths)
         if (importPath && !importPath.startsWith('.') && !importPath.startsWith('/')) {
             const packageName = importPath.startsWith('@') 
                 ? importPath.split('/').slice(0, 2).join('/') // scoped package
                 : importPath.split('/')[0]; // regular package
             
-            // 处理默认导入
+            // Handle default imports
             if (defaultImport && packageName && !isBuiltInType(defaultImport) && !isProjectType(defaultImport)) {
                 classToPackageMap.set(defaultImport, packageName);
             }
             
-            // 处理命名导入
+            // Handle named imports
             if (namedImports && packageName) {
                 const imports = namedImports.split(',').map(imp => imp.trim());
                 for (const imp of imports) {
@@ -44,14 +44,14 @@ function extractThirdPartyLibraries(codeContext: string): { className: string; p
                 }
             }
             
-            // 处理命名空间导入
+            // Handle namespace imports
             if (namespaceImport && packageName && !isBuiltInType(namespaceImport) && !isProjectType(namespaceImport)) {
                 classToPackageMap.set(namespaceImport, packageName);
             }
         }
     }
     
-    // 2. 检测代码中使用的类，并查找对应的包名
+    // 2. Detect classes used in code and find corresponding package names
     const constructorRegex = /new\s+([A-Z][a-zA-Z0-9_]*)/g;
     const usedClasses = new Set<string>();
     
@@ -62,14 +62,14 @@ function extractThirdPartyLibraries(codeContext: string): { className: string; p
         }
     }
     
-    // 3. 为每个使用的类找到对应的包名
+    // 3. Find corresponding package name for each used class
     for (const className of usedClasses) {
         const packageName = classToPackageMap.get(className);
         if (packageName) {
             libraries.push({ className, packageName });
         } else {
-            // 如果没有找到映射，使用启发式的包名映射（fallback）
-            // 将驼峰命名转换为 kebab-case，例如 NodeCache -> node-cache
+            // If no mapping found, use heuristic package name mapping (fallback)
+            // Convert camelCase to kebab-case, e.g. NodeCache -> node-cache
             const kebabCasePackageName = className
                 .replace(/([A-Z])/g, (match, letter, index) => 
                     index === 0 ? letter.toLowerCase() : '-' + letter.toLowerCase()
@@ -82,7 +82,7 @@ function extractThirdPartyLibraries(codeContext: string): { className: string; p
 }
 
 /**
- * 检查是否为内置类型
+ * Check if it's a built-in type
  */
 function isBuiltInType(typeName: string): boolean {
     const builtInTypes = [
@@ -94,13 +94,13 @@ function isBuiltInType(typeName: string): boolean {
 }
 
 /**
- * 检查是否为项目内类型（基于常见的项目类型命名模式）
+ * Check if it's a project-internal type (based on common project type naming patterns)
  */
 function isProjectType(typeName: string): boolean {
-    // 项目内类型通常以 Service, Controller, Entity, Model 等结尾
+    // Project-internal types usually end with Service, Controller, Entity, Model, etc.
     const projectSuffixes = ['Service', 'Controller', 'Entity', 'Model', 'Repository', 'Manager', 'Handler'];
     return projectSuffixes.some(suffix => typeName.endsWith(suffix)) || 
-           typeName === 'User' || typeName === 'DB'; // 项目特定的类型
+           typeName === 'User' || typeName === 'DB'; // Project-specific types
 }
 
 export function generatePrompt(
@@ -181,20 +181,7 @@ export function generatePrompt(
             // Try to get constructor signatures and key methods
             const text = decl.getText();
             if (text.includes('class') || text.includes('interface')) {
-                // For classes like NodeCache, provide basic usage info
-                if (name === 'NodeCache') {
-                    return `// NodeCache is a simple in-memory cache for Node.js
-// Usage: new NodeCache(options)
-// Methods: set(key, value), get(key), del(key), has(key)
-class NodeCache {
-    constructor(options?: { stdTTL?: number });
-    set(key: string, value: any): boolean;
-    get(key: string): any;
-    del(key: string): number;
-    has(key: string): boolean;
-}`;
-                }
-                // For other external types, return a simplified version
+                // For external types, return a simplified version
                 return `// External type: ${name}\n${text.substring(0, 500)}...`;
             }
             return null;
@@ -270,7 +257,8 @@ You must follow these rules strictly:
 2. The implementation class MUST 'extend' the original abstract class '${interfaceName}'.
 3. You MUST implement all abstract methods directly. Do NOT create private helper methods for the core logic.
 4. You MUST NOT redeclare any properties already present in the base class. Access them with 'this'.
-5. Your response MUST be only the raw TypeScript code. No explanations, no markdown.
+5. IMPORTANT: Do NOT create unnecessary temporary objects for validation or processing. Validate data directly using appropriate methods (e.g., regex for email validation, direct string/number checks).
+6. Your response MUST be only the raw TypeScript code. No explanations, no markdown.
 
 Here are the dependent type definitions:
 \`\`\`typescript

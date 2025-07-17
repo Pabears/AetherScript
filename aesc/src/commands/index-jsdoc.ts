@@ -2,7 +2,7 @@ import { JSDocIndexer } from '../jsdoc-indexer';
 import * as path from 'path';
 
 /**
- * JSDoc 索引命令 - 批量索引 package.json 中的所有依赖
+ * JSDoc index command - Batch index all dependencies in package.json
  */
 export async function indexJSDocCommand(projectPath?: string): Promise<void> {
     const targetPath = projectPath || process.cwd();
@@ -30,7 +30,7 @@ export async function indexJSDocCommand(projectPath?: string): Promise<void> {
 }
 
 /**
- * 清除 JSDoc 索引缓存
+ * Clear JSDoc index cache
  */
 export function clearJSDocIndexCommand(projectPath?: string): void {
     const targetPath = projectPath || process.cwd();

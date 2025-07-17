@@ -2,21 +2,21 @@ import type { JSDocInfo } from './jsdoc-extractor';
 
 export class JSDocFormatter {
     /**
-     * 将 JSDoc 信息格式化为适合 LLM 的 TypeScript 代码字符串
+     * Format JSDoc information into TypeScript code strings suitable for LLM
      */
     public formatForLLM(jsdocInfo: JSDocInfo): string {
         const lines: string[] = [];
         
-        // 添加库的描述
+        // Add library description
         lines.push(`// External dependency: ${jsdocInfo.name}`);
         if (jsdocInfo.description) {
             lines.push(`// ${jsdocInfo.description}`);
         }
         
-        // 开始类定义
+        // Start class definition
         lines.push(`class ${jsdocInfo.name} {`);
         
-        // 添加构造函数
+        // Add constructors
         if (jsdocInfo.constructors.length > 0) {
             for (const constructor of jsdocInfo.constructors) {
                 if (constructor.description) {
@@ -30,18 +30,18 @@ export class JSDocFormatter {
                     lines.push(`     */`);
                 }
                 
-                // 简化构造函数签名
+                // Simplify constructor signature
                 const paramStrings = constructor.parameters.map(p => 
                     `${p.name}${p.type.includes('undefined') ? '?' : ''}: ${this.simplifyType(p.type)}`
                 );
                 lines.push(`    constructor(${paramStrings.join(', ')});`);
             }
         } else {
-            // 默认构造函数
+            // Default constructor
             lines.push(`    constructor();`);
         }
         
-        // 添加属性
+        // Add properties
         for (const property of jsdocInfo.properties) {
             if (property.description) {
                 lines.push(`    /** ${property.description} */`);
@@ -49,7 +49,7 @@ export class JSDocFormatter {
             lines.push(`    ${property.name}: ${this.simplifyType(property.type)};`);
         }
         
-        // 添加方法
+        // Add methods
         for (const method of jsdocInfo.methods) {
             if (method.description || method.parameters.some(p => p.description) || method.returnDescription) {
                 lines.push(`    /**`);
@@ -67,7 +67,7 @@ export class JSDocFormatter {
                 lines.push(`     */`);
             }
             
-            // 简化方法签名
+            // Simplify method signature
             const paramStrings = method.parameters.map(p => 
                 `${p.name}${p.type.includes('undefined') ? '?' : ''}: ${this.simplifyType(p.type)}`
             );
@@ -81,17 +81,17 @@ export class JSDocFormatter {
     }
     
     /**
-     * 简化复杂的 TypeScript 类型为更简洁的形式
+     * Simplify complex TypeScript types to more concise forms
      */
     private simplifyType(type: string): string {
-        // 移除模块路径和复杂的泛型
+        // Remove module paths and complex generics
         let simplified = type
-            .replace(/import\([^)]+\)\./g, '') // 移除 import() 路径
-            .replace(/\w+\./g, '') // 移除命名空间前缀
-            .replace(/\s+/g, ' ') // 标准化空格
+            .replace(/import\([^)]+\)\./g, '') // Remove import() paths
+            .replace(/\w+\./g, '') // Remove namespace prefixes
+            .replace(/\s+/g, ' ') // Normalize spaces
             .trim();
         
-        // 处理常见的类型简化
+        // Handle common type simplifications
         const typeMap: { [key: string]: string } = {
             'string | undefined': 'string?',
             'number | undefined': 'number?',
@@ -105,7 +105,7 @@ export class JSDocFormatter {
             simplified = simplified.replace(new RegExp(complex, 'g'), simple);
         }
         
-        // 如果类型太复杂，简化为 any
+        // If type is too complex, simplify to any
         if (simplified.length > 50) {
             simplified = 'any';
         }
@@ -114,13 +114,13 @@ export class JSDocFormatter {
     }
     
     /**
-     * 生成使用示例
+     * Generate usage examples
      */
     public generateUsageExample(jsdocInfo: JSDocInfo): string {
         const lines: string[] = [];
         lines.push(`// Usage example for ${jsdocInfo.name}:`);
         
-        // 构造函数示例
+        // Constructor example
         if (jsdocInfo.constructors.length > 0) {
             const constructor = jsdocInfo.constructors[0];
             if (constructor) {
@@ -137,7 +137,7 @@ export class JSDocFormatter {
             lines.push(`const instance = new ${jsdocInfo.name}();`);
         }
         
-        // 方法调用示例
+        // Method call examples
         const publicMethods = jsdocInfo.methods.filter(m => !m.name.startsWith('_'));
         if (publicMethods.length > 0) {
             const method = publicMethods[0];
