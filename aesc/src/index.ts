@@ -19,6 +19,7 @@ import {
     getLockData, 
     handleLockUnlock 
 } from './file-saver';
+import { indexJSDocCommand, clearJSDocIndexCommand } from './commands/index-jsdoc';
 
 // Configuration
 const OUTPUT_DIR = 'src/generated';
@@ -145,6 +146,16 @@ function main() {
     .command('unlock <paths...>', 'Unlock a file or a directory', (yargs) => {
         return yargs.positional('paths', { describe: 'File or directory paths to unlock', type: 'string', demandOption: true, array: true });
     }, (argv) => handleLockUnlock(argv.paths as string[], 'unlock'))
+    .command('index-jsdoc [path]', 'Index JSDoc documentation for all dependencies', (yargs) => {
+        return yargs.positional('path', { describe: 'Project path to index (defaults to current directory)', type: 'string' });
+    }, (argv) => {
+        indexJSDocCommand(argv.path).catch(err => console.error('JSDoc indexing failed:', err));
+    })
+    .command('clear-jsdoc [path]', 'Clear JSDoc index cache', (yargs) => {
+        return yargs.positional('path', { describe: 'Project path to clear cache for (defaults to current directory)', type: 'string' });
+    }, (argv) => {
+        clearJSDocIndexCommand(argv.path);
+    })
     .demandCommand(1, 'You need at least one command before moving on')
     .help()
     .parse();

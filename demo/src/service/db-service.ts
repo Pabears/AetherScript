@@ -1,9 +1,11 @@
 import { User } from "../entity/user";
-export abstract class DB {
-    protected users = new Map<string, User>();
+import NodeCache from "node-cache";
 
-    // save user to users
+export abstract class DB {
+    protected cache = new NodeCache({ stdTTL: 0 }); // 0 means no expiration
+
+    // save user to cache
     public abstract save(user: User): void;
-    // find user from users
+    // find user from cache
     public abstract find(name: string): User | undefined;
 }

@@ -3,10 +3,10 @@ import { DB } from "../service/db-service";
 
 export class DBImpl extends DB {
     public save(user: User): void {
-        this.users.set(user.name, user);
+        this.cache.set(user.name, user);
     }
 
     public find(name: string): User | undefined {
-        return this.users.get(name);
+        return this.cache.get(name) as User | undefined;
     }
 }
