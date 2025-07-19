@@ -12,47 +12,44 @@ export class OrderServiceImpl extends OrderService {
     createOrder(customerId: string, items: Omit<OrderItem, 'unitPrice'>[]): Order {
         const orderId = uuid();
         let totalAmount = 0;
+        const orderItems: OrderItem[] = [];
 
         for (const item of items) {
             const product = this.productService?.findProductById(item.productId);
             if (!product || !product.canFulfill(item.quantity)) {
-                throw new Error(`Product ${item.productId} is out of stock or does not exist.`);
+                throw new Error(`Product with ID ${item.productId} is out of stock or does not exist.`);
             }
-            totalAmount += product.price * item.quantity;
+            orderItems.push({ ...item, unitPrice: product.price });
+            totalAmount += item.quantity * product.price;
         }
 
-        const orderItems: OrderItem[] = items.map(item => ({
-            ...item,
-            unitPrice: this.productService?.findProductById(item.productId)?.price || 0
-        }));
-
-        const newOrder = new Order(orderId, customerId, orderItems, OrderStatus.PENDING, new Date(), totalAmount);
-        this.db?.saveObject(newOrder.id, newOrder);
+        const order = new Order(orderId, customerId, orderItems, OrderStatus.PENDING, new Date(), totalAmount);
+        this.db?.saveObject(order.id, order);
 
         if (this.notificationService) {
             const customer = this.db?.findObject(customerId) as Customer | undefined;
             if (customer) {
-                this.notificationService.sendOrderConfirmation(customer, newOrder);
+                this.notificationService.sendOrderConfirmation(customer, order);
             }
         }
 
-        return newOrder;
+        return order;
     }
 
     confirmOrder(orderId: string): boolean {
-        const order = this.findOrderById(orderId);
+        const order = this.db?.findObject(orderId) as Order | undefined;
         if (!order || order.status !== OrderStatus.PENDING) {
-            throw new Error('Order cannot be confirmed.');
+            return false;
         }
 
         for (const item of order.items) {
             if (!this.productService?.reduceStock(item.productId, item.quantity)) {
-                throw new Error(`Failed to reduce stock for product ${item.productId}.`);
+                throw new Error(`Failed to reduce stock for product ID ${item.productId}`);
             }
         }
 
         order.status = OrderStatus.CONFIRMED;
-        this.db?.saveObject(orderId, order);
+        this.db?.saveObject(order.id, order);
 
         if (this.notificationService) {
             const customer = this.db?.findObject(order.customerId) as Customer | undefined;
@@ -65,13 +62,13 @@ export class OrderServiceImpl extends OrderService {
     }
 
     processPayment(orderId: string): boolean {
-        const order = this.findOrderById(orderId);
+        const order = this.db?.findObject(orderId) as Order | undefined;
         if (!order || order.status !== OrderStatus.CONFIRMED) {
-            throw new Error('Order cannot be processed for payment.');
+            return false;
         }
 
         order.status = OrderStatus.PAID;
-        this.db?.saveObject(orderId, order);
+        this.db?.saveObject(order.id, order);
 
         if (this.notificationService) {
             const customer = this.db?.findObject(order.customerId) as Customer | undefined;
@@ -84,9 +81,9 @@ export class OrderServiceImpl extends OrderService {
     }
 
     cancelOrder(orderId: string): boolean {
-        const order = this.findOrderById(orderId);
+        const order = this.db?.findObject(orderId) as Order | undefined;
         if (!order || ![OrderStatus.PENDING, OrderStatus.CONFIRMED].includes(order.status)) {
-            throw new Error('Order cannot be cancelled.');
+            return false;
         }
 
         if (order.status === OrderStatus.CONFIRMED) {
@@ -94,13 +91,13 @@ export class OrderServiceImpl extends OrderService {
                 const product = this.productService?.findProductById(item.productId);
                 if (product) {
                     product.stock += item.quantity;
-                    this.productService?.updateStock(product.id, product.stock);
+                    this.db?.saveObject(product.id, product);
                 }
             }
         }
 
         order.status = OrderStatus.CANCELLED;
-        this.db?.saveObject(orderId, order);
+        this.db?.saveObject(order.id, order);
 
         if (this.notificationService) {
             const customer = this.db?.findObject(order.customerId) as Customer | undefined;
@@ -128,6 +125,13 @@ export class OrderServiceImpl extends OrderService {
 
     getAllOrders(): Order[] {
         const keys = this.db?.getAllKeys() || [];
-        return keys.map(key => this.findOrderById(key) as Order).filter(order => !!order);
+        const orders: Order[] = [];
+        for (const key of keys) {
+            const order = this.db?.findObject(key) as Order | undefined;
+            if (order) {
+                orders.push(order);
+            }
+        }
+        return orders;
     }
 }

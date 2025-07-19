@@ -4,9 +4,9 @@ import { Product } from "../entity/product";
 import { AutoGen } from "aesc";
 
 export class ProductServiceImpl extends ProductService {
-    public createProduct(name: string, price: number, stock: number, category: string, description?: string): Product {
+    createProduct(name: string, price: number, stock: number, category: string, description?: string): Product {
         if (name.length === 0 || price <= 0 || stock < 0) {
-            throw new Error("Invalid product details");
+            throw new Error('Invalid product data');
         }
         const id = crypto.randomUUID();
         const product = new Product(id, name, price, stock, category, description);
@@ -14,24 +14,20 @@ export class ProductServiceImpl extends ProductService {
         return product;
     }
 
-    public findProductById(productId: string): Product | undefined {
+    findProductById(productId: string): Product | undefined {
         return this.db?.findObject(productId) as Product | undefined;
     }
 
-    public findProductsByCategory(category: string): Product[] {
+    findProductsByCategory(category: string): Product[] {
         const allKeys = this.db?.getAllKeys() || [];
-        return allKeys.reduce<Product[]>((acc, key) => {
-            const product = this.db?.findObject(key) as Product | undefined;
-            if (product && product.category === category) {
-                acc.push(product);
-            }
-            return acc;
-        }, []);
+        return allKeys
+            .map(key => this.db?.findObject(key) as Product)
+            .filter(product => product.category === category);
     }
 
-    public updateStock(productId: string, newStock: number): boolean {
+    updateStock(productId: string, newStock: number): boolean {
         const product = this.findProductById(productId);
-        if (!product || newStock < 0) {
+        if (!product) {
             return false;
         }
         product.stock = newStock;
@@ -39,7 +35,7 @@ export class ProductServiceImpl extends ProductService {
         return true;
     }
 
-    public reduceStock(productId: string, quantity: number): boolean {
+    reduceStock(productId: string, quantity: number): boolean {
         const product = this.findProductById(productId);
         if (!product || !product.canFulfill(quantity)) {
             return false;
@@ -49,7 +45,7 @@ export class ProductServiceImpl extends ProductService {
         return true;
     }
 
-    public getAllProducts(): Product[] {
+    getAllProducts(): Product[] {
         const allKeys = this.db?.getAllKeys() || [];
         return allKeys.map(key => this.db?.findObject(key) as Product);
     }

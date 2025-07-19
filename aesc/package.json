@@ -1,12 +1,30 @@
 {
   "name": "aesc",
+  "description": "AetherScript: AI-Assisted Development You Can Trust, separating human intent from AI implementation.",
   "version": "0.1.0",
-  "bin": {
-    "aesc": "./dist/index.js"
+  "author": "Pabears",
+  "license": "MIT",
+  "keywords": [
+    "ai",
+    "code-generation",
+    "typescript",
+    "llm",
+    "development-tool"
+  ],
+  "repository": {
+    "type": "https",
+    "url": "git+https://github.com/Pabears/AetherScript.git"
   },
+  "bin": {
+    "aesc": "dist/index.js"
+  },
+  "main": "dist/index.js",
   "module": "dist/index.js",
   "types": "dist/index.d.ts",
   "type": "module",
+  "files": [
+    "dist"
+  ],
   "devDependencies": {
     "@types/bun": "latest",
     "@types/yargs": "^17.0.33",

@@ -12,9 +12,9 @@ export class DBImpl extends DB {
 
     public find(name: string): User | undefined {
         if (typeof name !== 'string') {
-            return undefined;
+            throw new Error('Invalid name');
         }
-        return this.cache.get(name) as User | undefined;
+        return this.cache.get(name) as User;
     }
 
     public saveObject(key: string, data: any): void {
@@ -26,7 +26,7 @@ export class DBImpl extends DB {
 
     public findObject(key: string): any {
         if (typeof key !== 'string') {
-            return undefined;
+            throw new Error('Invalid key');
         }
         return this.cache.get(key);
     }
@@ -37,7 +37,7 @@ export class DBImpl extends DB {
 
     public deleteObject(key: string): boolean {
         if (typeof key !== 'string') {
-            return false;
+            throw new Error('Invalid key');
         }
         return this.cache.del(key) > 0;
     }
