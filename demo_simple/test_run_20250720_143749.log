@@ -1,0 +1,853 @@
+Test run started. Output will be saved to: test_run_20250720_143749.log
+=====================================================
+Starting test with 100 iterations...
+Using provider: cloudflare
+Using model: @cf/qwen/qwen2.5-coder-32b-instruct
+--- Running Test Iteration: 1/100 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+-> Running application with assertions...
+-> Iteration 1: SUCCESS
+--- Running Test Iteration: 2/100 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+-> Running application with assertions...
+-> Iteration 2: SUCCESS
+--- Running Test Iteration: 3/100 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+-> Running application with assertions...
+-> Iteration 3: SUCCESS
+--- Running Test Iteration: 4/100 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+-> Running application with assertions...
+-> Iteration 4: SUCCESS
+--- Running Test Iteration: 5/100 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+-> Running application with assertions...
+-> Iteration 5: SUCCESS
+--- Running Test Iteration: 6/100 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+-> Running application with assertions...
+-> Iteration 6: SUCCESS
+--- Running Test Iteration: 7/100 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+-> Running application with assertions...
+[ERROR] 'bun run start' exited with a non-zero status at iteration 7, indicating a test failure.
+--- Run Log ---
+$ bun src/index.ts
+1 | (function (entry, fetcher)
+              ^
+SyntaxError: Export named 'DBImpl' not found in module '/Users/shiheng/project/AetherScript/demo_simple/src/generated/db.service.impl.ts'.
+      at loadAndEvaluateModule (1:11)
+
+Bun v1.2.16 (macOS arm64)
+error: script "start" exited with code 1
+--------------- 
+-> Iteration 7: FAILED
+--- Running Test Iteration: 8/100 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+-> Running application with assertions...
+[ERROR] 'bun run start' exited with a non-zero status at iteration 8, indicating a test failure.
+--- Run Log ---
+$ bun src/index.ts
+--- Application Start ---
+22 | 
+23 |     public get<K extends keyof ServiceMap>(identifier: K): ServiceMap[K] {
+24 |         if (!this.instances.has(identifier)) {
+25 |             const factory = this.factories[identifier];
+26 |             if (!factory) {
+27 |                 throw new Error('Service not found for identifier: ' + identifier);
+                           ^
+error: Service not found for identifier: DB
+      at get (/Users/shiheng/project/AetherScript/demo_simple/src/generated/container.ts:27:23)
+      at UserService (/Users/shiheng/project/AetherScript/demo_simple/src/generated/container.ts:17:32)
+      at get (/Users/shiheng/project/AetherScript/demo_simple/src/generated/container.ts:29:30)
+      at main (/Users/shiheng/project/AetherScript/demo_simple/src/index.ts:15:44)
+      at main (/Users/shiheng/project/AetherScript/demo_simple/src/index.ts:6:20)
+      at /Users/shiheng/project/AetherScript/demo_simple/src/index.ts:75:1
+      at loadAndEvaluateModule (2:1)
+
+Bun v1.2.16 (macOS arm64)
+error: script "start" exited with code 1
+--------------- 
+-> Iteration 8: FAILED
+--- Running Test Iteration: 9/100 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+-> Running application with assertions...
+-> Iteration 9: SUCCESS
+--- Running Test Iteration: 10/100 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+-> Running application with assertions...
+-> Iteration 10: SUCCESS
+--- Running Test Iteration: 11/100 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+-> Running application with assertions...
+[ERROR] 'bun run start' exited with a non-zero status at iteration 11, indicating a test failure.
+--- Run Log ---
+$ bun src/index.ts
+--- Application Start ---
+21 | 
+22 |     public get<K extends keyof ServiceMap>(identifier: K): ServiceMap[K] {
+23 |         if (!this.instances.has(identifier)) {
+24 |             const factory = this.factories[identifier];
+25 |             if (!factory) {
+26 |                 throw new Error('Service not found for identifier: ' + identifier);
+                           ^
+error: Service not found for identifier: UserService
+      at get (/Users/shiheng/project/AetherScript/demo_simple/src/generated/container.ts:26:23)
+      at main (/Users/shiheng/project/AetherScript/demo_simple/src/index.ts:15:44)
+      at main (/Users/shiheng/project/AetherScript/demo_simple/src/index.ts:6:20)
+      at /Users/shiheng/project/AetherScript/demo_simple/src/index.ts:75:1
+      at loadAndEvaluateModule (2:1)
+
+Bun v1.2.16 (macOS arm64)
+error: script "start" exited with code 1
+--------------- 
+-> Iteration 11: FAILED
+--- Running Test Iteration: 12/100 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+-> Running application with assertions...
+-> Iteration 12: SUCCESS
+--- Running Test Iteration: 13/100 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+-> Running application with assertions...
+-> Iteration 13: SUCCESS
+--- Running Test Iteration: 14/100 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+-> Running application with assertions...
+-> Iteration 14: SUCCESS
+--- Running Test Iteration: 15/100 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+-> Running application with assertions...
+-> Iteration 15: SUCCESS
+--- Running Test Iteration: 16/100 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+-> Running application with assertions...
+-> Iteration 16: SUCCESS
+--- Running Test Iteration: 17/100 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+-> Running application with assertions...
+-> Iteration 17: SUCCESS
+--- Running Test Iteration: 18/100 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+-> Running application with assertions...
+-> Iteration 18: SUCCESS
+--- Running Test Iteration: 19/100 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+-> Running application with assertions...
+-> Iteration 19: SUCCESS
+--- Running Test Iteration: 20/100 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+-> Running application with assertions...
+-> Iteration 20: SUCCESS
+--- Running Test Iteration: 21/100 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+-> Running application with assertions...
+-> Iteration 21: SUCCESS
+--- Running Test Iteration: 22/100 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+-> Running application with assertions...
+-> Iteration 22: SUCCESS
+--- Running Test Iteration: 23/100 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+-> Running application with assertions...
+-> Iteration 23: SUCCESS
+--- Running Test Iteration: 24/100 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+-> Running application with assertions...
+-> Iteration 24: SUCCESS
+--- Running Test Iteration: 25/100 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+-> Running application with assertions...
+[ERROR] 'bun run start' exited with a non-zero status at iteration 25, indicating a test failure.
+--- Run Log ---
+$ bun src/index.ts
+--- Application Start ---
+22 | 
+23 |     public get<K extends keyof ServiceMap>(identifier: K): ServiceMap[K] {
+24 |         if (!this.instances.has(identifier)) {
+25 |             const factory = this.factories[identifier];
+26 |             if (!factory) {
+27 |                 throw new Error('Service not found for identifier: ' + identifier);
+                           ^
+error: Service not found for identifier: DB
+      at get (/Users/shiheng/project/AetherScript/demo_simple/src/generated/container.ts:27:23)
+      at UserService (/Users/shiheng/project/AetherScript/demo_simple/src/generated/container.ts:17:32)
+      at get (/Users/shiheng/project/AetherScript/demo_simple/src/generated/container.ts:29:30)
+      at main (/Users/shiheng/project/AetherScript/demo_simple/src/index.ts:15:44)
+      at main (/Users/shiheng/project/AetherScript/demo_simple/src/index.ts:6:20)
+      at /Users/shiheng/project/AetherScript/demo_simple/src/index.ts:75:1
+      at loadAndEvaluateModule (2:1)
+
+Bun v1.2.16 (macOS arm64)
+error: script "start" exited with code 1
+--------------- 
+-> Iteration 25: FAILED
+--- Running Test Iteration: 26/100 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+-> Running application with assertions...
+-> Iteration 26: SUCCESS
+--- Running Test Iteration: 27/100 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+-> Running application with assertions...
+-> Iteration 27: SUCCESS
+--- Running Test Iteration: 28/100 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+-> Running application with assertions...
+-> Iteration 28: SUCCESS
+--- Running Test Iteration: 29/100 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+-> Running application with assertions...
+-> Iteration 29: SUCCESS
+--- Running Test Iteration: 30/100 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+-> Running application with assertions...
+-> Iteration 30: SUCCESS
+--- Running Test Iteration: 31/100 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+-> Running application with assertions...
+[ERROR] 'bun run start' exited with a non-zero status at iteration 31, indicating a test failure.
+--- Run Log ---
+$ bun src/index.ts
+--- Application Start ---
+21 | 
+22 |     public get<K extends keyof ServiceMap>(identifier: K): ServiceMap[K] {
+23 |         if (!this.instances.has(identifier)) {
+24 |             const factory = this.factories[identifier];
+25 |             if (!factory) {
+26 |                 throw new Error('Service not found for identifier: ' + identifier);
+                           ^
+error: Service not found for identifier: UserService
+      at get (/Users/shiheng/project/AetherScript/demo_simple/src/generated/container.ts:26:23)
+      at main (/Users/shiheng/project/AetherScript/demo_simple/src/index.ts:15:44)
+      at main (/Users/shiheng/project/AetherScript/demo_simple/src/index.ts:6:20)
+      at /Users/shiheng/project/AetherScript/demo_simple/src/index.ts:75:1
+      at loadAndEvaluateModule (2:1)
+
+Bun v1.2.16 (macOS arm64)
+error: script "start" exited with code 1
+--------------- 
+-> Iteration 31: FAILED
+--- Running Test Iteration: 32/100 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+-> Running application with assertions...
+[ERROR] 'bun run start' exited with a non-zero status at iteration 32, indicating a test failure.
+--- Run Log ---
+$ bun src/index.ts
+--- Application Start ---
+22 | 
+23 |     public get<K extends keyof ServiceMap>(identifier: K): ServiceMap[K] {
+24 |         if (!this.instances.has(identifier)) {
+25 |             const factory = this.factories[identifier];
+26 |             if (!factory) {
+27 |                 throw new Error('Service not found for identifier: ' + identifier);
+                           ^
+error: Service not found for identifier: DB
+      at get (/Users/shiheng/project/AetherScript/demo_simple/src/generated/container.ts:27:23)
+      at UserService (/Users/shiheng/project/AetherScript/demo_simple/src/generated/container.ts:17:32)
+      at get (/Users/shiheng/project/AetherScript/demo_simple/src/generated/container.ts:29:30)
+      at main (/Users/shiheng/project/AetherScript/demo_simple/src/index.ts:15:44)
+      at main (/Users/shiheng/project/AetherScript/demo_simple/src/index.ts:6:20)
+      at /Users/shiheng/project/AetherScript/demo_simple/src/index.ts:75:1
+      at loadAndEvaluateModule (2:1)
+
+Bun v1.2.16 (macOS arm64)
+error: script "start" exited with code 1
+--------------- 
+-> Iteration 32: FAILED
+--- Running Test Iteration: 33/100 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+-> Running application with assertions...
+-> Iteration 33: SUCCESS
+--- Running Test Iteration: 34/100 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+-> Running application with assertions...
+-> Iteration 34: SUCCESS
+--- Running Test Iteration: 35/100 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+-> Running application with assertions...
+-> Iteration 35: SUCCESS
+--- Running Test Iteration: 36/100 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+-> Running application with assertions...
+[ERROR] 'bun run start' exited with a non-zero status at iteration 36, indicating a test failure.
+--- Run Log ---
+$ bun src/index.ts
+--- Application Start ---
+21 | 
+22 |     public get<K extends keyof ServiceMap>(identifier: K): ServiceMap[K] {
+23 |         if (!this.instances.has(identifier)) {
+24 |             const factory = this.factories[identifier];
+25 |             if (!factory) {
+26 |                 throw new Error('Service not found for identifier: ' + identifier);
+                           ^
+error: Service not found for identifier: UserService
+      at get (/Users/shiheng/project/AetherScript/demo_simple/src/generated/container.ts:26:23)
+      at main (/Users/shiheng/project/AetherScript/demo_simple/src/index.ts:15:44)
+      at main (/Users/shiheng/project/AetherScript/demo_simple/src/index.ts:6:20)
+      at /Users/shiheng/project/AetherScript/demo_simple/src/index.ts:75:1
+      at loadAndEvaluateModule (2:1)
+
+Bun v1.2.16 (macOS arm64)
+error: script "start" exited with code 1
+--------------- 
+-> Iteration 36: FAILED
+--- Running Test Iteration: 37/100 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+-> Running application with assertions...
+-> Iteration 37: SUCCESS
+--- Running Test Iteration: 38/100 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+-> Running application with assertions...
+-> Iteration 38: SUCCESS
+--- Running Test Iteration: 39/100 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+-> Running application with assertions...
+-> Iteration 39: SUCCESS
+--- Running Test Iteration: 40/100 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+-> Running application with assertions...
+-> Iteration 40: SUCCESS
+--- Running Test Iteration: 41/100 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+-> Running application with assertions...
+-> Iteration 41: SUCCESS
+--- Running Test Iteration: 42/100 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+-> Running application with assertions...
+[ERROR] 'bun run start' exited with a non-zero status at iteration 42, indicating a test failure.
+--- Run Log ---
+$ bun src/index.ts
+--- Application Start ---
+21 | 
+22 |     public get<K extends keyof ServiceMap>(identifier: K): ServiceMap[K] {
+23 |         if (!this.instances.has(identifier)) {
+24 |             const factory = this.factories[identifier];
+25 |             if (!factory) {
+26 |                 throw new Error('Service not found for identifier: ' + identifier);
+                           ^
+error: Service not found for identifier: UserService
+      at get (/Users/shiheng/project/AetherScript/demo_simple/src/generated/container.ts:26:23)
+      at main (/Users/shiheng/project/AetherScript/demo_simple/src/index.ts:15:44)
+      at main (/Users/shiheng/project/AetherScript/demo_simple/src/index.ts:6:20)
+      at /Users/shiheng/project/AetherScript/demo_simple/src/index.ts:75:1
+      at loadAndEvaluateModule (2:1)
+
+Bun v1.2.16 (macOS arm64)
+error: script "start" exited with code 1
+--------------- 
+-> Iteration 42: FAILED
+--- Running Test Iteration: 43/100 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+-> Running application with assertions...
+-> Iteration 43: SUCCESS
+--- Running Test Iteration: 44/100 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+-> Running application with assertions...
+[ERROR] 'bun run start' exited with a non-zero status at iteration 44, indicating a test failure.
+--- Run Log ---
+$ bun src/index.ts
+--- Application Start ---
+21 | 
+22 |     public get<K extends keyof ServiceMap>(identifier: K): ServiceMap[K] {
+23 |         if (!this.instances.has(identifier)) {
+24 |             const factory = this.factories[identifier];
+25 |             if (!factory) {
+26 |                 throw new Error('Service not found for identifier: ' + identifier);
+                           ^
+error: Service not found for identifier: UserService
+      at get (/Users/shiheng/project/AetherScript/demo_simple/src/generated/container.ts:26:23)
+      at main (/Users/shiheng/project/AetherScript/demo_simple/src/index.ts:15:44)
+      at main (/Users/shiheng/project/AetherScript/demo_simple/src/index.ts:6:20)
+      at /Users/shiheng/project/AetherScript/demo_simple/src/index.ts:75:1
+      at loadAndEvaluateModule (2:1)
+
+Bun v1.2.16 (macOS arm64)
+error: script "start" exited with code 1
+--------------- 
+-> Iteration 44: FAILED
+--- Running Test Iteration: 45/100 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+-> Running application with assertions...
+-> Iteration 45: SUCCESS
+--- Running Test Iteration: 46/100 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+-> Running application with assertions...
+-> Iteration 46: SUCCESS
+--- Running Test Iteration: 47/100 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+-> Running application with assertions...
+-> Iteration 47: SUCCESS
+--- Running Test Iteration: 48/100 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+-> Running application with assertions...
+-> Iteration 48: SUCCESS
+--- Running Test Iteration: 49/100 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+-> Running application with assertions...
+-> Iteration 49: SUCCESS
+--- Running Test Iteration: 50/100 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+-> Running application with assertions...
+-> Iteration 50: SUCCESS
+--- Running Test Iteration: 51/100 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+-> Running application with assertions...
+-> Iteration 51: SUCCESS
+--- Running Test Iteration: 52/100 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+-> Running application with assertions...
+-> Iteration 52: SUCCESS
+--- Running Test Iteration: 53/100 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+-> Running application with assertions...
+-> Iteration 53: SUCCESS
+--- Running Test Iteration: 54/100 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+-> Running application with assertions...
+-> Iteration 54: SUCCESS
+--- Running Test Iteration: 55/100 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+-> Running application with assertions...
+-> Iteration 55: SUCCESS
+--- Running Test Iteration: 56/100 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+-> Running application with assertions...
+[ERROR] 'bun run start' exited with a non-zero status at iteration 56, indicating a test failure.
+--- Run Log ---
+$ bun src/index.ts
+--- Application Start ---
+21 | 
+22 |     public get<K extends keyof ServiceMap>(identifier: K): ServiceMap[K] {
+23 |         if (!this.instances.has(identifier)) {
+24 |             const factory = this.factories[identifier];
+25 |             if (!factory) {
+26 |                 throw new Error('Service not found for identifier: ' + identifier);
+                           ^
+error: Service not found for identifier: UserService
+      at get (/Users/shiheng/project/AetherScript/demo_simple/src/generated/container.ts:26:23)
+      at main (/Users/shiheng/project/AetherScript/demo_simple/src/index.ts:15:44)
+      at main (/Users/shiheng/project/AetherScript/demo_simple/src/index.ts:6:20)
+      at /Users/shiheng/project/AetherScript/demo_simple/src/index.ts:75:1
+      at loadAndEvaluateModule (2:1)
+
+Bun v1.2.16 (macOS arm64)
+error: script "start" exited with code 1
+--------------- 
+-> Iteration 56: FAILED
+--- Running Test Iteration: 57/100 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+-> Running application with assertions...
+-> Iteration 57: SUCCESS
+--- Running Test Iteration: 58/100 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+-> Running application with assertions...
+-> Iteration 58: SUCCESS
+--- Running Test Iteration: 59/100 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+-> Running application with assertions...
+[ERROR] 'bun run start' exited with a non-zero status at iteration 59, indicating a test failure.
+--- Run Log ---
+$ bun src/index.ts
+--- Application Start ---
+22 | 
+23 |     public get<K extends keyof ServiceMap>(identifier: K): ServiceMap[K] {
+24 |         if (!this.instances.has(identifier)) {
+25 |             const factory = this.factories[identifier];
+26 |             if (!factory) {
+27 |                 throw new Error('Service not found for identifier: ' + identifier);
+                           ^
+error: Service not found for identifier: DB
+      at get (/Users/shiheng/project/AetherScript/demo_simple/src/generated/container.ts:27:23)
+      at UserService (/Users/shiheng/project/AetherScript/demo_simple/src/generated/container.ts:17:32)
+      at get (/Users/shiheng/project/AetherScript/demo_simple/src/generated/container.ts:29:30)
+      at main (/Users/shiheng/project/AetherScript/demo_simple/src/index.ts:15:44)
+      at main (/Users/shiheng/project/AetherScript/demo_simple/src/index.ts:6:20)
+      at /Users/shiheng/project/AetherScript/demo_simple/src/index.ts:75:1
+      at loadAndEvaluateModule (2:1)
+
+Bun v1.2.16 (macOS arm64)
+error: script "start" exited with code 1
+--------------- 
+-> Iteration 59: FAILED
+--- Running Test Iteration: 60/100 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+-> Running application with assertions...
+[ERROR] 'bun run start' exited with a non-zero status at iteration 60, indicating a test failure.
+--- Run Log ---
+$ bun src/index.ts
+--- Application Start ---
+21 | 
+22 |     public get<K extends keyof ServiceMap>(identifier: K): ServiceMap[K] {
+23 |         if (!this.instances.has(identifier)) {
+24 |             const factory = this.factories[identifier];
+25 |             if (!factory) {
+26 |                 throw new Error('Service not found for identifier: ' + identifier);
+                           ^
+error: Service not found for identifier: UserService
+      at get (/Users/shiheng/project/AetherScript/demo_simple/src/generated/container.ts:26:23)
+      at main (/Users/shiheng/project/AetherScript/demo_simple/src/index.ts:15:44)
+      at main (/Users/shiheng/project/AetherScript/demo_simple/src/index.ts:6:20)
+      at /Users/shiheng/project/AetherScript/demo_simple/src/index.ts:75:1
+      at loadAndEvaluateModule (2:1)
+
+Bun v1.2.16 (macOS arm64)
+error: script "start" exited with code 1
+--------------- 
+-> Iteration 60: FAILED
+--- Running Test Iteration: 61/100 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+-> Running application with assertions...
+-> Iteration 61: SUCCESS
+--- Running Test Iteration: 62/100 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+-> Running application with assertions...
+-> Iteration 62: SUCCESS
+--- Running Test Iteration: 63/100 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+-> Running application with assertions...
+[ERROR] 'bun run start' exited with a non-zero status at iteration 63, indicating a test failure.
+--- Run Log ---
+$ bun src/index.ts
+1 | (function (entry, fetcher)
+              ^
+SyntaxError: Export named 'DBImpl' not found in module '/Users/shiheng/project/AetherScript/demo_simple/src/generated/db.service.impl.ts'.
+      at loadAndEvaluateModule (1:11)
+
+Bun v1.2.16 (macOS arm64)
+error: script "start" exited with code 1
+--------------- 
+-> Iteration 63: FAILED
+--- Running Test Iteration: 64/100 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+-> Running application with assertions...
+[ERROR] 'bun run start' exited with a non-zero status at iteration 64, indicating a test failure.
+--- Run Log ---
+$ bun src/index.ts
+--- Application Start ---
+21 | 
+22 |     public get<K extends keyof ServiceMap>(identifier: K): ServiceMap[K] {
+23 |         if (!this.instances.has(identifier)) {
+24 |             const factory = this.factories[identifier];
+25 |             if (!factory) {
+26 |                 throw new Error('Service not found for identifier: ' + identifier);
+                           ^
+error: Service not found for identifier: UserService
+      at get (/Users/shiheng/project/AetherScript/demo_simple/src/generated/container.ts:26:23)
+      at main (/Users/shiheng/project/AetherScript/demo_simple/src/index.ts:15:44)
+      at main (/Users/shiheng/project/AetherScript/demo_simple/src/index.ts:6:20)
+      at /Users/shiheng/project/AetherScript/demo_simple/src/index.ts:75:1
+      at loadAndEvaluateModule (2:1)
+
+Bun v1.2.16 (macOS arm64)
+error: script "start" exited with code 1
+--------------- 
+-> Iteration 64: FAILED
+--- Running Test Iteration: 65/100 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+-> Running application with assertions...
+-> Iteration 65: SUCCESS
+--- Running Test Iteration: 66/100 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+-> Running application with assertions...
+[ERROR] 'bun run start' exited with a non-zero status at iteration 66, indicating a test failure.
+--- Run Log ---
+$ bun src/index.ts
+--- Application Start ---
+21 | 
+22 |     public get<K extends keyof ServiceMap>(identifier: K): ServiceMap[K] {
+23 |         if (!this.instances.has(identifier)) {
+24 |             const factory = this.factories[identifier];
+25 |             if (!factory) {
+26 |                 throw new Error('Service not found for identifier: ' + identifier);
+                           ^
+error: Service not found for identifier: UserService
+      at get (/Users/shiheng/project/AetherScript/demo_simple/src/generated/container.ts:26:23)
+      at main (/Users/shiheng/project/AetherScript/demo_simple/src/index.ts:15:44)
+      at main (/Users/shiheng/project/AetherScript/demo_simple/src/index.ts:6:20)
+      at /Users/shiheng/project/AetherScript/demo_simple/src/index.ts:75:1
+      at loadAndEvaluateModule (2:1)
+
+Bun v1.2.16 (macOS arm64)
+error: script "start" exited with code 1
+--------------- 
+-> Iteration 66: FAILED
+--- Running Test Iteration: 67/100 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+-> Running application with assertions...
+[ERROR] 'bun run start' exited with a non-zero status at iteration 67, indicating a test failure.
+--- Run Log ---
+$ bun src/index.ts
+1 | (function (entry, fetcher)
+              ^
+SyntaxError: Export named 'DBImpl' not found in module '/Users/shiheng/project/AetherScript/demo_simple/src/generated/db.service.impl.ts'.
+      at loadAndEvaluateModule (1:11)
+
+Bun v1.2.16 (macOS arm64)
+error: script "start" exited with code 1
+--------------- 
+-> Iteration 67: FAILED
+--- Running Test Iteration: 68/100 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+-> Running application with assertions...
+-> Iteration 68: SUCCESS
+--- Running Test Iteration: 69/100 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+-> Running application with assertions...
+-> Iteration 69: SUCCESS
+--- Running Test Iteration: 70/100 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+-> Running application with assertions...
+-> Iteration 70: SUCCESS
+--- Running Test Iteration: 71/100 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+-> Running application with assertions...
+-> Iteration 71: SUCCESS
+--- Running Test Iteration: 72/100 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+-> Running application with assertions...
+-> Iteration 72: SUCCESS
+--- Running Test Iteration: 73/100 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+-> Running application with assertions...
+[ERROR] 'bun run start' exited with a non-zero status at iteration 73, indicating a test failure.
+--- Run Log ---
+$ bun src/index.ts
+--- Application Start ---
+21 | 
+22 |     public get<K extends keyof ServiceMap>(identifier: K): ServiceMap[K] {
+23 |         if (!this.instances.has(identifier)) {
+24 |             const factory = this.factories[identifier];
+25 |             if (!factory) {
+26 |                 throw new Error('Service not found for identifier: ' + identifier);
+                           ^
+error: Service not found for identifier: UserService
+      at get (/Users/shiheng/project/AetherScript/demo_simple/src/generated/container.ts:26:23)
+      at main (/Users/shiheng/project/AetherScript/demo_simple/src/index.ts:15:44)
+      at main (/Users/shiheng/project/AetherScript/demo_simple/src/index.ts:6:20)
+      at /Users/shiheng/project/AetherScript/demo_simple/src/index.ts:75:1
+      at loadAndEvaluateModule (2:1)
+
+Bun v1.2.16 (macOS arm64)
+error: script "start" exited with code 1
+--------------- 
+-> Iteration 73: FAILED
+--- Running Test Iteration: 74/100 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+-> Running application with assertions...
+-> Iteration 74: SUCCESS
+--- Running Test Iteration: 75/100 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+-> Running application with assertions...
+-> Iteration 75: SUCCESS
+--- Running Test Iteration: 76/100 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+-> Running application with assertions...
+[ERROR] 'bun run start' exited with a non-zero status at iteration 76, indicating a test failure.
+--- Run Log ---
+$ bun src/index.ts
+--- Application Start ---
+22 | 
+23 |     public get<K extends keyof ServiceMap>(identifier: K): ServiceMap[K] {
+24 |         if (!this.instances.has(identifier)) {
+25 |             const factory = this.factories[identifier];
+26 |             if (!factory) {
+27 |                 throw new Error('Service not found for identifier: ' + identifier);
+                           ^
+error: Service not found for identifier: DB
+      at get (/Users/shiheng/project/AetherScript/demo_simple/src/generated/container.ts:27:23)
+      at UserService (/Users/shiheng/project/AetherScript/demo_simple/src/generated/container.ts:17:32)
+      at get (/Users/shiheng/project/AetherScript/demo_simple/src/generated/container.ts:29:30)
+      at main (/Users/shiheng/project/AetherScript/demo_simple/src/index.ts:15:44)
+      at main (/Users/shiheng/project/AetherScript/demo_simple/src/index.ts:6:20)
+      at /Users/shiheng/project/AetherScript/demo_simple/src/index.ts:75:1
+      at loadAndEvaluateModule (2:1)
+
+Bun v1.2.16 (macOS arm64)
+error: script "start" exited with code 1
+--------------- 
+-> Iteration 76: FAILED
+--- Running Test Iteration: 77/100 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+-> Running application with assertions...
+-> Iteration 77: SUCCESS
+--- Running Test Iteration: 78/100 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+-> Running application with assertions...
+-> Iteration 78: SUCCESS
+--- Running Test Iteration: 79/100 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+-> Running application with assertions...
+-> Iteration 79: SUCCESS
+--- Running Test Iteration: 80/100 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+-> Running application with assertions...
+-> Iteration 80: SUCCESS
+--- Running Test Iteration: 81/100 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+-> Running application with assertions...
+[ERROR] 'bun run start' exited with a non-zero status at iteration 81, indicating a test failure.
+--- Run Log ---
+$ bun src/index.ts
+--- Application Start ---
+21 | 
+22 |     public get<K extends keyof ServiceMap>(identifier: K): ServiceMap[K] {
+23 |         if (!this.instances.has(identifier)) {
+24 |             const factory = this.factories[identifier];
+25 |             if (!factory) {
+26 |                 throw new Error('Service not found for identifier: ' + identifier);
+                           ^
+error: Service not found for identifier: UserService
+      at get (/Users/shiheng/project/AetherScript/demo_simple/src/generated/container.ts:26:23)
+      at main (/Users/shiheng/project/AetherScript/demo_simple/src/index.ts:15:44)
+      at main (/Users/shiheng/project/AetherScript/demo_simple/src/index.ts:6:20)
+      at /Users/shiheng/project/AetherScript/demo_simple/src/index.ts:75:1
+      at loadAndEvaluateModule (2:1)
+
+Bun v1.2.16 (macOS arm64)
+error: script "start" exited with code 1
+--------------- 
+-> Iteration 81: FAILED
+--- Running Test Iteration: 82/100 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+-> Running application with assertions...
+-> Iteration 82: SUCCESS
+--- Running Test Iteration: 83/100 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+-> Running application with assertions...
+-> Iteration 83: SUCCESS
+--- Running Test Iteration: 84/100 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+-> Running application with assertions...
+-> Iteration 84: SUCCESS
+--- Running Test Iteration: 85/100 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+-> Running application with assertions...
+-> Iteration 85: SUCCESS
+--- Running Test Iteration: 86/100 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+-> Running application with assertions...
+-> Iteration 86: SUCCESS
+--- Running Test Iteration: 87/100 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+-> Running application with assertions...
+-> Iteration 87: SUCCESS
+--- Running Test Iteration: 88/100 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+-> Running application with assertions...
+-> Iteration 88: SUCCESS
+--- Running Test Iteration: 89/100 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+-> Running application with assertions...
+-> Iteration 89: SUCCESS
+--- Running Test Iteration: 90/100 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+-> Running application with assertions...
+-> Iteration 90: SUCCESS
+--- Running Test Iteration: 91/100 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+-> Running application with assertions...
+-> Iteration 91: SUCCESS
+--- Running Test Iteration: 92/100 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+[ERROR] 'bun aesc gen -vf' failed at iteration 92.
+--- Generation Log ---
+Failed to generate code using provider: Cloudflare request failed with status 400: {"errors":[{"message":"AiError: AiError: This model's maximum context length is 32768 tokens. However, you requested 41399 tokens (439 in the messages, 40960 in the completion). Please reduce the length of the messages or completion. (51e05191-f835-4a9e-9cdd-de5c1232e465)","code":3030}],"success":false,"result":{},"messages":[]}
+  -> ❌ Failed to generate UserService: Cloudflare request failed with status 400: {"errors":[{"message":"AiError: AiError: This model's maximum context length is 32768 tokens. However, you requested 41399 tokens (439 in the messages, 40960 in the completion). Please reduce the length of the messages or completion. (51e05191-f835-4a9e-9cdd-de5c1232e465)","code":3030}],"success":false,"result":{},"messages":[]}
+Failed to generate code using provider: Cloudflare request failed with status 400: {"errors":[{"message":"AiError: AiError: This model's maximum context length is 32768 tokens. However, you requested 43106 tokens (2146 in the messages, 40960 in the completion). Please reduce the length of the messages or completion. (240c6736-74cb-49b4-b321-22205711badc)","code":3030}],"success":false,"result":{},"messages":[]}
+  -> ❌ Failed to generate DB: Cloudflare request failed with status 400: {"errors":[{"message":"AiError: AiError: This model's maximum context length is 32768 tokens. However, you requested 43106 tokens (2146 in the messages, 40960 in the completion). Please reduce the length of the messages or completion. (240c6736-74cb-49b4-b321-22205711badc)","code":3030}],"success":false,"result":{},"messages":[]}
+error: "aesc" exited with code 1
+----------------------
+-> Iteration 92: FAILED
+--- Running Test Iteration: 93/100 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+[ERROR] 'bun aesc gen -vf' failed at iteration 93.
+--- Generation Log ---
+Failed to generate code using provider: Cloudflare request failed with status 400: {"errors":[{"message":"AiError: AiError: This model's maximum context length is 32768 tokens. However, you requested 41399 tokens (439 in the messages, 40960 in the completion). Please reduce the length of the messages or completion. (d9a3436f-49f0-4037-aa7b-4e59f337fb06)","code":3030}],"success":false,"result":{},"messages":[]}
+  -> ❌ Failed to generate UserService: Cloudflare request failed with status 400: {"errors":[{"message":"AiError: AiError: This model's maximum context length is 32768 tokens. However, you requested 41399 tokens (439 in the messages, 40960 in the completion). Please reduce the length of the messages or completion. (d9a3436f-49f0-4037-aa7b-4e59f337fb06)","code":3030}],"success":false,"result":{},"messages":[]}
+Failed to generate code using provider: Cloudflare request failed with status 400: {"errors":[{"message":"AiError: AiError: This model's maximum context length is 32768 tokens. However, you requested 43106 tokens (2146 in the messages, 40960 in the completion). Please reduce the length of the messages or completion. (c23d966a-03ef-448c-94f7-0c74d0f90be3)","code":3030}],"success":false,"result":{},"messages":[]}
+  -> ❌ Failed to generate DB: Cloudflare request failed with status 400: {"errors":[{"message":"AiError: AiError: This model's maximum context length is 32768 tokens. However, you requested 43106 tokens (2146 in the messages, 40960 in the completion). Please reduce the length of the messages or completion. (c23d966a-03ef-448c-94f7-0c74d0f90be3)","code":3030}],"success":false,"result":{},"messages":[]}
+error: "aesc" exited with code 1
+----------------------
+-> Iteration 93: FAILED
+--- Running Test Iteration: 94/100 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+[ERROR] 'bun aesc gen -vf' failed at iteration 94.
+--- Generation Log ---
+Failed to generate code using provider: Cloudflare request failed with status 400: {"errors":[{"message":"AiError: AiError: This model's maximum context length is 32768 tokens. However, you requested 41399 tokens (439 in the messages, 40960 in the completion). Please reduce the length of the messages or completion. (7b3636e3-041b-4dab-b745-5419a6915e5a)","code":3030}],"success":false,"result":{},"messages":[]}
+  -> ❌ Failed to generate UserService: Cloudflare request failed with status 400: {"errors":[{"message":"AiError: AiError: This model's maximum context length is 32768 tokens. However, you requested 41399 tokens (439 in the messages, 40960 in the completion). Please reduce the length of the messages or completion. (7b3636e3-041b-4dab-b745-5419a6915e5a)","code":3030}],"success":false,"result":{},"messages":[]}
+Failed to generate code using provider: Cloudflare request failed with status 400: {"errors":[{"message":"AiError: AiError: This model's maximum context length is 32768 tokens. However, you requested 43106 tokens (2146 in the messages, 40960 in the completion). Please reduce the length of the messages or completion. (1b96d091-ff6e-43db-b899-aaf919a1c061)","code":3030}],"success":false,"result":{},"messages":[]}
+  -> ❌ Failed to generate DB: Cloudflare request failed with status 400: {"errors":[{"message":"AiError: AiError: This model's maximum context length is 32768 tokens. However, you requested 43106 tokens (2146 in the messages, 40960 in the completion). Please reduce the length of the messages or completion. (1b96d091-ff6e-43db-b899-aaf919a1c061)","code":3030}],"success":false,"result":{},"messages":[]}
+error: "aesc" exited with code 1
+----------------------
+-> Iteration 94: FAILED
+--- Running Test Iteration: 95/100 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+[ERROR] 'bun aesc gen -vf' failed at iteration 95.
+--- Generation Log ---
+Failed to generate code using provider: Cloudflare request failed with status 400: {"errors":[{"message":"AiError: AiError: This model's maximum context length is 32768 tokens. However, you requested 41399 tokens (439 in the messages, 40960 in the completion). Please reduce the length of the messages or completion. (48a2f1ab-e3b0-4f3d-9655-56623e1510e5)","code":3030}],"success":false,"result":{},"messages":[]}
+  -> ❌ Failed to generate UserService: Cloudflare request failed with status 400: {"errors":[{"message":"AiError: AiError: This model's maximum context length is 32768 tokens. However, you requested 41399 tokens (439 in the messages, 40960 in the completion). Please reduce the length of the messages or completion. (48a2f1ab-e3b0-4f3d-9655-56623e1510e5)","code":3030}],"success":false,"result":{},"messages":[]}
+Failed to generate code using provider: Cloudflare request failed with status 400: {"errors":[{"message":"AiError: AiError: This model's maximum context length is 32768 tokens. However, you requested 43106 tokens (2146 in the messages, 40960 in the completion). Please reduce the length of the messages or completion. (c8aaf9a6-7a7a-470a-945e-17c6547ee963)","code":3030}],"success":false,"result":{},"messages":[]}
+  -> ❌ Failed to generate DB: Cloudflare request failed with status 400: {"errors":[{"message":"AiError: AiError: This model's maximum context length is 32768 tokens. However, you requested 43106 tokens (2146 in the messages, 40960 in the completion). Please reduce the length of the messages or completion. (c8aaf9a6-7a7a-470a-945e-17c6547ee963)","code":3030}],"success":false,"result":{},"messages":[]}
+error: "aesc" exited with code 1
+----------------------
+-> Iteration 95: FAILED
+--- Running Test Iteration: 96/100 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+[ERROR] 'bun aesc gen -vf' failed at iteration 96.
+--- Generation Log ---
+Failed to generate code using provider: Cloudflare request failed with status 400: {"errors":[{"message":"AiError: AiError: This model's maximum context length is 32768 tokens. However, you requested 41399 tokens (439 in the messages, 40960 in the completion). Please reduce the length of the messages or completion. (3babe1ad-6892-4e6f-9846-3aa4d13d6a17)","code":3030}],"success":false,"result":{},"messages":[]}
+  -> ❌ Failed to generate UserService: Cloudflare request failed with status 400: {"errors":[{"message":"AiError: AiError: This model's maximum context length is 32768 tokens. However, you requested 41399 tokens (439 in the messages, 40960 in the completion). Please reduce the length of the messages or completion. (3babe1ad-6892-4e6f-9846-3aa4d13d6a17)","code":3030}],"success":false,"result":{},"messages":[]}
+Failed to generate code using provider: Cloudflare request failed with status 400: {"errors":[{"message":"AiError: AiError: This model's maximum context length is 32768 tokens. However, you requested 43106 tokens (2146 in the messages, 40960 in the completion). Please reduce the length of the messages or completion. (8e92d4b1-976d-4111-bb4d-f831a9cb761c)","code":3030}],"success":false,"result":{},"messages":[]}
+  -> ❌ Failed to generate DB: Cloudflare request failed with status 400: {"errors":[{"message":"AiError: AiError: This model's maximum context length is 32768 tokens. However, you requested 43106 tokens (2146 in the messages, 40960 in the completion). Please reduce the length of the messages or completion. (8e92d4b1-976d-4111-bb4d-f831a9cb761c)","code":3030}],"success":false,"result":{},"messages":[]}
+error: "aesc" exited with code 1
+----------------------
+-> Iteration 96: FAILED
+--- Running Test Iteration: 97/100 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+[ERROR] 'bun aesc gen -vf' failed at iteration 97.
+--- Generation Log ---
+Failed to generate code using provider: Cloudflare request failed with status 400: {"errors":[{"message":"AiError: AiError: This model's maximum context length is 32768 tokens. However, you requested 41399 tokens (439 in the messages, 40960 in the completion). Please reduce the length of the messages or completion. (180ca157-c7ba-4fde-b670-8094c098735f)","code":3030}],"success":false,"result":{},"messages":[]}
+  -> ❌ Failed to generate UserService: Cloudflare request failed with status 400: {"errors":[{"message":"AiError: AiError: This model's maximum context length is 32768 tokens. However, you requested 41399 tokens (439 in the messages, 40960 in the completion). Please reduce the length of the messages or completion. (180ca157-c7ba-4fde-b670-8094c098735f)","code":3030}],"success":false,"result":{},"messages":[]}
+Failed to generate code using provider: Cloudflare request failed with status 400: {"errors":[{"message":"AiError: AiError: This model's maximum context length is 32768 tokens. However, you requested 43106 tokens (2146 in the messages, 40960 in the completion). Please reduce the length of the messages or completion. (a71c0863-36ae-4519-9329-4827b20ac538)","code":3030}],"success":false,"result":{},"messages":[]}
+  -> ❌ Failed to generate DB: Cloudflare request failed with status 400: {"errors":[{"message":"AiError: AiError: This model's maximum context length is 32768 tokens. However, you requested 43106 tokens (2146 in the messages, 40960 in the completion). Please reduce the length of the messages or completion. (a71c0863-36ae-4519-9329-4827b20ac538)","code":3030}],"success":false,"result":{},"messages":[]}
+error: "aesc" exited with code 1
+----------------------
+-> Iteration 97: FAILED
+--- Running Test Iteration: 98/100 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+[ERROR] 'bun aesc gen -vf' failed at iteration 98.
+--- Generation Log ---
+Failed to generate code using provider: Cloudflare request failed with status 400: {"errors":[{"message":"AiError: AiError: This model's maximum context length is 32768 tokens. However, you requested 41399 tokens (439 in the messages, 40960 in the completion). Please reduce the length of the messages or completion. (cadaf4aa-6af9-447d-adea-23dd42fc11a6)","code":3030}],"success":false,"result":{},"messages":[]}
+  -> ❌ Failed to generate UserService: Cloudflare request failed with status 400: {"errors":[{"message":"AiError: AiError: This model's maximum context length is 32768 tokens. However, you requested 41399 tokens (439 in the messages, 40960 in the completion). Please reduce the length of the messages or completion. (cadaf4aa-6af9-447d-adea-23dd42fc11a6)","code":3030}],"success":false,"result":{},"messages":[]}
+Failed to generate code using provider: Cloudflare request failed with status 400: {"errors":[{"message":"AiError: AiError: This model's maximum context length is 32768 tokens. However, you requested 43106 tokens (2146 in the messages, 40960 in the completion). Please reduce the length of the messages or completion. (cab14884-040d-4823-b377-ab2070e09b1d)","code":3030}],"success":false,"result":{},"messages":[]}
+  -> ❌ Failed to generate DB: Cloudflare request failed with status 400: {"errors":[{"message":"AiError: AiError: This model's maximum context length is 32768 tokens. However, you requested 43106 tokens (2146 in the messages, 40960 in the completion). Please reduce the length of the messages or completion. (cab14884-040d-4823-b377-ab2070e09b1d)","code":3030}],"success":false,"result":{},"messages":[]}
+error: "aesc" exited with code 1
+----------------------
+-> Iteration 98: FAILED
+--- Running Test Iteration: 99/100 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+[ERROR] 'bun aesc gen -vf' failed at iteration 99.
+--- Generation Log ---
+Failed to generate code using provider: Cloudflare request failed with status 400: {"errors":[{"message":"AiError: AiError: This model's maximum context length is 32768 tokens. However, you requested 41399 tokens (439 in the messages, 40960 in the completion). Please reduce the length of the messages or completion. (f7f9cbb1-ba2f-45e8-a679-99f7f82c9492)","code":3030}],"success":false,"result":{},"messages":[]}
+  -> ❌ Failed to generate UserService: Cloudflare request failed with status 400: {"errors":[{"message":"AiError: AiError: This model's maximum context length is 32768 tokens. However, you requested 41399 tokens (439 in the messages, 40960 in the completion). Please reduce the length of the messages or completion. (f7f9cbb1-ba2f-45e8-a679-99f7f82c9492)","code":3030}],"success":false,"result":{},"messages":[]}
+Failed to generate code using provider: Cloudflare request failed with status 400: {"errors":[{"message":"AiError: AiError: This model's maximum context length is 32768 tokens. However, you requested 43106 tokens (2146 in the messages, 40960 in the completion). Please reduce the length of the messages or completion. (77eb318f-36a0-4350-99f5-397fb6a7521e)","code":3030}],"success":false,"result":{},"messages":[]}
+  -> ❌ Failed to generate DB: Cloudflare request failed with status 400: {"errors":[{"message":"AiError: AiError: This model's maximum context length is 32768 tokens. However, you requested 43106 tokens (2146 in the messages, 40960 in the completion). Please reduce the length of the messages or completion. (77eb318f-36a0-4350-99f5-397fb6a7521e)","code":3030}],"success":false,"result":{},"messages":[]}
+error: "aesc" exited with code 1
+----------------------
+-> Iteration 99: FAILED
+--- Running Test Iteration: 100/100 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+[ERROR] 'bun aesc gen -vf' failed at iteration 100.
+--- Generation Log ---
+Failed to generate code using provider: Cloudflare request failed with status 400: {"errors":[{"message":"AiError: AiError: This model's maximum context length is 32768 tokens. However, you requested 41399 tokens (439 in the messages, 40960 in the completion). Please reduce the length of the messages or completion. (0cbfe032-4a2f-4008-b85c-7425047d69bb)","code":3030}],"success":false,"result":{},"messages":[]}
+  -> ❌ Failed to generate UserService: Cloudflare request failed with status 400: {"errors":[{"message":"AiError: AiError: This model's maximum context length is 32768 tokens. However, you requested 41399 tokens (439 in the messages, 40960 in the completion). Please reduce the length of the messages or completion. (0cbfe032-4a2f-4008-b85c-7425047d69bb)","code":3030}],"success":false,"result":{},"messages":[]}
+Failed to generate code using provider: Cloudflare request failed with status 400: {"errors":[{"message":"AiError: AiError: This model's maximum context length is 32768 tokens. However, you requested 43106 tokens (2146 in the messages, 40960 in the completion). Please reduce the length of the messages or completion. (67fb475f-33c3-4a95-9ece-67c4d0358dfd)","code":3030}],"success":false,"result":{},"messages":[]}
+  -> ❌ Failed to generate DB: Cloudflare request failed with status 400: {"errors":[{"message":"AiError: AiError: This model's maximum context length is 32768 tokens. However, you requested 43106 tokens (2146 in the messages, 40960 in the completion). Please reduce the length of the messages or completion. (67fb475f-33c3-4a95-9ece-67c4d0358dfd)","code":3030}],"success":false,"result":{},"messages":[]}
+error: "aesc" exited with code 1
+----------------------
+-> Iteration 100: FAILED
+
+--- Test Run Complete ---
+Total Iterations: 100
+Successful Runs:  72
+Failed Runs:      28
+-------------------------

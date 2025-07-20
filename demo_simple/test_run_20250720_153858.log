@@ -1,0 +1,26 @@
+Test run started. Output will be saved to: test_run_20250720_153858.log
+=====================================================
+Starting test with 10 iterations...
+Using provider: cloudflare
+Using model: @cf/qwen/qwen2.5-coder-32b-instruct
+--- Running Test Iteration: 1/10 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+-> Running application with assertions...
+-> Iteration 1: SUCCESS
+--- Running Test Iteration: 2/10 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+-> Running application with assertions...
+[ERROR] 'bun run start' exited with a non-zero status at iteration 2, indicating a test failure.
+--- Run Log ---
+$ bun src/index.ts
+1 | (function (entry, fetcher)
+              ^
+SyntaxError: Export named 'UserServiceImpl' not found in module '/Users/shiheng/project/AetherScript/demo_simple/src/generated/userservice.service.impl.ts'.
+      at loadAndEvaluateModule (1:11)
+
+Bun v1.2.16 (macOS arm64)
+error: script "start" exited with code 1
+--------------- 
+-> Iteration 2: FAILED
+--- Running Test Iteration: 3/10 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...

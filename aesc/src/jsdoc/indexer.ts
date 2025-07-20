@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { JSDocExtractor } from './jsdoc-extractor';
-import type { JSDocInfo } from './jsdoc-extractor';
+import { JSDocExtractor } from './extractor';
+import type { JSDocInfo } from './extractor';
 
 /**
  * JSDoc Indexer - Batch process all dependencies in package.json

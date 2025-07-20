@@ -13,14 +13,20 @@ TOTAL_RUNS=1000
 # Default model
 MODEL="codellama"
 
+# Default provider (empty means use default)
+PROVIDER=""
+
 # Parse command-line options
-while getopts ":n:m:" opt; do
+while getopts ":n:m:p:" opt; do
   case $opt in
     n)
       TOTAL_RUNS=$OPTARG
       ;;
     m)
       MODEL=$OPTARG
+      ;;
+    p)
+      PROVIDER=$OPTARG
       ;;
     \?)
       echo "Invalid option: -$OPTARG" >&2
@@ -34,6 +40,10 @@ while getopts ":n:m:" opt; do
 done
 
 echo "Starting test with $TOTAL_RUNS iterations..."
+if [ -n "$PROVIDER" ]; then
+  echo "Using provider: $PROVIDER"
+fi
+echo "Using model: $MODEL"
 
 # Counters for successful and failed runs
 SUCCESS_COUNT=0
@@ -48,7 +58,11 @@ do
   # Step 1: Generate code
   echo "-> Generating code with model: $MODEL..."
   # Capture stderr to check for errors, hide stdout
-  GEN_ERROR=$(bun aesc gen -vf -m "$MODEL" 2>&1 >/dev/null)
+  if [ -n "$PROVIDER" ]; then
+    GEN_ERROR=$(bun aesc gen -vf -p "$PROVIDER" -m "$MODEL" 2>&1 >/dev/null)
+  else
+    GEN_ERROR=$(bun aesc gen -vf -m "$MODEL" 2>&1 >/dev/null)
+  fi
   if [ $? -ne 0 ]; then
     echo "[ERROR] 'bun aesc gen -vf' failed at iteration $i."
     echo "--- Generation Log ---"

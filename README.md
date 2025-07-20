@@ -8,12 +8,34 @@ This is the vision behind this project, a prototype for what we'll call **Aether
 
 AetherScript introduces a new, structured workflow for human-AI collaboration, built on a simple yet powerful philosophy: **separate human intent from AI implementation.**
 
+## 🚀 Recent Major Updates (v2.0)
+
+### ✅ Complete Architecture Refactoring
+- **Modular Design**: Refactored from a monolithic 400+ line `index.ts` to a highly modular architecture with dedicated modules for CLI, core generation, configuration, utilities, error handling, and logging
+- **Improved Maintainability**: Code is now organized into logical modules (`src/cli/`, `src/core/`, `src/config/`, `src/utils/`, `src/errors/`, `src/logging/`)
+- **Enhanced Extensibility**: New provider support and features can be easily added without touching core logic
+
+### ✅ Multi-Provider AI Support
+- **Cloudflare Workers AI**: Full support for Cloudflare's AI platform with automatic token optimization
+- **Provider Abstraction**: Clean abstraction layer supporting multiple AI providers (Ollama, Cloudflare, extensible for more)
+- **Intelligent Token Management**: Automatic prompt optimization for token-limited models (e.g., 32K context models)
+
+### ✅ Smart Prompt Optimization
+- **Provider-Aware Prompts**: Automatically adjusts prompt complexity based on the target AI provider's capabilities
+- **Dynamic JSDoc Integration**: Enhanced third-party dependency detection with intelligent caching system
+- **Comprehensive Documentation**: Full JSDoc injection for all providers ensures high-quality code generation
+
+### ✅ Enhanced Developer Experience
+- **Comprehensive Statistics**: Detailed timing and performance metrics for generation and testing
+- **Improved Error Handling**: Robust error recovery with intelligent retry mechanisms
+- **Better CLI**: More intuitive command structure with comprehensive help and examples
+
 ## Project Structure
 
 This repository is organized into two main parts:
 
 *   `aesc/`: The core AetherScript library and command-line tool.
-*   `demo/`: A simple example project that demonstrates how to use the `aesc` tool.
+*   `demo_simple/`: A simple example project that demonstrates how to use the `aesc` tool.
 
 ## Getting Started: Running the Demo
 
@@ -22,17 +44,27 @@ This repository is organized into two main parts:
 Before you begin, ensure you have the following installed:
 
 - **Bun**: Follow the instructions on the [official Bun website](https://bun.sh/) to install it.
-- **Ollama**: Download and install Ollama from the [official Ollama website](https://ollama.com/download). After installation, you must pull the model that `aesc` will use and ensure the Ollama application is running.
+- **AI Provider**: Choose one of the supported providers:
+  
+  **Option 1: Ollama (Local)**
+  - Download and install Ollama from the [official Ollama website](https://ollama.com/download)
+  - Pull a model and ensure Ollama is running:
+    ```bash
+    # Download the default model
+    ollama pull codellama
+    
+    # You can also pull other models
+    ollama pull qwen2.5-coder:32b
+    
+    # Make sure Ollama is running in the background
+    ```
 
-  ```bash
-  # Download the default model
-  ollama pull codellama
-
-  # You can also pull other models to use with the --model flag
-  ollama pull qwen2.5-coder:32b
-
-  # Make sure the Ollama application is running in the background
-  ```
+  **Option 2: Cloudflare Workers AI (Remote)**
+  - Set up environment variables:
+    ```bash
+    export CLOUDFLARE_ACCOUNT_ID="your-account-id"
+    export CLOUDFLARE_API_TOKEN="your-api-token"
+    ```
 
 ### Setup and Execution
 
@@ -43,7 +75,7 @@ To see AetherScript in action, follow these steps to set up the local developmen
     ```bash
     cd aesc
     bun install
-    cd ../demo
+    cd ../demo_simple
     bun install
     ```
 
@@ -75,18 +107,160 @@ To see AetherScript in action, follow these steps to set up the local developmen
 
 4.  **Run Code Generation in the Demo Project**
 
-    Now, from the `demo` directory, you can use the `aesc` command-line tool just like a published package.
+    Now, from the `demo_simple` directory, you can use the `aesc` command-line tool just like a published package.
 
     ```bash
-    # Make sure you are in the demo/ directory
-    # This will use the default 'codellama' model
+    # Make sure you are in the demo_simple/ directory
+    # This will use the default 'codellama' model with local Ollama
     bunx aesc gen -vf
 
     # You can specify a different model using the -m or --model flag
     # bunx aesc gen -vf -m qwen2.5-coder:32b
+    
+    # Use Cloudflare Workers AI (requires environment variables)
+    # bunx aesc gen -vf -p cloudflare -m "@cf/qwen/qwen2.5-coder-32b-instruct"
     ```
 
     This command will scan your project for `@AutoGen` decorators and generate the necessary implementation files inside `src/generated`.
+
+5.  **Run the Demo Application**
+
+    ```bash
+    bun run start
+    ```
+
+## 🔧 Advanced Usage
+
+### Multi-Provider AI Support
+
+AetherScript supports multiple AI model providers through a unified interface. You can easily switch between different providers without changing your code structure.
+
+#### Available Providers
+
+- **Ollama** (default): Local or remote Ollama instances
+- **Cloudflare Workers AI**: Cloud-based AI models via Cloudflare with automatic token optimization
+
+#### Provider Configuration
+
+**Option 1: Environment Variables (Recommended)**
+
+```bash
+# For Cloudflare Workers AI
+export CLOUDFLARE_ACCOUNT_ID="your-account-id"
+export CLOUDFLARE_API_TOKEN="your-api-token"
+export CLOUDFLARE_AIG_TOKEN="your-aig-token"  # Optional for AI Gateway
+
+# For remote Ollama
+export OLLAMA_ENDPOINT="http://your-remote-server:11434/api/generate"
+```
+
+**Option 2: Command Line Arguments**
+
+```bash
+# Use Cloudflare Workers AI
+bunx aesc gen -vf -p cloudflare -m "@cf/qwen/qwen2.5-coder-32b-instruct"
+
+# Use remote Ollama
+bunx aesc gen -vf -p ollama -m "qwen2.5-coder:32b"
+
+# Use local Ollama (default)
+bunx aesc gen -vf -m "codellama"
+```
+
+### CLI Commands Reference
+
+#### Core Generation Commands
+
+```bash
+# Generate implementations for all @AutoGen decorators
+bunx aesc gen [files...] [options]
+
+# Options:
+#   -f, --force     Force overwrite existing files
+#   -v, --verbose   Show detailed generation process
+#   -m, --model     Specify AI model to use
+#   -p, --provider  Specify AI provider (ollama, cloudflare)
+
+# Examples:
+bunx aesc gen -vf                                    # Generate all with verbose output
+bunx aesc gen UserService -f                        # Generate specific service
+bunx aesc gen -p cloudflare -m "@cf/qwen/qwen2.5-coder-32b-instruct"
+```
+
+#### Provider Management Commands
+
+```bash
+# List all available providers and their status
+bunx aesc list-providers
+
+# Test connection to a specific provider
+bunx aesc test-provider [provider-name]
+
+# Show provider configuration examples
+bunx aesc provider-examples
+
+# Test code generation with a specific provider/model
+bunx aesc test-generation [provider] [model]
+```
+
+#### JSDoc Integration Commands
+
+```bash
+# Index JSDoc documentation for all dependencies
+bunx aesc index-jsdoc [path]
+
+# Clear JSDoc cache
+bunx aesc clear-jsdoc [path]
+```
+
+#### File Management Commands
+
+```bash
+# Lock files to prevent regeneration
+bunx aesc lock <paths...>
+
+# Unlock previously locked files
+bunx aesc unlock <paths...>
+```
+
+### Enhanced JSDoc Integration
+
+AetherScript provides comprehensive JSDoc integration for better code generation:
+
+- **Dynamic Documentation Loading**: Automatically loads and caches JSDoc documentation for all project dependencies
+- **Intelligent Type Detection**: Detects third-party library usage and injects relevant API documentation
+- **Fallback Mechanisms**: Gracefully handles missing documentation with basic type definitions
+- **Smart Caching**: Efficient caching system reduces redundant documentation processing
+
+# Use specific Ollama model
+bunx aesc gen -vf -m qwen2.5-coder:32b
+
+# Use remote Ollama (with OLLAMA_ENDPOINT set)
+bunx aesc gen -vf -p ollama -m qwen2.5-coder:32b
+```
+
+#### Provider Management Commands
+
+```bash
+# List all available and configured providers
+bunx aesc list-providers
+
+# Test connection to a specific provider
+bunx aesc test-provider cloudflare
+
+# Show configuration examples
+bunx aesc provider-examples
+
+# Test code generation with a provider
+bunx aesc test-generation cloudflare "@cf/qwen/qwen2.5-coder-32b-instruct"
+```
+
+#### Command Line Options
+
+- `-p, --provider <name>`: Specify the AI provider (ollama, cloudflare)
+- `-m, --model <model>`: Specify the model to use
+- `-v, --verbose`: Enable verbose logging to see full prompts and responses
+- `-f, --force`: Force overwrite existing implementation files
 
 5.  **Run the Demo Application**
 

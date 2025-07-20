@@ -1,0 +1,21 @@
+Test run started. Output will be saved to: test_run_20250720_153632.log
+=====================================================
+Starting test with 10 iterations...
+Using model: codellama
+--- Running Test Iteration: 1/10 ---
+-> Generating code with model: codellama...
+-> Running application with assertions...
+[ERROR] 'bun run start' exited with a non-zero status at iteration 1, indicating a test failure.
+--- Run Log ---
+$ bun src/index.ts
+1 | (function (entry, fetcher)
+              ^
+SyntaxError: Export named 'DBImpl' not found in module '/Users/shiheng/project/AetherScript/demo_simple/src/generated/db.service.impl.ts'. Did you mean to import default?
+      at loadAndEvaluateModule (1:11)
+
+Bun v1.2.16 (macOS arm64)
+error: script "start" exited with code 1
+--------------- 
+-> Iteration 1: FAILED
+--- Running Test Iteration: 2/10 ---
+-> Generating code with model: codellama...

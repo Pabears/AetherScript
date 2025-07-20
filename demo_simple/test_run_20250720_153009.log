@@ -1,0 +1,85 @@
+Test run started. Output will be saved to: test_run_20250720_153009.log
+=====================================================
+Starting test with 10 iterations...
+Using provider: cloudflare
+Using model: @cf/qwen/qwen2.5-coder-32b-instruct
+--- Running Test Iteration: 1/10 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+-> Running application with assertions...
+-> Iteration 1: SUCCESS
+--- Running Test Iteration: 2/10 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+-> Running application with assertions...
+[ERROR] 'bun run start' exited with a non-zero status at iteration 2, indicating a test failure.
+--- Run Log ---
+$ bun src/index.ts
+1 | (function (entry, fetcher)
+              ^
+SyntaxError: Export named 'UserService' not found in module '/Users/shiheng/project/AetherScript/demo_simple/src/generated/db.service.impl.ts'.
+      at loadAndEvaluateModule (1:11)
+
+Bun v1.2.16 (macOS arm64)
+error: script "start" exited with code 1
+--------------- 
+-> Iteration 2: FAILED
+--- Running Test Iteration: 3/10 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+-> Running application with assertions...
+-> Iteration 3: SUCCESS
+--- Running Test Iteration: 4/10 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+-> Running application with assertions...
+[ERROR] 'bun run start' exited with a non-zero status at iteration 4, indicating a test failure.
+--- Run Log ---
+$ bun src/index.ts
+1 | (function (entry, fetcher)
+              ^
+SyntaxError: Export named 'UserService' not found in module '/Users/shiheng/project/AetherScript/demo_simple/src/generated/db.service.impl.ts'.
+      at loadAndEvaluateModule (1:11)
+
+Bun v1.2.16 (macOS arm64)
+error: script "start" exited with code 1
+--------------- 
+-> Iteration 4: FAILED
+--- Running Test Iteration: 5/10 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+[ERROR] 'bun aesc gen -vf' failed at iteration 5.
+--- Generation Log ---
+  -> ERROR: Generated code for DB failed validation after 3 retry attempts.
+error: "aesc" exited with code 1
+----------------------
+-> Iteration 5: FAILED
+--- Running Test Iteration: 6/10 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+-> Running application with assertions...
+-> Iteration 6: SUCCESS
+--- Running Test Iteration: 7/10 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+-> Running application with assertions...
+-> Iteration 7: SUCCESS
+--- Running Test Iteration: 8/10 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+[ERROR] 'bun aesc gen -vf' failed at iteration 8.
+--- Generation Log ---
+  -> ERROR: Generated code for DB failed validation after 3 retry attempts.
+error: "aesc" exited with code 1
+----------------------
+-> Iteration 8: FAILED
+--- Running Test Iteration: 9/10 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+[ERROR] 'bun aesc gen -vf' failed at iteration 9.
+--- Generation Log ---
+  -> ERROR: Generated code for DB failed validation after 3 retry attempts.
+error: "aesc" exited with code 1
+----------------------
+-> Iteration 9: FAILED
+--- Running Test Iteration: 10/10 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...
+-> Running application with assertions...
+-> Iteration 10: SUCCESS
+
+--- Test Run Complete ---
+Total Iterations: 10
+Successful Runs:  5
+Failed Runs:      5
+-------------------------

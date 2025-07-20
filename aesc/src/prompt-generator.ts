@@ -1,7 +1,7 @@
 import { InterfaceDeclaration, ClassDeclaration, Node, ts, SourceFile } from "ts-morph";
 import type { GeneratedService } from './file-analysis';
-import { JSDocIndexer } from './jsdoc-indexer';
-import { JSDocFormatter } from './jsdoc-formatter';
+import { JSDocIndexer } from './jsdoc/indexer';
+import { JSDocFormatter } from './jsdoc/formatter';
 import * as path from 'path';
 
 /**
@@ -106,7 +106,8 @@ function isProjectType(typeName: string): boolean {
 export function generatePrompt(
     declaration: InterfaceDeclaration | ClassDeclaration, 
     originalImportPath: string, 
-    generatedFilePath: string
+    generatedFilePath: string,
+    provider?: string
 ): string {
     const interfaceName = declaration.getName();
     if (!interfaceName) {
@@ -192,7 +193,6 @@ export function generatePrompt(
 
     addDependencies(declaration);
 
-    // Check for third-party library usage and add type definitions dynamically
     const originalCode = declaration.getText();
     const allDependentCode = Array.from(dependentTypes.values()).map(dep => dep.code).join('\n');
     

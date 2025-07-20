@@ -1,0 +1,625 @@
+{
+  "name": "node-cache",
+  "description": "\nSince 4.1.0: Key-validation: The keys can be given as either string or number,\nbut are casted to a string internally anyway.",
+  "methods": [
+    {
+      "name": "get",
+      "signature": "get<T>(\n\t\tkey: Key\n\t): T | undefined;",
+      "description": "\nget a cached key and change the stats\n",
+      "parameters": [
+        {
+          "name": "key",
+          "type": "import(\"/Users/shiheng/project/AetherScript/demo_simple/node_modules/node-cache/index\").Key",
+          "description": "cache key"
+        }
+      ],
+      "returnType": "T | undefined",
+      "returnDescription": "The value stored in the key"
+    },
+    {
+      "name": "mget",
+      "signature": "mget<T>(\n\t\tkeys: Key[]\n\t): { [key: string]: T };",
+      "description": "\nget multiple cached keys at once and change the stats\n",
+      "parameters": [
+        {
+          "name": "keys",
+          "type": "import(\"/Users/shiheng/project/AetherScript/demo_simple/node_modules/node-cache/index\").Key[]",
+          "description": "an array of keys"
+        }
+      ],
+      "returnType": "{ [key: string]: T; }",
+      "returnDescription": "an object containing the values stored in the matching keys"
+    },
+    {
+      "name": "set",
+      "signature": "set<T>(\n\t\tkey: Key,\n\t\tvalue: T,\n\t\tttl: number | string\n\t): boolean;",
+      "description": "\nset a cached key and change the stats\n",
+      "parameters": [
+        {
+          "name": "key",
+          "type": "import(\"/Users/shiheng/project/AetherScript/demo_simple/node_modules/node-cache/index\").Key",
+          "description": "cache key"
+        },
+        {
+          "name": "value",
+          "type": "T",
+          "description": "A element to cache. If the option `option.forceString` is `true` the module trys to translate\nit to a serialized JSON"
+        },
+        {
+          "name": "ttl",
+          "type": "string | number",
+          "description": "The time to live in seconds."
+        }
+      ],
+      "returnType": "boolean",
+      "returnDescription": ""
+    },
+    {
+      "name": "set",
+      "signature": "set<T>(\n\t\tkey: Key,\n\t\tvalue: T\n\t): boolean;",
+      "description": "",
+      "parameters": [
+        {
+          "name": "key",
+          "type": "import(\"/Users/shiheng/project/AetherScript/demo_simple/node_modules/node-cache/index\").Key",
+          "description": ""
+        },
+        {
+          "name": "value",
+          "type": "T",
+          "description": ""
+        }
+      ],
+      "returnType": "boolean",
+      "returnDescription": ""
+    },
+    {
+      "name": "mset",
+      "signature": "mset<T>(\n\t\tkeyValueSet: ValueSetItem<T>[]\n\t): boolean;",
+      "description": "\nset multiple cached keys at once and change the stats\n",
+      "parameters": [
+        {
+          "name": "keyValueSet",
+          "type": "import(\"/Users/shiheng/project/AetherScript/demo_simple/node_modules/node-cache/index\").ValueSetItem<T>[]",
+          "description": "an array of object which includes key,value and ttl"
+        }
+      ],
+      "returnType": "boolean",
+      "returnDescription": ""
+    },
+    {
+      "name": "del",
+      "signature": "del(\n\t\tkeys: Key | Key[]\n\t): number;",
+      "description": "\nremove keys",
+      "parameters": [
+        {
+          "name": "keys",
+          "type": "import(\"/Users/shiheng/project/AetherScript/demo_simple/node_modules/node-cache/index\").Key | import(\"/Users/shiheng/project/AetherScript/demo_simple/node_modules/node-cache/index\").Key[]",
+          "description": "cache key to delete or a array of cache keys"
+        }
+      ],
+      "returnType": "number",
+      "returnDescription": "Number of deleted keys"
+    },
+    {
+      "name": "take",
+      "signature": "take<T>(\n\t\tkey: Key\n\t): T | undefined;",
+      "description": "\nget a cached key and remove it from the cache.\nEquivalent to calling `get(key)` + `del(key)`.\nUseful for implementing `single use` mechanism such as OTP, where once a value is read it will become obsolete.\n",
+      "parameters": [
+        {
+          "name": "key",
+          "type": "import(\"/Users/shiheng/project/AetherScript/demo_simple/node_modules/node-cache/index\").Key",
+          "description": "cache key"
+        }
+      ],
+      "returnType": "T | undefined",
+      "returnDescription": "The value stored in the key"
+    },
+    {
+      "name": "ttl",
+      "signature": "ttl(\n\t\tkey: Key,\n\t\tttl: number\n\t): boolean;",
+      "description": "\nreset or redefine the ttl of a key. If `ttl` is not passed or set to 0 it's similar to `.del()`",
+      "parameters": [
+        {
+          "name": "key",
+          "type": "import(\"/Users/shiheng/project/AetherScript/demo_simple/node_modules/node-cache/index\").Key",
+          "description": ""
+        },
+        {
+          "name": "ttl",
+          "type": "number",
+          "description": ""
+        }
+      ],
+      "returnType": "boolean",
+      "returnDescription": ""
+    },
+    {
+      "name": "ttl",
+      "signature": "ttl(\n\t\tkey: Key\n\t): boolean;",
+      "description": "",
+      "parameters": [
+        {
+          "name": "key",
+          "type": "import(\"/Users/shiheng/project/AetherScript/demo_simple/node_modules/node-cache/index\").Key",
+          "description": ""
+        }
+      ],
+      "returnType": "boolean",
+      "returnDescription": ""
+    },
+    {
+      "name": "getTtl",
+      "signature": "getTtl(\n\t\tkey: Key,\n\t): number|undefined;",
+      "description": "",
+      "parameters": [
+        {
+          "name": "key",
+          "type": "import(\"/Users/shiheng/project/AetherScript/demo_simple/node_modules/node-cache/index\").Key",
+          "description": ""
+        }
+      ],
+      "returnType": "number | undefined",
+      "returnDescription": ""
+    },
+    {
+      "name": "getTtl",
+      "signature": "getTtl(\n\t\tkey: Key\n\t): boolean;",
+      "description": "",
+      "parameters": [
+        {
+          "name": "key",
+          "type": "import(\"/Users/shiheng/project/AetherScript/demo_simple/node_modules/node-cache/index\").Key",
+          "description": ""
+        }
+      ],
+      "returnType": "boolean",
+      "returnDescription": ""
+    },
+    {
+      "name": "keys",
+      "signature": "keys(): string[];",
+      "description": "\nlist all keys within this cache",
+      "parameters": [],
+      "returnType": "string[]",
+      "returnDescription": "An array of all keys"
+    },
+    {
+      "name": "getStats",
+      "signature": "getStats(): Stats;",
+      "description": "\nget the stats\n",
+      "parameters": [],
+      "returnType": "import(\"/Users/shiheng/project/AetherScript/demo_simple/node_modules/node-cache/index\").Stats",
+      "returnDescription": "Stats data"
+    },
+    {
+      "name": "has",
+      "signature": "has(key: Key): boolean;",
+      "description": "\nCheck if a key is cached",
+      "parameters": [
+        {
+          "name": "key",
+          "type": "import(\"/Users/shiheng/project/AetherScript/demo_simple/node_modules/node-cache/index\").Key",
+          "description": "cache key to check"
+        }
+      ],
+      "returnType": "boolean",
+      "returnDescription": "Boolean indicating if the key is cached or not"
+    },
+    {
+      "name": "flushAll",
+      "signature": "flushAll(): void;",
+      "description": "\nflush the whole data and reset the stats",
+      "parameters": [],
+      "returnType": "void",
+      "returnDescription": ""
+    },
+    {
+      "name": "close",
+      "signature": "close(): void;",
+      "description": "\nThis will clear the interval timeout which is set on checkperiod option.",
+      "parameters": [],
+      "returnType": "void",
+      "returnDescription": ""
+    },
+    {
+      "name": "flushStats",
+      "signature": "flushStats(): void;",
+      "description": "\nflush the stats and reset all counters to 0",
+      "parameters": [],
+      "returnType": "void",
+      "returnDescription": ""
+    },
+    {
+      "name": "get",
+      "signature": "get<T>(\n\t\t\tkey: Key,\n\t\t\tcb?: Callback<T>\n\t\t): T | undefined;",
+      "description": "\nget a cached key and change the stats\n",
+      "parameters": [
+        {
+          "name": "key",
+          "type": "import(\"/Users/shiheng/project/AetherScript/demo_simple/node_modules/node-cache/index\").Key",
+          "description": "cache key or an array of keys"
+        },
+        {
+          "name": "cb",
+          "type": "import(\"/Users/shiheng/project/AetherScript/demo_simple/node_modules/node-cache/index\").Callback<T> | undefined",
+          "description": "Callback function"
+        }
+      ],
+      "returnType": "T | undefined",
+      "returnDescription": ""
+    },
+    {
+      "name": "mget",
+      "signature": "mget<T>(\n\t\t\tkeys: Key[],\n\t\t\tcb?: Callback<{ [key: string]: T }>\n\t\t): { [key: string]: T };",
+      "description": "\nget multiple cached keys at once and change the stats\n",
+      "parameters": [
+        {
+          "name": "keys",
+          "type": "import(\"/Users/shiheng/project/AetherScript/demo_simple/node_modules/node-cache/index\").Key[]",
+          "description": "an array of keys"
+        },
+        {
+          "name": "cb",
+          "type": "import(\"/Users/shiheng/project/AetherScript/demo_simple/node_modules/node-cache/index\").Callback<{ [key: string]: T; }> | undefined",
+          "description": "Callback function"
+        }
+      ],
+      "returnType": "{ [key: string]: T; }",
+      "returnDescription": ""
+    },
+    {
+      "name": "set",
+      "signature": "set<T>(\n\t\t\tkey: Key,\n\t\t\tvalue: T,\n\t\t\tttl: number | string,\n\t\t\tcb?: Callback<boolean>\n\t\t): boolean;",
+      "description": "\nset a cached key and change the stats\n",
+      "parameters": [
+        {
+          "name": "key",
+          "type": "import(\"/Users/shiheng/project/AetherScript/demo_simple/node_modules/node-cache/index\").Key",
+          "description": "cache key"
+        },
+        {
+          "name": "value",
+          "type": "T",
+          "description": "A element to cache. If the option `option.forceString` is `true` the module trys to translate\nit to a serialized JSON"
+        },
+        {
+          "name": "ttl",
+          "type": "string | number",
+          "description": "The time to live in seconds."
+        },
+        {
+          "name": "cb",
+          "type": "import(\"/Users/shiheng/project/AetherScript/demo_simple/node_modules/node-cache/index\").Callback<boolean> | undefined",
+          "description": "Callback function"
+        }
+      ],
+      "returnType": "boolean",
+      "returnDescription": ""
+    },
+    {
+      "name": "set",
+      "signature": "set<T>(\n\t\t\tkey: Key,\n\t\t\tvalue: T,\n\t\t\tcb?: Callback<boolean>\n\t\t): boolean;",
+      "description": "",
+      "parameters": [
+        {
+          "name": "key",
+          "type": "import(\"/Users/shiheng/project/AetherScript/demo_simple/node_modules/node-cache/index\").Key",
+          "description": ""
+        },
+        {
+          "name": "value",
+          "type": "T",
+          "description": ""
+        },
+        {
+          "name": "cb",
+          "type": "import(\"/Users/shiheng/project/AetherScript/demo_simple/node_modules/node-cache/index\").Callback<boolean> | undefined",
+          "description": ""
+        }
+      ],
+      "returnType": "boolean",
+      "returnDescription": ""
+    },
+    {
+      "name": "mset",
+      "signature": "mset<T>(\n\t\t\tkeyValueSet: ValueSetItem<T>[],\n\t\t): boolean;",
+      "description": "\nset multiple cached keys at once and change the stats\n",
+      "parameters": [
+        {
+          "name": "keyValueSet",
+          "type": "import(\"/Users/shiheng/project/AetherScript/demo_simple/node_modules/node-cache/index\").ValueSetItem<T>[]",
+          "description": "an array of object which includes key,value and ttl"
+        }
+      ],
+      "returnType": "boolean",
+      "returnDescription": ""
+    },
+    {
+      "name": "del",
+      "signature": "del(\n\t\t\tkeys: Key | Key[],\n\t\t\tcb?: Callback<number>\n\t\t): number;",
+      "description": "\nremove keys",
+      "parameters": [
+        {
+          "name": "keys",
+          "type": "import(\"/Users/shiheng/project/AetherScript/demo_simple/node_modules/node-cache/index\").Key | import(\"/Users/shiheng/project/AetherScript/demo_simple/node_modules/node-cache/index\").Key[]",
+          "description": "cache key to delete or a array of cache keys"
+        },
+        {
+          "name": "cb",
+          "type": "import(\"/Users/shiheng/project/AetherScript/demo_simple/node_modules/node-cache/index\").Callback<number> | undefined",
+          "description": "Callback function"
+        }
+      ],
+      "returnType": "number",
+      "returnDescription": "Number of deleted keys"
+    },
+    {
+      "name": "ttl",
+      "signature": "ttl(\n\t\t\tkey: Key,\n\t\t\tttl: number,\n\t\t\tcb?: Callback<boolean>\n\t\t): boolean;",
+      "description": "\nreset or redefine the ttl of a key. If `ttl` is not passed or set to 0 it's similar to `.del()`",
+      "parameters": [
+        {
+          "name": "key",
+          "type": "import(\"/Users/shiheng/project/AetherScript/demo_simple/node_modules/node-cache/index\").Key",
+          "description": ""
+        },
+        {
+          "name": "ttl",
+          "type": "number",
+          "description": ""
+        },
+        {
+          "name": "cb",
+          "type": "import(\"/Users/shiheng/project/AetherScript/demo_simple/node_modules/node-cache/index\").Callback<boolean> | undefined",
+          "description": ""
+        }
+      ],
+      "returnType": "boolean",
+      "returnDescription": ""
+    },
+    {
+      "name": "ttl",
+      "signature": "ttl(\n\t\t\tkey: Key,\n\t\t\tcb?: Callback<boolean>\n\t\t): boolean;",
+      "description": "",
+      "parameters": [
+        {
+          "name": "key",
+          "type": "import(\"/Users/shiheng/project/AetherScript/demo_simple/node_modules/node-cache/index\").Key",
+          "description": ""
+        },
+        {
+          "name": "cb",
+          "type": "import(\"/Users/shiheng/project/AetherScript/demo_simple/node_modules/node-cache/index\").Callback<boolean> | undefined",
+          "description": ""
+        }
+      ],
+      "returnType": "boolean",
+      "returnDescription": ""
+    },
+    {
+      "name": "getTtl",
+      "signature": "getTtl(\n\t\t\tkey: Key,\n\t\t): number|undefined;",
+      "description": "",
+      "parameters": [
+        {
+          "name": "key",
+          "type": "import(\"/Users/shiheng/project/AetherScript/demo_simple/node_modules/node-cache/index\").Key",
+          "description": ""
+        }
+      ],
+      "returnType": "number | undefined",
+      "returnDescription": ""
+    },
+    {
+      "name": "getTtl",
+      "signature": "getTtl(\n\t\t\tkey: Key,\n\t\t\tcb?: Callback<boolean>\n\t\t): boolean;",
+      "description": "",
+      "parameters": [
+        {
+          "name": "key",
+          "type": "import(\"/Users/shiheng/project/AetherScript/demo_simple/node_modules/node-cache/index\").Key",
+          "description": ""
+        },
+        {
+          "name": "cb",
+          "type": "import(\"/Users/shiheng/project/AetherScript/demo_simple/node_modules/node-cache/index\").Callback<boolean> | undefined",
+          "description": ""
+        }
+      ],
+      "returnType": "boolean",
+      "returnDescription": ""
+    },
+    {
+      "name": "keys",
+      "signature": "keys(cb?: Callback<string[]>): string[];",
+      "description": "\nlist all keys within this cache",
+      "parameters": [
+        {
+          "name": "cb",
+          "type": "import(\"/Users/shiheng/project/AetherScript/demo_simple/node_modules/node-cache/index\").Callback<string[]> | undefined",
+          "description": "Callback function"
+        }
+      ],
+      "returnType": "string[]",
+      "returnDescription": "An array of all keys"
+    },
+    {
+      "name": "getStats",
+      "signature": "getStats(): Stats;",
+      "description": "\nget the stats\n",
+      "parameters": [],
+      "returnType": "import(\"/Users/shiheng/project/AetherScript/demo_simple/node_modules/node-cache/index\").Stats",
+      "returnDescription": "Stats data"
+    },
+    {
+      "name": "flushAll",
+      "signature": "flushAll(): void;",
+      "description": "\nflush the whole data and reset the stats",
+      "parameters": [],
+      "returnType": "void",
+      "returnDescription": ""
+    },
+    {
+      "name": "close",
+      "signature": "close(): void;",
+      "description": "\nThis will clear the interval timeout which is set on checkperiod option.",
+      "parameters": [],
+      "returnType": "void",
+      "returnDescription": ""
+    }
+  ],
+  "properties": [
+    {
+      "name": "data",
+      "type": "import(\"/Users/shiheng/project/AetherScript/demo_simple/node_modules/node-cache/index\").Data",
+      "description": "container for cached data"
+    },
+    {
+      "name": "options",
+      "type": "import(\"/Users/shiheng/project/AetherScript/demo_simple/node_modules/node-cache/index\").Options",
+      "description": "module options"
+    },
+    {
+      "name": "stats",
+      "type": "import(\"/Users/shiheng/project/AetherScript/demo_simple/node_modules/node-cache/index\").Stats",
+      "description": "statistics container"
+    },
+    {
+      "name": "data",
+      "type": "import(\"/Users/shiheng/project/AetherScript/demo_simple/node_modules/node-cache/index\").Data",
+      "description": "container for cached data"
+    },
+    {
+      "name": "options",
+      "type": "import(\"/Users/shiheng/project/AetherScript/demo_simple/node_modules/node-cache/index\").Options",
+      "description": "module options"
+    },
+    {
+      "name": "stats",
+      "type": "import(\"/Users/shiheng/project/AetherScript/demo_simple/node_modules/node-cache/index\").Stats",
+      "description": "statistics container"
+    },
+    {
+      "name": "Key",
+      "type": "string | number",
+      "description": "\nSince 4.1.0: Key-validation: The keys can be given as either string or number,\nbut are casted to a string internally anyway.",
+      "optional": false
+    },
+    {
+      "name": "ValueSetItem",
+      "type": "{\n\t\tkey: Key;\n\t\tval: T;\n\t\tttl?: number;\n\t}",
+      "description": "\nSince 4.1.0: Key-validation: The keys can be given as either string or number,\nbut are casted to a string internally anyway.",
+      "optional": false
+    },
+    {
+      "name": "forceString",
+      "type": "boolean | undefined",
+      "description": "\nIf enabled, all values will be stringified during the set operation\n"
+    },
+    {
+      "name": "objectValueSize",
+      "type": "number | undefined",
+      "description": ""
+    },
+    {
+      "name": "promiseValueSize",
+      "type": "number | undefined",
+      "description": ""
+    },
+    {
+      "name": "arrayValueSize",
+      "type": "number | undefined",
+      "description": ""
+    },
+    {
+      "name": "stdTTL",
+      "type": "number | undefined",
+      "description": "\nstandard time to live in seconds. 0 = infinity\n"
+    },
+    {
+      "name": "checkperiod",
+      "type": "number | undefined",
+      "description": "\ntime in seconds to check all data and delete expired keys\n"
+    },
+    {
+      "name": "useClones",
+      "type": "boolean | undefined",
+      "description": "\nen/disable cloning of variables.\ndisabling this is strongly encouraged when aiming for performance!\n\nIf `true`: set operations store a clone of the value and get operations will create a fresh clone of the cached value\nIf `false` you'll just store a reference to your value\n"
+    },
+    {
+      "name": "errorOnMissing",
+      "type": "boolean | undefined",
+      "description": ""
+    },
+    {
+      "name": "deleteOnExpire",
+      "type": "boolean | undefined",
+      "description": ""
+    },
+    {
+      "name": "enableLegacyCallbacks",
+      "type": "boolean | undefined",
+      "description": "\nenable legacy callbacks.\nlegacy callback support will drop in v6.x!\n"
+    },
+    {
+      "name": "maxKeys",
+      "type": "number | undefined",
+      "description": "\nmax amount of keys that are being stored.\nset operations will throw an error when the cache is full\n"
+    },
+    {
+      "name": "hits",
+      "type": "number",
+      "description": ""
+    },
+    {
+      "name": "misses",
+      "type": "number",
+      "description": ""
+    },
+    {
+      "name": "keys",
+      "type": "number",
+      "description": ""
+    },
+    {
+      "name": "ksize",
+      "type": "number",
+      "description": ""
+    },
+    {
+      "name": "vsize",
+      "type": "number",
+      "description": ""
+    },
+    {
+      "name": "t",
+      "type": "number",
+      "description": ""
+    },
+    {
+      "name": "v",
+      "type": "T",
+      "description": ""
+    },
+    {
+      "name": "Callback",
+      "type": "(err: any, data: T | undefined) => void",
+      "description": "\nSince 4.1.0: Key-validation: The keys can be given as either string or number,\nbut are casted to a string internally anyway.",
+      "optional": false
+    }
+  ],
+  "constructors": [
+    {
+      "signature": "constructor(options?: Options);",
+      "description": "constructor",
+      "parameters": [
+        {
+          "name": "options",
+          "type": "import(\"/Users/shiheng/project/AetherScript/demo_simple/node_modules/node-cache/index\").Options | undefined",
+          "description": ""
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+Test run started. Output will be saved to: test_run_20250720_183534.log
+=====================================================
+Starting test with 10 iterations...
+Using provider: cloudflare
+Using model: @cf/qwen/qwen2.5-coder-32b-instruct
+--- Running Test Iteration: 1/10 ---
+-> Generating code with model: @cf/qwen/qwen2.5-coder-32b-instruct...

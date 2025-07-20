@@ -1,0 +1,11 @@
+Test run started. Output will be saved to: test_run_20250720_155358.log
+=====================================================
+Starting test with v iterations...
+Using model: codellama
+seq: invalid floating point argument: v
+
+--- Test Run Complete ---
+Total Iterations: v
+Successful Runs:  0
+Failed Runs:      0
+-------------------------

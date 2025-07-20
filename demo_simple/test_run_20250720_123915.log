@@ -1,0 +1,1121 @@
+Test run started. Output will be saved to: test_run_20250720_123915.log
+=====================================================
+Starting test with 100 iterations...
+--- Running Test Iteration: 1/100 ---
+-> Generating code with model: codellama...
+-> Running application with assertions...
+[ERROR] 'bun run start' exited with a non-zero status at iteration 1, indicating a test failure.
+--- Run Log ---
+$ bun src/index.ts
+--- Application Start ---
+UserService has been injected into UserController.
+
+--- Testing Happy Path ---
+[FAIL] Happy path test failed:  5 | export class UserController {
+ 6 |     @AutoGen
+ 7 |     public userService?: UserService;
+ 8 | 
+ 9 |     create(user: User): void {
+10 |         this.userService!.create(user);
+                               ^
+TypeError: this.userService.create is not a function. (In 'this.userService.create(user)', 'this.userService.create' is undefined)
+      at create (/Users/shiheng/project/AetherScript/demo_simple/src/user-controller.ts:10:27)
+      at main (/Users/shiheng/project/AetherScript/demo_simple/src/index.ts:22:24)
+      at main (/Users/shiheng/project/AetherScript/demo_simple/src/index.ts:6:20)
+      at /Users/shiheng/project/AetherScript/demo_simple/src/index.ts:75:1
+      at loadAndEvaluateModule (2:1)
+
+------------------------
+
+--- Testing Validation ---
+[FAIL] Test case 'Invalid name (too short)' failed:  8 | 
+ 9 |     create(user: User): void {
+10 |         this.userService!.create(user);
+11 |     }
+12 |     find(name: string): User | undefined {
+13 |         return this.userService!.findByName(name)
+                                      ^
+TypeError: this.userService.findByName is not a function. (In 'this.userService.findByName(name)', 'this.userService.findByName' is undefined)
+      at <anonymous> (/Users/shiheng/project/AetherScript/demo_simple/src/user-controller.ts:13:34)
+      at main (/Users/shiheng/project/AetherScript/demo_simple/src/index.ts:53:46)
+      at main (/Users/shiheng/project/AetherScript/demo_simple/src/index.ts:6:20)
+      at /Users/shiheng/project/AetherScript/demo_simple/src/index.ts:75:1
+      at loadAndEvaluateModule (2:1)
+
+[FAIL] Test case 'Invalid name (too long)' failed:  8 | 
+ 9 |     create(user: User): void {
+10 |         this.userService!.create(user);
+11 |     }
+12 |     find(name: string): User | undefined {
+13 |         return this.userService!.findByName(name)
+                                      ^
+TypeError: this.userService.findByName is not a function. (In 'this.userService.findByName(name)', 'this.userService.findByName' is undefined)
+      at <anonymous> (/Users/shiheng/project/AetherScript/demo_simple/src/user-controller.ts:13:34)
+      at main (/Users/shiheng/project/AetherScript/demo_simple/src/index.ts:53:46)
+      at main (/Users/shiheng/project/AetherScript/demo_simple/src/index.ts:6:20)
+      at /Users/shiheng/project/AetherScript/demo_simple/src/index.ts:75:1
+      at loadAndEvaluateModule (2:1)
+
+[FAIL] Test case 'Invalid age (negative)' failed:  8 | 
+ 9 |     create(user: User): void {
+10 |         this.userService!.create(user);
+11 |     }
+12 |     find(name: string): User | undefined {
+13 |         return this.userService!.findByName(name)
+                                      ^
+TypeError: this.userService.findByName is not a function. (In 'this.userService.findByName(name)', 'this.userService.findByName' is undefined)
+      at <anonymous> (/Users/shiheng/project/AetherScript/demo_simple/src/user-controller.ts:13:34)
+      at main (/Users/shiheng/project/AetherScript/demo_simple/src/index.ts:53:46)
+      at main (/Users/shiheng/project/AetherScript/demo_simple/src/index.ts:6:20)
+      at /Users/shiheng/project/AetherScript/demo_simple/src/index.ts:75:1
+      at loadAndEvaluateModule (2:1)
+
+[FAIL] Test case 'Invalid age (too high)' failed:  8 | 
+ 9 |     create(user: User): void {
+10 |         this.userService!.create(user);
+11 |     }
+12 |     find(name: string): User | undefined {
+13 |         return this.userService!.findByName(name)
+                                      ^
+TypeError: this.userService.findByName is not a function. (In 'this.userService.findByName(name)', 'this.userService.findByName' is undefined)
+      at <anonymous> (/Users/shiheng/project/AetherScript/demo_simple/src/user-controller.ts:13:34)
+      at main (/Users/shiheng/project/AetherScript/demo_simple/src/index.ts:53:46)
+      at main (/Users/shiheng/project/AetherScript/demo_simple/src/index.ts:6:20)
+      at /Users/shiheng/project/AetherScript/demo_simple/src/index.ts:75:1
+      at loadAndEvaluateModule (2:1)
+
+--------------------------
+
+--- Test Run Summary ---
+[FAIL] 5 test(s) failed.
+error: script "start" exited with code 1
+--------------- 
+-> Iteration 1: FAILED
+--- Running Test Iteration: 2/100 ---
+-> Generating code with model: codellama...
+-> Running application with assertions...
+[ERROR] 'bun run start' exited with a non-zero status at iteration 2, indicating a test failure.
+--- Run Log ---
+$ bun src/index.ts
+--- Application Start ---
+21 | 
+22 |     public get<K extends keyof ServiceMap>(identifier: K): ServiceMap[K] {
+23 |         if (!this.instances.has(identifier)) {
+24 |             const factory = this.factories[identifier];
+25 |             if (!factory) {
+26 |                 throw new Error('Service not found for identifier: ' + identifier);
+                           ^
+error: Service not found for identifier: UserService
+      at get (/Users/shiheng/project/AetherScript/demo_simple/src/generated/container.ts:26:23)
+      at main (/Users/shiheng/project/AetherScript/demo_simple/src/index.ts:15:44)
+      at main (/Users/shiheng/project/AetherScript/demo_simple/src/index.ts:6:20)
+      at /Users/shiheng/project/AetherScript/demo_simple/src/index.ts:75:1
+      at loadAndEvaluateModule (2:1)
+
+Bun v1.2.16 (macOS arm64)
+error: script "start" exited with code 1
+--------------- 
+-> Iteration 2: FAILED
+--- Running Test Iteration: 3/100 ---
+-> Generating code with model: codellama...
+-> Running application with assertions...
+[ERROR] 'bun run start' exited with a non-zero status at iteration 3, indicating a test failure.
+--- Run Log ---
+$ bun src/index.ts
+--- Application Start ---
+22 | 
+23 |     public get<K extends keyof ServiceMap>(identifier: K): ServiceMap[K] {
+24 |         if (!this.instances.has(identifier)) {
+25 |             const factory = this.factories[identifier];
+26 |             if (!factory) {
+27 |                 throw new Error('Service not found for identifier: ' + identifier);
+                           ^
+error: Service not found for identifier: DB
+      at get (/Users/shiheng/project/AetherScript/demo_simple/src/generated/container.ts:27:23)
+      at UserService (/Users/shiheng/project/AetherScript/demo_simple/src/generated/container.ts:17:32)
+      at get (/Users/shiheng/project/AetherScript/demo_simple/src/generated/container.ts:29:30)
+      at main (/Users/shiheng/project/AetherScript/demo_simple/src/index.ts:15:44)
+      at main (/Users/shiheng/project/AetherScript/demo_simple/src/index.ts:6:20)
+      at /Users/shiheng/project/AetherScript/demo_simple/src/index.ts:75:1
+      at loadAndEvaluateModule (2:1)
+
+Bun v1.2.16 (macOS arm64)
+error: script "start" exited with code 1
+--------------- 
+-> Iteration 3: FAILED
+--- Running Test Iteration: 4/100 ---
+-> Generating code with model: codellama...
+-> Running application with assertions...
+[ERROR] 'bun run start' exited with a non-zero status at iteration 4, indicating a test failure.
+--- Run Log ---
+$ bun src/index.ts
+1 | (function (entry, fetcher)
+              ^
+SyntaxError: Export named 'DBImpl' not found in module '/Users/shiheng/project/AetherScript/demo_simple/src/generated/db.service.impl.ts'.
+      at loadAndEvaluateModule (1:11)
+
+Bun v1.2.16 (macOS arm64)
+error: script "start" exited with code 1
+--------------- 
+-> Iteration 4: FAILED
+--- Running Test Iteration: 5/100 ---
+-> Generating code with model: codellama...
+-> Running application with assertions...
+-> Iteration 5: SUCCESS
+--- Running Test Iteration: 6/100 ---
+-> Generating code with model: codellama...
+-> Running application with assertions...
+[ERROR] 'bun run start' exited with a non-zero status at iteration 6, indicating a test failure.
+--- Run Log ---
+$ bun src/index.ts
+--- Application Start ---
+22 | 
+23 |     public get<K extends keyof ServiceMap>(identifier: K): ServiceMap[K] {
+24 |         if (!this.instances.has(identifier)) {
+25 |             const factory = this.factories[identifier];
+26 |             if (!factory) {
+27 |                 throw new Error('Service not found for identifier: ' + identifier);
+                           ^
+error: Service not found for identifier: DB
+      at get (/Users/shiheng/project/AetherScript/demo_simple/src/generated/container.ts:27:23)
+      at UserService (/Users/shiheng/project/AetherScript/demo_simple/src/generated/container.ts:17:32)
+      at get (/Users/shiheng/project/AetherScript/demo_simple/src/generated/container.ts:29:30)
+      at main (/Users/shiheng/project/AetherScript/demo_simple/src/index.ts:15:44)
+      at main (/Users/shiheng/project/AetherScript/demo_simple/src/index.ts:6:20)
+      at /Users/shiheng/project/AetherScript/demo_simple/src/index.ts:75:1
+      at loadAndEvaluateModule (2:1)
+
+Bun v1.2.16 (macOS arm64)
+error: script "start" exited with code 1
+--------------- 
+-> Iteration 6: FAILED
+--- Running Test Iteration: 7/100 ---
+-> Generating code with model: codellama...
+-> Running application with assertions...
+[ERROR] 'bun run start' exited with a non-zero status at iteration 7, indicating a test failure.
+--- Run Log ---
+$ bun src/index.ts
+--- Application Start ---
+22 | 
+23 |     public get<K extends keyof ServiceMap>(identifier: K): ServiceMap[K] {
+24 |         if (!this.instances.has(identifier)) {
+25 |             const factory = this.factories[identifier];
+26 |             if (!factory) {
+27 |                 throw new Error('Service not found for identifier: ' + identifier);
+                           ^
+error: Service not found for identifier: DB
+      at get (/Users/shiheng/project/AetherScript/demo_simple/src/generated/container.ts:27:23)
+      at UserService (/Users/shiheng/project/AetherScript/demo_simple/src/generated/container.ts:17:32)
+      at get (/Users/shiheng/project/AetherScript/demo_simple/src/generated/container.ts:29:30)
+      at main (/Users/shiheng/project/AetherScript/demo_simple/src/index.ts:15:44)
+      at main (/Users/shiheng/project/AetherScript/demo_simple/src/index.ts:6:20)
+      at /Users/shiheng/project/AetherScript/demo_simple/src/index.ts:75:1
+      at loadAndEvaluateModule (2:1)
+
+Bun v1.2.16 (macOS arm64)
+error: script "start" exited with code 1
+--------------- 
+-> Iteration 7: FAILED
+--- Running Test Iteration: 8/100 ---
+-> Generating code with model: codellama...
+-> Running application with assertions...
+-> Iteration 8: SUCCESS
+--- Running Test Iteration: 9/100 ---
+-> Generating code with model: codellama...
+-> Running application with assertions...
+[ERROR] 'bun run start' exited with a non-zero status at iteration 9, indicating a test failure.
+--- Run Log ---
+$ bun src/index.ts
+--- Application Start ---
+22 | 
+23 |     public get<K extends keyof ServiceMap>(identifier: K): ServiceMap[K] {
+24 |         if (!this.instances.has(identifier)) {
+25 |             const factory = this.factories[identifier];
+26 |             if (!factory) {
+27 |                 throw new Error('Service not found for identifier: ' + identifier);
+                           ^
+error: Service not found for identifier: DB
+      at get (/Users/shiheng/project/AetherScript/demo_simple/src/generated/container.ts:27:23)
+      at UserService (/Users/shiheng/project/AetherScript/demo_simple/src/generated/container.ts:17:32)
+      at get (/Users/shiheng/project/AetherScript/demo_simple/src/generated/container.ts:29:30)
+      at main (/Users/shiheng/project/AetherScript/demo_simple/src/index.ts:15:44)
+      at main (/Users/shiheng/project/AetherScript/demo_simple/src/index.ts:6:20)
+      at /Users/shiheng/project/AetherScript/demo_simple/src/index.ts:75:1
+      at loadAndEvaluateModule (2:1)
+
+Bun v1.2.16 (macOS arm64)
+error: script "start" exited with code 1
+--------------- 
+-> Iteration 9: FAILED
+--- Running Test Iteration: 10/100 ---
+-> Generating code with model: codellama...
+-> Running application with assertions...
+-> Iteration 10: SUCCESS
+--- Running Test Iteration: 11/100 ---
+-> Generating code with model: codellama...
+-> Running application with assertions...
+-> Iteration 11: SUCCESS
+--- Running Test Iteration: 12/100 ---
+-> Generating code with model: codellama...
+-> Running application with assertions...
+[ERROR] 'bun run start' exited with a non-zero status at iteration 12, indicating a test failure.
+--- Run Log ---
+$ bun src/index.ts
+--- Application Start ---
+UserService has been injected into UserController.
+
+--- Testing Happy Path ---
+[FAIL] Happy path test failed: AssertionError [ERR_ASSERTION]: Happy path user should be found and be equal to the created user.
+[32m+ actual[39m [31m- expected[39m
+
+[32m+[39m undefined
+[31m-[39m User {
+[31m-[39m   age: 30,
+[31m-[39m   name: 'Alice'
+[31m-[39m }
+
+    at main (/Users/shiheng/project/AetherScript/demo_simple/src/index.ts:24:16)
+    at main (/Users/shiheng/project/AetherScript/demo_simple/src/index.ts:6:20)
+    at /Users/shiheng/project/AetherScript/demo_simple/src/index.ts:75
+    at moduleEvaluation (native:1:11)
+    at moduleEvaluation (native:1:11)
+    at loadAndEvaluateModule (native:2)
+    at processTicksAndRejections (native:7:39) {
+  generatedMessage: false,
+  actual: undefined,
+  expected: [User],
+  operator: 'deepStrictEqual',
+  code: 'ERR_ASSERTION'
+}
+------------------------
+
+--- Testing Validation ---
+[SUCCESS] Test case 'Invalid name (too short)' passed.
+[SUCCESS] Test case 'Invalid name (too long)' passed.
+[SUCCESS] Test case 'Invalid age (negative)' passed.
+[SUCCESS] Test case 'Invalid age (too high)' passed.
+--------------------------
+
+--- Test Run Summary ---
+[FAIL] 1 test(s) failed.
+error: script "start" exited with code 1
+--------------- 
+-> Iteration 12: FAILED
+--- Running Test Iteration: 13/100 ---
+-> Generating code with model: codellama...
+-> Running application with assertions...
+[ERROR] 'bun run start' exited with a non-zero status at iteration 13, indicating a test failure.
+--- Run Log ---
+$ bun src/index.ts
+--- Application Start ---
+22 | 
+23 |     public get<K extends keyof ServiceMap>(identifier: K): ServiceMap[K] {
+24 |         if (!this.instances.has(identifier)) {
+25 |             const factory = this.factories[identifier];
+26 |             if (!factory) {
+27 |                 throw new Error('Service not found for identifier: ' + identifier);
+                           ^
+error: Service not found for identifier: DB
+      at get (/Users/shiheng/project/AetherScript/demo_simple/src/generated/container.ts:27:23)
+      at UserService (/Users/shiheng/project/AetherScript/demo_simple/src/generated/container.ts:17:32)
+      at get (/Users/shiheng/project/AetherScript/demo_simple/src/generated/container.ts:29:30)
+      at main (/Users/shiheng/project/AetherScript/demo_simple/src/index.ts:15:44)
+      at main (/Users/shiheng/project/AetherScript/demo_simple/src/index.ts:6:20)
+      at /Users/shiheng/project/AetherScript/demo_simple/src/index.ts:75:1
+      at loadAndEvaluateModule (2:1)
+
+Bun v1.2.16 (macOS arm64)
+error: script "start" exited with code 1
+--------------- 
+-> Iteration 13: FAILED
+--- Running Test Iteration: 14/100 ---
+-> Generating code with model: codellama...
+-> Running application with assertions...
+[ERROR] 'bun run start' exited with a non-zero status at iteration 14, indicating a test failure.
+--- Run Log ---
+$ bun src/index.ts
+--- Application Start ---
+21 | 
+22 |     public get<K extends keyof ServiceMap>(identifier: K): ServiceMap[K] {
+23 |         if (!this.instances.has(identifier)) {
+24 |             const factory = this.factories[identifier];
+25 |             if (!factory) {
+26 |                 throw new Error('Service not found for identifier: ' + identifier);
+                           ^
+error: Service not found for identifier: UserService
+      at get (/Users/shiheng/project/AetherScript/demo_simple/src/generated/container.ts:26:23)
+      at main (/Users/shiheng/project/AetherScript/demo_simple/src/index.ts:15:44)
+      at main (/Users/shiheng/project/AetherScript/demo_simple/src/index.ts:6:20)
+      at /Users/shiheng/project/AetherScript/demo_simple/src/index.ts:75:1
+      at loadAndEvaluateModule (2:1)
+
+Bun v1.2.16 (macOS arm64)
+error: script "start" exited with code 1
+--------------- 
+-> Iteration 14: FAILED
+--- Running Test Iteration: 15/100 ---
+-> Generating code with model: codellama...
+-> Running application with assertions...
+[ERROR] 'bun run start' exited with a non-zero status at iteration 15, indicating a test failure.
+--- Run Log ---
+$ bun src/index.ts
+1 | (function (entry, fetcher)
+              ^
+SyntaxError: Export named 'DBImpl' not found in module '/Users/shiheng/project/AetherScript/demo_simple/src/generated/db.service.impl.ts'. Did you mean to import default?
+      at loadAndEvaluateModule (1:11)
+
+Bun v1.2.16 (macOS arm64)
+error: script "start" exited with code 1
+--------------- 
+-> Iteration 15: FAILED
+--- Running Test Iteration: 16/100 ---
+-> Generating code with model: codellama...
+-> Running application with assertions...
+[ERROR] 'bun run start' exited with a non-zero status at iteration 16, indicating a test failure.
+--- Run Log ---
+$ bun src/index.ts
+--- Application Start ---
+22 | 
+23 |     public get<K extends keyof ServiceMap>(identifier: K): ServiceMap[K] {
+24 |         if (!this.instances.has(identifier)) {
+25 |             const factory = this.factories[identifier];
+26 |             if (!factory) {
+27 |                 throw new Error('Service not found for identifier: ' + identifier);
+                           ^
+error: Service not found for identifier: DB
+      at get (/Users/shiheng/project/AetherScript/demo_simple/src/generated/container.ts:27:23)
+      at UserService (/Users/shiheng/project/AetherScript/demo_simple/src/generated/container.ts:17:32)
+      at get (/Users/shiheng/project/AetherScript/demo_simple/src/generated/container.ts:29:30)
+      at main (/Users/shiheng/project/AetherScript/demo_simple/src/index.ts:15:44)
+      at main (/Users/shiheng/project/AetherScript/demo_simple/src/index.ts:6:20)
+      at /Users/shiheng/project/AetherScript/demo_simple/src/index.ts:75:1
+      at loadAndEvaluateModule (2:1)
+
+Bun v1.2.16 (macOS arm64)
+error: script "start" exited with code 1
+--------------- 
+-> Iteration 16: FAILED
+--- Running Test Iteration: 17/100 ---
+-> Generating code with model: codellama...
+-> Running application with assertions...
+[ERROR] 'bun run start' exited with a non-zero status at iteration 17, indicating a test failure.
+--- Run Log ---
+$ bun src/index.ts
+--- Application Start ---
+22 | 
+23 |     public get<K extends keyof ServiceMap>(identifier: K): ServiceMap[K] {
+24 |         if (!this.instances.has(identifier)) {
+25 |             const factory = this.factories[identifier];
+26 |             if (!factory) {
+27 |                 throw new Error('Service not found for identifier: ' + identifier);
+                           ^
+error: Service not found for identifier: DB
+      at get (/Users/shiheng/project/AetherScript/demo_simple/src/generated/container.ts:27:23)
+      at UserService (/Users/shiheng/project/AetherScript/demo_simple/src/generated/container.ts:17:32)
+      at get (/Users/shiheng/project/AetherScript/demo_simple/src/generated/container.ts:29:30)
+      at main (/Users/shiheng/project/AetherScript/demo_simple/src/index.ts:15:44)
+      at main (/Users/shiheng/project/AetherScript/demo_simple/src/index.ts:6:20)
+      at /Users/shiheng/project/AetherScript/demo_simple/src/index.ts:75:1
+      at loadAndEvaluateModule (2:1)
+
+Bun v1.2.16 (macOS arm64)
+error: script "start" exited with code 1
+--------------- 
+-> Iteration 17: FAILED
+--- Running Test Iteration: 18/100 ---
+-> Generating code with model: codellama...
+-> Running application with assertions...
+[ERROR] 'bun run start' exited with a non-zero status at iteration 18, indicating a test failure.
+--- Run Log ---
+$ bun src/index.ts
+--- Application Start ---
+21 | 
+22 |     public get<K extends keyof ServiceMap>(identifier: K): ServiceMap[K] {
+23 |         if (!this.instances.has(identifier)) {
+24 |             const factory = this.factories[identifier];
+25 |             if (!factory) {
+26 |                 throw new Error('Service not found for identifier: ' + identifier);
+                           ^
+error: Service not found for identifier: UserService
+      at get (/Users/shiheng/project/AetherScript/demo_simple/src/generated/container.ts:26:23)
+      at main (/Users/shiheng/project/AetherScript/demo_simple/src/index.ts:15:44)
+      at main (/Users/shiheng/project/AetherScript/demo_simple/src/index.ts:6:20)
+      at /Users/shiheng/project/AetherScript/demo_simple/src/index.ts:75:1
+      at loadAndEvaluateModule (2:1)
+
+Bun v1.2.16 (macOS arm64)
+error: script "start" exited with code 1
+--------------- 
+-> Iteration 18: FAILED
+--- Running Test Iteration: 19/100 ---
+-> Generating code with model: codellama...
+-> Running application with assertions...
+-> Iteration 19: SUCCESS
+--- Running Test Iteration: 20/100 ---
+-> Generating code with model: codellama...
+-> Running application with assertions...
+[ERROR] 'bun run start' exited with a non-zero status at iteration 20, indicating a test failure.
+--- Run Log ---
+$ bun src/index.ts
+--- Application Start ---
+22 | 
+23 |     public get<K extends keyof ServiceMap>(identifier: K): ServiceMap[K] {
+24 |         if (!this.instances.has(identifier)) {
+25 |             const factory = this.factories[identifier];
+26 |             if (!factory) {
+27 |                 throw new Error('Service not found for identifier: ' + identifier);
+                           ^
+error: Service not found for identifier: DB
+      at get (/Users/shiheng/project/AetherScript/demo_simple/src/generated/container.ts:27:23)
+      at UserService (/Users/shiheng/project/AetherScript/demo_simple/src/generated/container.ts:17:32)
+      at get (/Users/shiheng/project/AetherScript/demo_simple/src/generated/container.ts:29:30)
+      at main (/Users/shiheng/project/AetherScript/demo_simple/src/index.ts:15:44)
+      at main (/Users/shiheng/project/AetherScript/demo_simple/src/index.ts:6:20)
+      at /Users/shiheng/project/AetherScript/demo_simple/src/index.ts:75:1
+      at loadAndEvaluateModule (2:1)
+
+Bun v1.2.16 (macOS arm64)
+error: script "start" exited with code 1
+--------------- 
+-> Iteration 20: FAILED
+--- Running Test Iteration: 21/100 ---
+-> Generating code with model: codellama...
+-> Running application with assertions...
+[ERROR] 'bun run start' exited with a non-zero status at iteration 21, indicating a test failure.
+--- Run Log ---
+$ bun src/index.ts
+--- Application Start ---
+22 | 
+23 |     public get<K extends keyof ServiceMap>(identifier: K): ServiceMap[K] {
+24 |         if (!this.instances.has(identifier)) {
+25 |             const factory = this.factories[identifier];
+26 |             if (!factory) {
+27 |                 throw new Error('Service not found for identifier: ' + identifier);
+                           ^
+error: Service not found for identifier: DB
+      at get (/Users/shiheng/project/AetherScript/demo_simple/src/generated/container.ts:27:23)
+      at UserService (/Users/shiheng/project/AetherScript/demo_simple/src/generated/container.ts:17:32)
+      at get (/Users/shiheng/project/AetherScript/demo_simple/src/generated/container.ts:29:30)
+      at main (/Users/shiheng/project/AetherScript/demo_simple/src/index.ts:15:44)
+      at main (/Users/shiheng/project/AetherScript/demo_simple/src/index.ts:6:20)
+      at /Users/shiheng/project/AetherScript/demo_simple/src/index.ts:75:1
+      at loadAndEvaluateModule (2:1)
+
+Bun v1.2.16 (macOS arm64)
+error: script "start" exited with code 1
+--------------- 
+-> Iteration 21: FAILED
+--- Running Test Iteration: 22/100 ---
+-> Generating code with model: codellama...
+-> Running application with assertions...
+[ERROR] 'bun run start' exited with a non-zero status at iteration 22, indicating a test failure.
+--- Run Log ---
+$ bun src/index.ts
+--- Application Start ---
+22 | 
+23 |     public get<K extends keyof ServiceMap>(identifier: K): ServiceMap[K] {
+24 |         if (!this.instances.has(identifier)) {
+25 |             const factory = this.factories[identifier];
+26 |             if (!factory) {
+27 |                 throw new Error('Service not found for identifier: ' + identifier);
+                           ^
+error: Service not found for identifier: DB
+      at get (/Users/shiheng/project/AetherScript/demo_simple/src/generated/container.ts:27:23)
+      at UserService (/Users/shiheng/project/AetherScript/demo_simple/src/generated/container.ts:17:32)
+      at get (/Users/shiheng/project/AetherScript/demo_simple/src/generated/container.ts:29:30)
+      at main (/Users/shiheng/project/AetherScript/demo_simple/src/index.ts:15:44)
+      at main (/Users/shiheng/project/AetherScript/demo_simple/src/index.ts:6:20)
+      at /Users/shiheng/project/AetherScript/demo_simple/src/index.ts:75:1
+      at loadAndEvaluateModule (2:1)
+
+Bun v1.2.16 (macOS arm64)
+error: script "start" exited with code 1
+--------------- 
+-> Iteration 22: FAILED
+--- Running Test Iteration: 23/100 ---
+-> Generating code with model: codellama...
+-> Running application with assertions...
+[ERROR] 'bun run start' exited with a non-zero status at iteration 23, indicating a test failure.
+--- Run Log ---
+$ bun src/index.ts
+--- Application Start ---
+22 | 
+23 |     public get<K extends keyof ServiceMap>(identifier: K): ServiceMap[K] {
+24 |         if (!this.instances.has(identifier)) {
+25 |             const factory = this.factories[identifier];
+26 |             if (!factory) {
+27 |                 throw new Error('Service not found for identifier: ' + identifier);
+                           ^
+error: Service not found for identifier: DB
+      at get (/Users/shiheng/project/AetherScript/demo_simple/src/generated/container.ts:27:23)
+      at UserService (/Users/shiheng/project/AetherScript/demo_simple/src/generated/container.ts:17:32)
+      at get (/Users/shiheng/project/AetherScript/demo_simple/src/generated/container.ts:29:30)
+      at main (/Users/shiheng/project/AetherScript/demo_simple/src/index.ts:15:44)
+      at main (/Users/shiheng/project/AetherScript/demo_simple/src/index.ts:6:20)
+      at /Users/shiheng/project/AetherScript/demo_simple/src/index.ts:75:1
+      at loadAndEvaluateModule (2:1)
+
+Bun v1.2.16 (macOS arm64)
+error: script "start" exited with code 1
+--------------- 
+-> Iteration 23: FAILED
+--- Running Test Iteration: 24/100 ---
+-> Generating code with model: codellama...
+-> Running application with assertions...
+[ERROR] 'bun run start' exited with a non-zero status at iteration 24, indicating a test failure.
+--- Run Log ---
+$ bun src/index.ts
+--- Application Start ---
+21 | 
+22 |     public get<K extends keyof ServiceMap>(identifier: K): ServiceMap[K] {
+23 |         if (!this.instances.has(identifier)) {
+24 |             const factory = this.factories[identifier];
+25 |             if (!factory) {
+26 |                 throw new Error('Service not found for identifier: ' + identifier);
+                           ^
+error: Service not found for identifier: UserService
+      at get (/Users/shiheng/project/AetherScript/demo_simple/src/generated/container.ts:26:23)
+      at main (/Users/shiheng/project/AetherScript/demo_simple/src/index.ts:15:44)
+      at main (/Users/shiheng/project/AetherScript/demo_simple/src/index.ts:6:20)
+      at /Users/shiheng/project/AetherScript/demo_simple/src/index.ts:75:1
+      at loadAndEvaluateModule (2:1)
+
+Bun v1.2.16 (macOS arm64)
+error: script "start" exited with code 1
+--------------- 
+-> Iteration 24: FAILED
+--- Running Test Iteration: 25/100 ---
+-> Generating code with model: codellama...
+-> Running application with assertions...
+-> Iteration 25: SUCCESS
+--- Running Test Iteration: 26/100 ---
+-> Generating code with model: codellama...
+-> Running application with assertions...
+-> Iteration 26: SUCCESS
+--- Running Test Iteration: 27/100 ---
+-> Generating code with model: codellama...
+-> Running application with assertions...
+-> Iteration 27: SUCCESS
+--- Running Test Iteration: 28/100 ---
+-> Generating code with model: codellama...
+-> Running application with assertions...
+[ERROR] 'bun run start' exited with a non-zero status at iteration 28, indicating a test failure.
+--- Run Log ---
+$ bun src/index.ts
+--- Application Start ---
+22 | 
+23 |     public get<K extends keyof ServiceMap>(identifier: K): ServiceMap[K] {
+24 |         if (!this.instances.has(identifier)) {
+25 |             const factory = this.factories[identifier];
+26 |             if (!factory) {
+27 |                 throw new Error('Service not found for identifier: ' + identifier);
+                           ^
+error: Service not found for identifier: DB
+      at get (/Users/shiheng/project/AetherScript/demo_simple/src/generated/container.ts:27:23)
+      at UserService (/Users/shiheng/project/AetherScript/demo_simple/src/generated/container.ts:17:32)
+      at get (/Users/shiheng/project/AetherScript/demo_simple/src/generated/container.ts:29:30)
+      at main (/Users/shiheng/project/AetherScript/demo_simple/src/index.ts:15:44)
+      at main (/Users/shiheng/project/AetherScript/demo_simple/src/index.ts:6:20)
+      at /Users/shiheng/project/AetherScript/demo_simple/src/index.ts:75:1
+      at loadAndEvaluateModule (2:1)
+
+Bun v1.2.16 (macOS arm64)
+error: script "start" exited with code 1
+--------------- 
+-> Iteration 28: FAILED
+--- Running Test Iteration: 29/100 ---
+-> Generating code with model: codellama...
+-> Running application with assertions...
+[ERROR] 'bun run start' exited with a non-zero status at iteration 29, indicating a test failure.
+--- Run Log ---
+$ bun src/index.ts
+--- Application Start ---
+UserService has been injected into UserController.
+
+--- Testing Happy Path ---
+[FAIL] Happy path test failed: AssertionError [ERR_ASSERTION]: Happy path user should be found and be equal to the created user.
+[32m+ actual[39m [31m- expected[39m
+
+[32m+[39m undefined
+[31m-[39m User {
+[31m-[39m   age: 30,
+[31m-[39m   name: 'Alice'
+[31m-[39m }
+
+    at main (/Users/shiheng/project/AetherScript/demo_simple/src/index.ts:24:16)
+    at main (/Users/shiheng/project/AetherScript/demo_simple/src/index.ts:6:20)
+    at /Users/shiheng/project/AetherScript/demo_simple/src/index.ts:75
+    at moduleEvaluation (native:1:11)
+    at moduleEvaluation (native:1:11)
+    at loadAndEvaluateModule (native:2)
+    at processTicksAndRejections (native:7:39) {
+  generatedMessage: false,
+  actual: undefined,
+  expected: [User],
+  operator: 'deepStrictEqual',
+  code: 'ERR_ASSERTION'
+}
+------------------------
+
+--- Testing Validation ---
+[SUCCESS] Test case 'Invalid name (too short)' passed.
+[SUCCESS] Test case 'Invalid name (too long)' passed.
+[SUCCESS] Test case 'Invalid age (negative)' passed.
+[SUCCESS] Test case 'Invalid age (too high)' passed.
+--------------------------
+
+--- Test Run Summary ---
+[FAIL] 1 test(s) failed.
+error: script "start" exited with code 1
+--------------- 
+-> Iteration 29: FAILED
+--- Running Test Iteration: 30/100 ---
+-> Generating code with model: codellama...
+-> Running application with assertions...
+[ERROR] 'bun run start' exited with a non-zero status at iteration 30, indicating a test failure.
+--- Run Log ---
+$ bun src/index.ts
+--- Application Start ---
+22 | 
+23 |     public get<K extends keyof ServiceMap>(identifier: K): ServiceMap[K] {
+24 |         if (!this.instances.has(identifier)) {
+25 |             const factory = this.factories[identifier];
+26 |             if (!factory) {
+27 |                 throw new Error('Service not found for identifier: ' + identifier);
+                           ^
+error: Service not found for identifier: DB
+      at get (/Users/shiheng/project/AetherScript/demo_simple/src/generated/container.ts:27:23)
+      at UserService (/Users/shiheng/project/AetherScript/demo_simple/src/generated/container.ts:17:32)
+      at get (/Users/shiheng/project/AetherScript/demo_simple/src/generated/container.ts:29:30)
+      at main (/Users/shiheng/project/AetherScript/demo_simple/src/index.ts:15:44)
+      at main (/Users/shiheng/project/AetherScript/demo_simple/src/index.ts:6:20)
+      at /Users/shiheng/project/AetherScript/demo_simple/src/index.ts:75:1
+      at loadAndEvaluateModule (2:1)
+
+Bun v1.2.16 (macOS arm64)
+error: script "start" exited with code 1
+--------------- 
+-> Iteration 30: FAILED
+--- Running Test Iteration: 31/100 ---
+-> Generating code with model: codellama...
+-> Running application with assertions...
+[ERROR] 'bun run start' exited with a non-zero status at iteration 31, indicating a test failure.
+--- Run Log ---
+$ bun src/index.ts
+--- Application Start ---
+UserService has been injected into UserController.
+
+--- Testing Happy Path ---
+[FAIL] Happy path test failed: AssertionError [ERR_ASSERTION]: Happy path user should be found and be equal to the created user.
+[32m+ actual[39m [31m- expected[39m
+
+[32m+[39m undefined
+[31m-[39m User {
+[31m-[39m   age: 30,
+[31m-[39m   name: 'Alice'
+[31m-[39m }
+
+    at main (/Users/shiheng/project/AetherScript/demo_simple/src/index.ts:24:16)
+    at main (/Users/shiheng/project/AetherScript/demo_simple/src/index.ts:6:20)
+    at /Users/shiheng/project/AetherScript/demo_simple/src/index.ts:75
+    at moduleEvaluation (native:1:11)
+    at moduleEvaluation (native:1:11)
+    at loadAndEvaluateModule (native:2)
+    at processTicksAndRejections (native:7:39) {
+  generatedMessage: false,
+  actual: undefined,
+  expected: [User],
+  operator: 'deepStrictEqual',
+  code: 'ERR_ASSERTION'
+}
+------------------------
+
+--- Testing Validation ---
+[SUCCESS] Test case 'Invalid name (too short)' passed.
+[SUCCESS] Test case 'Invalid name (too long)' passed.
+[SUCCESS] Test case 'Invalid age (negative)' passed.
+[SUCCESS] Test case 'Invalid age (too high)' passed.
+--------------------------
+
+--- Test Run Summary ---
+[FAIL] 1 test(s) failed.
+error: script "start" exited with code 1
+--------------- 
+-> Iteration 31: FAILED
+--- Running Test Iteration: 32/100 ---
+-> Generating code with model: codellama...
+-> Running application with assertions...
+[ERROR] 'bun run start' exited with a non-zero status at iteration 32, indicating a test failure.
+--- Run Log ---
+$ bun src/index.ts
+--- Application Start ---
+22 | 
+23 |     public get<K extends keyof ServiceMap>(identifier: K): ServiceMap[K] {
+24 |         if (!this.instances.has(identifier)) {
+25 |             const factory = this.factories[identifier];
+26 |             if (!factory) {
+27 |                 throw new Error('Service not found for identifier: ' + identifier);
+                           ^
+error: Service not found for identifier: DB
+      at get (/Users/shiheng/project/AetherScript/demo_simple/src/generated/container.ts:27:23)
+      at UserService (/Users/shiheng/project/AetherScript/demo_simple/src/generated/container.ts:17:32)
+      at get (/Users/shiheng/project/AetherScript/demo_simple/src/generated/container.ts:29:30)
+      at main (/Users/shiheng/project/AetherScript/demo_simple/src/index.ts:15:44)
+      at main (/Users/shiheng/project/AetherScript/demo_simple/src/index.ts:6:20)
+      at /Users/shiheng/project/AetherScript/demo_simple/src/index.ts:75:1
+      at loadAndEvaluateModule (2:1)
+
+Bun v1.2.16 (macOS arm64)
+error: script "start" exited with code 1
+--------------- 
+-> Iteration 32: FAILED
+--- Running Test Iteration: 33/100 ---
+-> Generating code with model: codellama...
+-> Running application with assertions...
+[ERROR] 'bun run start' exited with a non-zero status at iteration 33, indicating a test failure.
+--- Run Log ---
+$ bun src/index.ts
+--- Application Start ---
+21 | 
+22 |     public get<K extends keyof ServiceMap>(identifier: K): ServiceMap[K] {
+23 |         if (!this.instances.has(identifier)) {
+24 |             const factory = this.factories[identifier];
+25 |             if (!factory) {
+26 |                 throw new Error('Service not found for identifier: ' + identifier);
+                           ^
+error: Service not found for identifier: UserService
+      at get (/Users/shiheng/project/AetherScript/demo_simple/src/generated/container.ts:26:23)
+      at main (/Users/shiheng/project/AetherScript/demo_simple/src/index.ts:15:44)
+      at main (/Users/shiheng/project/AetherScript/demo_simple/src/index.ts:6:20)
+      at /Users/shiheng/project/AetherScript/demo_simple/src/index.ts:75:1
+      at loadAndEvaluateModule (2:1)
+
+Bun v1.2.16 (macOS arm64)
+error: script "start" exited with code 1
+--------------- 
+-> Iteration 33: FAILED
+--- Running Test Iteration: 34/100 ---
+-> Generating code with model: codellama...
+-> Running application with assertions...
+[ERROR] 'bun run start' exited with a non-zero status at iteration 34, indicating a test failure.
+--- Run Log ---
+$ bun src/index.ts
+--- Application Start ---
+22 | 
+23 |     public get<K extends keyof ServiceMap>(identifier: K): ServiceMap[K] {
+24 |         if (!this.instances.has(identifier)) {
+25 |             const factory = this.factories[identifier];
+26 |             if (!factory) {
+27 |                 throw new Error('Service not found for identifier: ' + identifier);
+                           ^
+error: Service not found for identifier: DB
+      at get (/Users/shiheng/project/AetherScript/demo_simple/src/generated/container.ts:27:23)
+      at UserService (/Users/shiheng/project/AetherScript/demo_simple/src/generated/container.ts:17:32)
+      at get (/Users/shiheng/project/AetherScript/demo_simple/src/generated/container.ts:29:30)
+      at main (/Users/shiheng/project/AetherScript/demo_simple/src/index.ts:15:44)
+      at main (/Users/shiheng/project/AetherScript/demo_simple/src/index.ts:6:20)
+      at /Users/shiheng/project/AetherScript/demo_simple/src/index.ts:75:1
+      at loadAndEvaluateModule (2:1)
+
+Bun v1.2.16 (macOS arm64)
+error: script "start" exited with code 1
+--------------- 
+-> Iteration 34: FAILED
+--- Running Test Iteration: 35/100 ---
+-> Generating code with model: codellama...
+-> Running application with assertions...
+[ERROR] 'bun run start' exited with a non-zero status at iteration 35, indicating a test failure.
+--- Run Log ---
+$ bun src/index.ts
+--- Application Start ---
+21 | 
+22 |     public get<K extends keyof ServiceMap>(identifier: K): ServiceMap[K] {
+23 |         if (!this.instances.has(identifier)) {
+24 |             const factory = this.factories[identifier];
+25 |             if (!factory) {
+26 |                 throw new Error('Service not found for identifier: ' + identifier);
+                           ^
+error: Service not found for identifier: UserService
+      at get (/Users/shiheng/project/AetherScript/demo_simple/src/generated/container.ts:26:23)
+      at main (/Users/shiheng/project/AetherScript/demo_simple/src/index.ts:15:44)
+      at main (/Users/shiheng/project/AetherScript/demo_simple/src/index.ts:6:20)
+      at /Users/shiheng/project/AetherScript/demo_simple/src/index.ts:75:1
+      at loadAndEvaluateModule (2:1)
+
+Bun v1.2.16 (macOS arm64)
+error: script "start" exited with code 1
+--------------- 
+-> Iteration 35: FAILED
+--- Running Test Iteration: 36/100 ---
+-> Generating code with model: codellama...
+-> Running application with assertions...
+[ERROR] 'bun run start' exited with a non-zero status at iteration 36, indicating a test failure.
+--- Run Log ---
+$ bun src/index.ts
+--- Application Start ---
+21 | 
+22 |     public get<K extends keyof ServiceMap>(identifier: K): ServiceMap[K] {
+23 |         if (!this.instances.has(identifier)) {
+24 |             const factory = this.factories[identifier];
+25 |             if (!factory) {
+26 |                 throw new Error('Service not found for identifier: ' + identifier);
+                           ^
+error: Service not found for identifier: UserService
+      at get (/Users/shiheng/project/AetherScript/demo_simple/src/generated/container.ts:26:23)
+      at main (/Users/shiheng/project/AetherScript/demo_simple/src/index.ts:15:44)
+      at main (/Users/shiheng/project/AetherScript/demo_simple/src/index.ts:6:20)
+      at /Users/shiheng/project/AetherScript/demo_simple/src/index.ts:75:1
+      at loadAndEvaluateModule (2:1)
+
+Bun v1.2.16 (macOS arm64)
+error: script "start" exited with code 1
+--------------- 
+-> Iteration 36: FAILED
+--- Running Test Iteration: 37/100 ---
+-> Generating code with model: codellama...
+-> Running application with assertions...
+[ERROR] 'bun run start' exited with a non-zero status at iteration 37, indicating a test failure.
+--- Run Log ---
+$ bun src/index.ts
+error: Cannot find module './generated/container' from '/Users/shiheng/project/AetherScript/demo_simple/src/index.ts'
+
+Bun v1.2.16 (macOS arm64)
+error: script "start" exited with code 1
+--------------- 
+-> Iteration 37: FAILED
+--- Running Test Iteration: 38/100 ---
+-> Generating code with model: codellama...
+-> Running application with assertions...
+[ERROR] 'bun run start' exited with a non-zero status at iteration 38, indicating a test failure.
+--- Run Log ---
+$ bun src/index.ts
+--- Application Start ---
+21 | 
+22 |     public get<K extends keyof ServiceMap>(identifier: K): ServiceMap[K] {
+23 |         if (!this.instances.has(identifier)) {
+24 |             const factory = this.factories[identifier];
+25 |             if (!factory) {
+26 |                 throw new Error('Service not found for identifier: ' + identifier);
+                           ^
+error: Service not found for identifier: UserService
+      at get (/Users/shiheng/project/AetherScript/demo_simple/src/generated/container.ts:26:23)
+      at main (/Users/shiheng/project/AetherScript/demo_simple/src/index.ts:15:44)
+      at main (/Users/shiheng/project/AetherScript/demo_simple/src/index.ts:6:20)
+      at /Users/shiheng/project/AetherScript/demo_simple/src/index.ts:75:1
+      at loadAndEvaluateModule (2:1)
+
+Bun v1.2.16 (macOS arm64)
+error: script "start" exited with code 1
+--------------- 
+-> Iteration 38: FAILED
+--- Running Test Iteration: 39/100 ---
+-> Generating code with model: codellama...
+-> Running application with assertions...
+-> Iteration 39: SUCCESS
+--- Running Test Iteration: 40/100 ---
+-> Generating code with model: codellama...
+-> Running application with assertions...
+[ERROR] 'bun run start' exited with a non-zero status at iteration 40, indicating a test failure.
+--- Run Log ---
+$ bun src/index.ts
+--- Application Start ---
+UserService has been injected into UserController.
+
+--- Testing Happy Path ---
+[FAIL] Happy path test failed: AssertionError [ERR_ASSERTION]: Happy path user should be found and be equal to the created user.
+[32m+ actual[39m [31m- expected[39m
+
+[32m+[39m undefined
+[31m-[39m User {
+[31m-[39m   age: 30,
+[31m-[39m   name: 'Alice'
+[31m-[39m }
+
+    at main (/Users/shiheng/project/AetherScript/demo_simple/src/index.ts:24:16)
+    at main (/Users/shiheng/project/AetherScript/demo_simple/src/index.ts:6:20)
+    at /Users/shiheng/project/AetherScript/demo_simple/src/index.ts:75
+    at moduleEvaluation (native:1:11)
+    at moduleEvaluation (native:1:11)
+    at loadAndEvaluateModule (native:2)
+    at processTicksAndRejections (native:7:39) {
+  generatedMessage: false,
+  actual: undefined,
+  expected: [User],
+  operator: 'deepStrictEqual',
+  code: 'ERR_ASSERTION'
+}
+------------------------
+
+--- Testing Validation ---
+[SUCCESS] Test case 'Invalid name (too short)' passed.
+[SUCCESS] Test case 'Invalid name (too long)' passed.
+[SUCCESS] Test case 'Invalid age (negative)' passed.
+[SUCCESS] Test case 'Invalid age (too high)' passed.
+--------------------------
+
+--- Test Run Summary ---
+[FAIL] 1 test(s) failed.
+error: script "start" exited with code 1
+--------------- 
+-> Iteration 40: FAILED
+--- Running Test Iteration: 41/100 ---
+-> Generating code with model: codellama...
+-> Running application with assertions...
+[ERROR] 'bun run start' exited with a non-zero status at iteration 41, indicating a test failure.
+--- Run Log ---
+$ bun src/index.ts
+--- Application Start ---
+22 | 
+23 |     public get<K extends keyof ServiceMap>(identifier: K): ServiceMap[K] {
+24 |         if (!this.instances.has(identifier)) {
+25 |             const factory = this.factories[identifier];
+26 |             if (!factory) {
+27 |                 throw new Error('Service not found for identifier: ' + identifier);
+                           ^
+error: Service not found for identifier: DB
+      at get (/Users/shiheng/project/AetherScript/demo_simple/src/generated/container.ts:27:23)
+      at UserService (/Users/shiheng/project/AetherScript/demo_simple/src/generated/container.ts:17:32)
+      at get (/Users/shiheng/project/AetherScript/demo_simple/src/generated/container.ts:29:30)
+      at main (/Users/shiheng/project/AetherScript/demo_simple/src/index.ts:15:44)
+      at main (/Users/shiheng/project/AetherScript/demo_simple/src/index.ts:6:20)
+      at /Users/shiheng/project/AetherScript/demo_simple/src/index.ts:75:1
+      at loadAndEvaluateModule (2:1)
+
+Bun v1.2.16 (macOS arm64)
+error: script "start" exited with code 1
+--------------- 
+-> Iteration 41: FAILED
+--- Running Test Iteration: 42/100 ---
+-> Generating code with model: codellama...
+-> Running application with assertions...
+[ERROR] 'bun run start' exited with a non-zero status at iteration 42, indicating a test failure.
+--- Run Log ---
+$ bun src/index.ts
+--- Application Start ---
+22 | 
+23 |     public get<K extends keyof ServiceMap>(identifier: K): ServiceMap[K] {
+24 |         if (!this.instances.has(identifier)) {
+25 |             const factory = this.factories[identifier];
+26 |             if (!factory) {
+27 |                 throw new Error('Service not found for identifier: ' + identifier);
+                           ^
+error: Service not found for identifier: DB
+      at get (/Users/shiheng/project/AetherScript/demo_simple/src/generated/container.ts:27:23)
+      at UserService (/Users/shiheng/project/AetherScript/demo_simple/src/generated/container.ts:17:32)
+      at get (/Users/shiheng/project/AetherScript/demo_simple/src/generated/container.ts:29:30)
+      at main (/Users/shiheng/project/AetherScript/demo_simple/src/index.ts:15:44)
+      at main (/Users/shiheng/project/AetherScript/demo_simple/src/index.ts:6:20)
+      at /Users/shiheng/project/AetherScript/demo_simple/src/index.ts:75:1
+      at loadAndEvaluateModule (2:1)
+
+Bun v1.2.16 (macOS arm64)
+error: script "start" exited with code 1
+--------------- 
+-> Iteration 42: FAILED
+--- Running Test Iteration: 43/100 ---
+-> Generating code with model: codellama...
+-> Running application with assertions...
+-> Iteration 43: SUCCESS
+--- Running Test Iteration: 44/100 ---
+-> Generating code with model: codellama...
+-> Running application with assertions...
+[ERROR] 'bun run start' exited with a non-zero status at iteration 44, indicating a test failure.
+--- Run Log ---
+$ bun src/index.ts
+error: Cannot find module './generated/container' from '/Users/shiheng/project/AetherScript/demo_simple/src/index.ts'
+
+Bun v1.2.16 (macOS arm64)
+error: script "start" exited with code 1
+--------------- 
+-> Iteration 44: FAILED
+--- Running Test Iteration: 45/100 ---
+-> Generating code with model: codellama...
+-> Running application with assertions...
+[ERROR] 'bun run start' exited with a non-zero status at iteration 45, indicating a test failure.
+--- Run Log ---
+$ bun src/index.ts
+error: Cannot find module './generated/container' from '/Users/shiheng/project/AetherScript/demo_simple/src/index.ts'
+
+Bun v1.2.16 (macOS arm64)
+error: script "start" exited with code 1
+--------------- 
+-> Iteration 45: FAILED
+--- Running Test Iteration: 46/100 ---
+-> Generating code with model: codellama...
+-> Running application with assertions...
+[ERROR] 'bun run start' exited with a non-zero status at iteration 46, indicating a test failure.
+--- Run Log ---
+$ bun src/index.ts
+--- Application Start ---
+21 | 
+22 |     public get<K extends keyof ServiceMap>(identifier: K): ServiceMap[K] {
+23 |         if (!this.instances.has(identifier)) {
+24 |             const factory = this.factories[identifier];
+25 |             if (!factory) {
+26 |                 throw new Error('Service not found for identifier: ' + identifier);
+                           ^
+error: Service not found for identifier: UserService
+      at get (/Users/shiheng/project/AetherScript/demo_simple/src/generated/container.ts:26:23)
+      at main (/Users/shiheng/project/AetherScript/demo_simple/src/index.ts:15:44)
+      at main (/Users/shiheng/project/AetherScript/demo_simple/src/index.ts:6:20)
+      at /Users/shiheng/project/AetherScript/demo_simple/src/index.ts:75:1
+      at loadAndEvaluateModule (2:1)
+
+Bun v1.2.16 (macOS arm64)
+error: script "start" exited with code 1
+--------------- 
+-> Iteration 46: FAILED
+--- Running Test Iteration: 47/100 ---
+-> Generating code with model: codellama...
+-> Running application with assertions...
+[ERROR] 'bun run start' exited with a non-zero status at iteration 47, indicating a test failure.
+--- Run Log ---
+$ bun src/index.ts
+--- Application Start ---
+21 | 
+22 |     public get<K extends keyof ServiceMap>(identifier: K): ServiceMap[K] {
+23 |         if (!this.instances.has(identifier)) {
+24 |             const factory = this.factories[identifier];
+25 |             if (!factory) {
+26 |                 throw new Error('Service not found for identifier: ' + identifier);
+                           ^
+error: Service not found for identifier: UserService
+      at get (/Users/shiheng/project/AetherScript/demo_simple/src/generated/container.ts:26:23)
+      at main (/Users/shiheng/project/AetherScript/demo_simple/src/index.ts:15:44)
+      at main (/Users/shiheng/project/AetherScript/demo_simple/src/index.ts:6:20)
+      at /Users/shiheng/project/AetherScript/demo_simple/src/index.ts:75:1
+      at loadAndEvaluateModule (2:1)
+
+Bun v1.2.16 (macOS arm64)
+error: script "start" exited with code 1
+--------------- 
+-> Iteration 47: FAILED
+--- Running Test Iteration: 48/100 ---
+-> Generating code with model: codellama...
+-> Running application with assertions...
+[ERROR] 'bun run start' exited with a non-zero status at iteration 48, indicating a test failure.
+--- Run Log ---
+$ bun src/index.ts
+--- Application Start ---
+22 | 
+23 |     public get<K extends keyof ServiceMap>(identifier: K): ServiceMap[K] {
+24 |         if (!this.instances.has(identifier)) {
+25 |             const factory = this.factories[identifier];
+26 |             if (!factory) {
+27 |                 throw new Error('Service not found for identifier: ' + identifier);
+                           ^
+error: Service not found for identifier: DB
+      at get (/Users/shiheng/project/AetherScript/demo_simple/src/generated/container.ts:27:23)
+      at UserService (/Users/shiheng/project/AetherScript/demo_simple/src/generated/container.ts:17:32)
+      at get (/Users/shiheng/project/AetherScript/demo_simple/src/generated/container.ts:29:30)
+      at main (/Users/shiheng/project/AetherScript/demo_simple/src/index.ts:15:44)
+      at main (/Users/shiheng/project/AetherScript/demo_simple/src/index.ts:6:20)
+      at /Users/shiheng/project/AetherScript/demo_simple/src/index.ts:75:1
+      at loadAndEvaluateModule (2:1)
+
+Bun v1.2.16 (macOS arm64)
+error: script "start" exited with code 1
+--------------- 
+-> Iteration 48: FAILED
+--- Running Test Iteration: 49/100 ---
+-> Generating code with model: codellama...

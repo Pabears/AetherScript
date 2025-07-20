@@ -1,4 +1,4 @@
-import type { JSDocInfo } from './jsdoc-extractor';
+import type { JSDocInfo } from './extractor';
 
 export class JSDocFormatter {
     /**

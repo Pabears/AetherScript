@@ -1,4 +1,4 @@
-import { JSDocIndexer } from '../jsdoc-indexer';
+import { JSDocIndexer } from '../jsdoc/indexer';
 import * as path from 'path';
 
 /**
