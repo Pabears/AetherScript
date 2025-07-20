@@ -1,7 +1,7 @@
 {
   "name": "aesc",
   "description": "AetherScript: AI-Assisted Development You Can Trust, separating human intent from AI implementation.",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "author": "Pabears",
   "license": "MIT",
   "keywords": [
