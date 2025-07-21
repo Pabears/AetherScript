@@ -5,6 +5,97 @@ import { JSDocFormatter } from './jsdoc/formatter';
 import * as path from 'path';
 
 /**
+ * Generate dependency information for a given declaration
+ * This includes both project-internal dependencies and third-party libraries with JSDoc
+ */
+function generateDependencyInfo(
+    declaration: InterfaceDeclaration | ClassDeclaration,
+    originalImportPath: string,
+    generatedFilePath: string
+): { dependenciesText: string; originalCode: string } {
+    const dependentTypes = new Map<string, { path: string; code: string; isExternal: boolean }>();
+    
+    // Get all dependent services from the same project
+    const sourceFile = declaration.getSourceFile();
+    const project = sourceFile.getProject();
+    const allSourceFiles = project.getSourceFiles();
+    
+    // Find dependencies by analyzing the declaration
+    const originalCode = declaration.getFullText();
+    
+    // Extract project dependencies
+    allSourceFiles.forEach(file => {
+        if (file === sourceFile) return;
+        
+        const classes = file.getClasses();
+        const interfaces = file.getInterfaces();
+        const enums = file.getEnums();
+        
+        [...classes, ...interfaces, ...enums].forEach(node => {
+            const name = node.getName();
+            if (name && originalCode.includes(name)) {
+                const relativePath = path.relative(path.dirname(originalImportPath), file.getFilePath());
+                dependentTypes.set(name, {
+                    path: relativePath,
+                    code: node.getFullText().trim(),
+                    isExternal: false
+                });
+            }
+        });
+    });
+    
+    // Extract third-party dependencies
+    const thirdPartyLibraries = extractThirdPartyLibraries(originalCode);
+    
+    // Initialize JSDoc indexer and formatter
+    const demoPath = generatedFilePath.includes('/demo/') 
+        ? generatedFilePath.substring(0, generatedFilePath.indexOf('/demo/') + 5)
+        : path.dirname(path.dirname(path.dirname(generatedFilePath)));
+    const jsdocIndexer = new JSDocIndexer(demoPath);
+    const jsdocFormatter = new JSDocFormatter();
+    
+    // Process each detected third-party library
+    for (const libraryInfo of thirdPartyLibraries) {
+        const { className, packageName } = libraryInfo;
+        
+        if (!dependentTypes.has(className)) {
+            console.log(`[JSDoc] Loading documentation for ${className} from package ${packageName}...`);
+            const jsdocInfo = jsdocIndexer.loadLibraryJSDoc(packageName);
+            
+            if (jsdocInfo) {
+                const formattedCode = jsdocFormatter.formatForLLM(jsdocInfo);
+                dependentTypes.set(className, {
+                    path: `external: ${packageName}`,
+                    code: formattedCode,
+                    isExternal: true
+                });
+                console.log(`[JSDoc] Successfully loaded ${className} documentation from ${packageName} index`);
+            } else {
+                console.log(`[JSDoc] No indexed documentation found for ${packageName}, using fallback for ${className}`);
+                // Fallback to basic type definition for unknown libraries
+                dependentTypes.set(className, {
+                    path: `external: ${packageName}`,
+                    code: `// ${className} - Third-party library (documentation not available)\n// Please refer to the library's official documentation for usage details\nclass ${className} {\n    constructor(...args: any[]);\n    [key: string]: any;\n}`,
+                    isExternal: true
+                });
+            }
+        }
+    }
+
+    const dependenciesText = Array.from(dependentTypes.entries())
+        .map(([_, { path, code, isExternal }]) => {
+            if (isExternal) {
+                return `// External dependency: ${path}\n${code}`;
+            } else {
+                return `// From: ${path}\n${code}`;
+            }
+        })
+        .join('\n\n');
+        
+    return { dependenciesText, originalCode };
+}
+
+/**
  * Extract third-party library information from code context
  * Build mapping between class names and package names by parsing import statements
  */
@@ -114,149 +205,48 @@ export function generatePrompt(
         throw new Error("Cannot generate implementation for an anonymous class or interface.");
     }
 
-    const dependentTypes = new Map<string, { path: string, code: string, isExternal: boolean }>();
-
-    const addDependencies = (node: Node) => {
-        if (!node || !node.getSourceFile) return;
-        const sourceFile = node.getSourceFile();
-        
-        // Process both internal and external dependencies
-        // 1. Check TypeReferences (e.g., function parameters, return types)
-        const types = node.getDescendantsOfKind(ts.SyntaxKind.TypeReference);
-        types.forEach(typeRef => {
-            processSymbol(typeRef.getType().getSymbol());
-        });
-        
-        // 2. Check Identifiers in constructor calls (e.g., 'new NodeCache()')
-        const newExpressions = node.getDescendantsOfKind(ts.SyntaxKind.NewExpression);
-        newExpressions.forEach(newExpr => {
-            const identifier = newExpr.getExpression();
-            if (Node.isIdentifier(identifier)) {
-                const symbol = identifier.getSymbol();
-                if (symbol) {
-                    processSymbol(symbol);
-                }
-            }
-        });
-        
-        function processSymbol(symbol: any) {
-            if (!symbol) return;
-            const name = symbol.getName();
-            if (['Promise', 'void', 'string', 'number', 'boolean', 'any', 'unknown', 'never'].includes(name) || dependentTypes.has(name)) return;
-            
-            for (const decl of symbol.getDeclarations()) {
-                const declSourceFile = decl.getSourceFile();
-                if (declSourceFile) {
-                    const isExternal = declSourceFile.isFromExternalLibrary() || declSourceFile.isDeclarationFile();
-                    
-                    if (isExternal) {
-                        // For external libraries, try to get basic type info
-                        const typeInfo = getExternalTypeInfo(name, decl);
-                        if (typeInfo) {
-                            dependentTypes.set(name, { 
-                                path: `external: ${name}`, 
-                                code: typeInfo, 
-                                isExternal: true 
-                            });
-                        }
-                    } else {
-                        // For internal dependencies, only include class/interface declarations
-                        if (Node.isClassDeclaration(decl) || Node.isInterfaceDeclaration(decl)) {
-                            const importPath = path.relative(path.dirname(generatedFilePath), declSourceFile.getFilePath()).replace(/\\/g, '/').replace(/\.ts$/, '');
-                            dependentTypes.set(name, { 
-                                path: importPath, 
-                                code: decl.getText(), 
-                                isExternal: false 
-                            });
-                            addDependencies(decl);
-                        }
-                    }
-                }
-            }
-        }
-    };
-
-    // Helper function to extract basic type information for external dependencies
-    const getExternalTypeInfo = (name: string, decl: Node): string | null => {
-        try {
-            // Try to get constructor signatures and key methods
-            const text = decl.getText();
-            if (text.includes('class') || text.includes('interface')) {
-                // For external types, return a simplified version
-                return `// External type: ${name}\n${text.substring(0, 500)}...`;
-            }
-            return null;
-        } catch {
-            return null;
-        }
-    };
-
-    addDependencies(declaration);
-
-    const originalCode = declaration.getText();
-    const allDependentCode = Array.from(dependentTypes.values()).map(dep => dep.code).join('\n');
-    
-    // Only extract third-party libraries from the original code (direct dependencies)
-    // Do not include transitive dependencies from allDependentCode
-    const thirdPartyLibraries = extractThirdPartyLibraries(originalCode);
-    
-    // Initialize JSDoc indexer and formatter
-    // generatedFilePath is like /Users/.../demo/src/generated/file.ts
-    // We need to get to the demo directory which contains tsconfig.json
-    const demoPath = generatedFilePath.includes('/demo/') 
-        ? generatedFilePath.substring(0, generatedFilePath.indexOf('/demo/') + 5)
-        : path.dirname(path.dirname(path.dirname(generatedFilePath)));
-    const jsdocIndexer = new JSDocIndexer(demoPath);
-    const jsdocFormatter = new JSDocFormatter();
-    
-    // Process each detected third-party library
-    for (const libraryInfo of thirdPartyLibraries) {
-        const { className, packageName } = libraryInfo;
-        
-        if (!dependentTypes.has(className)) {
-            console.log(`[JSDoc] Loading documentation for ${className} from package ${packageName}...`);
-            const jsdocInfo = jsdocIndexer.loadLibraryJSDoc(packageName);
-            
-            if (jsdocInfo) {
-                const formattedCode = jsdocFormatter.formatForLLM(jsdocInfo);
-                dependentTypes.set(className, {
-                    path: `external: ${packageName}`,
-                    code: formattedCode,
-                    isExternal: true
-                });
-                console.log(`[JSDoc] Successfully loaded ${className} documentation from ${packageName} index`);
-            } else {
-                console.log(`[JSDoc] No indexed documentation found for ${packageName}, using fallback for ${className}`);
-                // Fallback to basic type definition for unknown libraries
-                dependentTypes.set(className, {
-                    path: `external: ${packageName}`,
-                    code: `// ${className} - Third-party library (documentation not available)\n// Please refer to the library's official documentation for usage details\nclass ${className} {\n    constructor(...args: any[]);\n    [key: string]: any;\n}`,
-                    isExternal: true
-                });
-            }
-        }
-    }
-
-    const dependenciesText = Array.from(dependentTypes.entries())
-        .map(([_, { path, code, isExternal }]) => {
-            if (isExternal) {
-                return `// External dependency: ${path}\n${code}`;
-            } else {
-                return `// From: ${path}\n${code}`;
-            }
-        })
-        .join('\n\n');
+    // Use the shared dependency analysis function
+    const { dependenciesText, originalCode } = generateDependencyInfo(
+        declaration,
+        originalImportPath,
+        generatedFilePath
+    );
 
     const fixedOriginalCode = originalCode.replace(/\.len\b/g, '.length');
 
-    // This is the new, much stricter prompt
+    // Determine declaration type and get type-specific configurations
+    const isInterface = Node.isInterfaceDeclaration(declaration);
+    const isAbstractClass = Node.isClassDeclaration(declaration);
+    
+    if (!isInterface && !isAbstractClass) {
+        throw new Error(`Unsupported declaration type for ${interfaceName}. Only interfaces and abstract classes are supported.`);
+    }
+    
+    // Type-specific configurations
+    const config = isInterface ? {
+        task: 'implement the following interface',
+        action: 'implement',
+        target: 'interface',
+        methodType: 'interface methods',
+        propertyRule: 'You MUST implement all properties defined in the interface.',
+        declarationLabel: 'interface you must implement'
+    } : {
+        task: 'extend the following abstract class and implement its abstract methods',
+        action: 'extend',
+        target: 'abstract class',
+        methodType: 'abstract methods',
+        propertyRule: 'You MUST NOT redeclare any properties already present in the base class. Access them with \'this\'.',
+        declarationLabel: 'abstract class you must extend'
+    };
+    
+    // Construct unified prompt with type-specific parts
     const prompt = `You are a TypeScript code generation engine.
-Your task is to implement the following abstract class.
+Your task is to ${config.task}.
 You must follow these rules strictly:
 1. The implementation class name must be '${interfaceName}Impl'.
-2. The implementation class MUST 'extend' the original abstract class '${interfaceName}'.
-3. You MUST implement all abstract methods directly. Do NOT create private helper methods for the core logic.
-4. You MUST NOT redeclare any properties already present in the base class. Access them with 'this'.
+2. The implementation class MUST '${config.action}' the original ${config.target} '${interfaceName}'.
+3. You MUST implement all ${config.methodType} directly. Do NOT create private helper methods for the core logic.
+4. ${config.propertyRule}
 5. IMPORTANT: Do NOT create unnecessary temporary objects for validation or processing. Validate data directly using appropriate methods (e.g., regex for email validation, direct string/number checks).
 6. Your response MUST be only the raw TypeScript code. No explanations, no markdown.
 
@@ -265,11 +255,102 @@ Here are the dependent type definitions:
 ${dependenciesText}
 \`\`\`
 
-Here is the abstract class you must implement:
+Here is the ${config.declarationLabel}:
 \`\`\`typescript
 ${fixedOriginalCode}
 \`\`\`
 `;
 
     return prompt;
+}
+
+/**
+ * Generate a specialized prompt for fixing validation errors in generated code
+ * This avoids the need to extract dependencies from an existing prompt using regex
+ */
+export function generateFixPrompt(
+    declaration: InterfaceDeclaration | ClassDeclaration,
+    originalImportPath: string,
+    generatedFilePath: string,
+    currentCode: string,
+    validationErrors: string[],
+    provider?: string
+): string {
+    const interfaceName = declaration.getName();
+    if (!interfaceName) {
+        throw new Error('Declaration must have a name');
+    }
+
+    // Get the original declaration code
+    const originalDeclarationCode = declaration.getFullText().trim();
+    
+    // Use the shared dependency analysis function
+    const { dependenciesText } = generateDependencyInfo(
+        declaration,
+        originalImportPath,
+        generatedFilePath
+    );
+
+    // Determine declaration type and get type-specific configurations
+    const isInterface = Node.isInterfaceDeclaration(declaration);
+    const isAbstractClass = Node.isClassDeclaration(declaration);
+    
+    if (!isInterface && !isAbstractClass) {
+        throw new Error(`Unsupported declaration type for ${interfaceName}. Only interfaces and abstract classes are supported.`);
+    }
+    
+    // Type-specific configurations (same as generatePrompt)
+    const config = isInterface ? {
+        action: 'implement',
+        target: 'interface',
+        methodType: 'interface methods',
+        propertyRule: 'You MUST implement all properties defined in the interface.'
+    } : {
+        action: 'extend',
+        target: 'abstract class',
+        methodType: 'abstract methods',
+        propertyRule: 'You MUST NOT redeclare any properties already present in the base class. Access them with \'this\'.'
+    };
+    
+    // Check if code appears to be truncated
+    const isTruncated = currentCode.trim().endsWith('//') || 
+                       currentCode.trim().endsWith('/*') || 
+                       !currentCode.includes('}') ||
+                       currentCode.split('{').length !== currentCode.split('}').length;
+    
+    // Construct unified fix prompt with type-specific parts
+    const fixPrompt = `You are a TypeScript code generation engine.
+Your task is to fix the following ${config.target} implementation that has validation errors.
+
+You must follow these rules strictly:
+1. The implementation class name must be '${interfaceName}Impl'.
+2. The implementation class MUST '${config.action}' the original ${config.target} '${interfaceName}'.
+3. You MUST implement all ${config.methodType} directly. Do NOT create private helper methods for the core logic.
+4. ${config.propertyRule}
+5. IMPORTANT: Do NOT create unnecessary temporary objects for validation or processing. Validate data directly using appropriate methods (e.g., regex for email validation, direct string/number checks).
+6. Fix all validation errors listed below.
+7. ${isTruncated ? 'COMPLETE the truncated/incomplete code - ensure ALL methods are fully implemented with proper closing braces.' : 'Ensure the code is complete and syntactically correct.'}
+8. Your response MUST be only the raw TypeScript code. No explanations, no markdown.
+
+${dependenciesText ? `Here are the dependent type definitions:
+\`\`\`typescript
+${dependenciesText}
+\`\`\`
+
+` : ''}Here is the original ${config.target} you must ${config.action}:
+\`\`\`typescript
+${originalDeclarationCode}
+\`\`\`
+
+Here is the current implementation with errors:
+\`\`\`typescript
+${currentCode}
+\`\`\`
+
+Validation errors that must be fixed:
+${validationErrors.map(err => `- ${err}`).join('\n')}
+
+${isTruncated ? 'CRITICAL: The code appears incomplete/truncated. You must complete ALL methods with proper implementation and closing braces.\n\n' : ''}Generate the complete, corrected ${interfaceName}Impl implementation:`;
+
+    return fixPrompt;
 }

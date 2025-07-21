@@ -18,6 +18,7 @@ import {
 import { fixGeneratedCode } from '../generation/code-fixer';
 import type { GenerateOptions } from '../types';
 import { getConfig } from '../config';
+import { JSDocIndexer } from '../jsdoc/indexer';
 
 // File generation statistics
 export interface FileStats {
@@ -92,6 +93,55 @@ export async function getAllExistingServices(
 }
 
 /**
+ * Ensure JSDoc index exists, auto-generate if missing
+ */
+async function ensureJSDocIndex(verbose: boolean = false): Promise<void> {
+    const projectPath = process.cwd();
+    const jsdocDir = path.join(projectPath, '.jsdoc');
+    const packageJsonPath = path.join(projectPath, 'package.json');
+    
+    // Check if package.json exists
+    if (!fs.existsSync(packageJsonPath)) {
+        if (verbose) {
+            console.log('[JSDoc Auto] No package.json found, skipping JSDoc indexing');
+        }
+        return;
+    }
+    
+    // Check if .jsdoc directory exists and has content
+    const hasExistingIndex = fs.existsSync(jsdocDir) && 
+                           fs.readdirSync(jsdocDir).filter(f => f.endsWith('.json')).length > 0;
+    
+    if (hasExistingIndex) {
+        if (verbose) {
+            console.log('[JSDoc Auto] JSDoc index already exists, skipping auto-generation');
+        }
+        return;
+    }
+    
+    // Auto-generate JSDoc index
+    console.log('📚 JSDoc index not found, auto-generating...');
+    
+    try {
+        const indexer = new JSDocIndexer(projectPath);
+        await indexer.indexAllDependencies();
+        
+        const indexedLibraries = indexer.getIndexedLibraries();
+        if (indexedLibraries.length > 0) {
+            console.log(`✅ JSDoc auto-generation completed! Indexed ${indexedLibraries.length} libraries.`);
+            if (verbose) {
+                console.log('📋 Indexed libraries:', indexedLibraries.join(', '));
+            }
+        } else {
+            console.log('ℹ️  No third-party libraries found to index.');
+        }
+    } catch (error) {
+        console.warn('⚠️  JSDoc auto-generation failed:', error instanceof Error ? error.message : 'Unknown error');
+        console.warn('   Code generation will continue without JSDoc context.');
+    }
+}
+
+/**
  * Core code generation function
  */
 export async function generateCode(options: GenerateOptions): Promise<GenerationResult> {
@@ -99,6 +149,9 @@ export async function generateCode(options: GenerateOptions): Promise<Generation
     const config = getConfig();
     
     console.log(`🚀 Starting code generation at ${new Date().toLocaleTimeString()}`);
+    
+    // Step 0: Auto-check and generate JSDoc if needed
+    await ensureJSDocIndex(options.verbose);
     
     const project = new Project({
         tsConfigFilePath: "tsconfig.json",

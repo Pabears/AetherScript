@@ -179,7 +179,7 @@ export class CloudflareProvider implements ModelProvider {
         // Add Cloudflare-specific parameters if provided in options
         if (options?.max_tokens) {
             // Allow larger max_tokens for code generation, cap at 8192 to prevent context overflow
-            cloudflareOptions.max_tokens = Math.min(options.max_tokens, 8192);
+            cloudflareOptions.max_tokens = Math.min(options.max_tokens, 20480);
         }
         
         if (options?.temperature) {

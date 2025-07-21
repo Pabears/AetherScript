@@ -2,7 +2,7 @@ import { ClassDeclaration, InterfaceDeclaration } from 'ts-morph';
 import { callOllamaModel } from '../model-caller';
 import { cleanGeneratedCode } from './code-cleaner';
 import { postProcessGeneratedCode, validateGeneratedCode } from './post-processor';
-import { generatePrompt } from '../prompt-generator';
+import { generatePrompt, generateFixPrompt } from '../prompt-generator';
 
 export interface CodeFixResult {
     success: boolean;
@@ -43,47 +43,15 @@ export async function fixGeneratedCode(
         }
         
         try {
-            // Create a fix prompt with current code, error messages, and dependency information
-            // Re-generate the dependency information for the fix prompt
-            const dependencyPrompt = generatePrompt(declaration, originalImportPath, implFilePath, provider);
-            
-            // Extract the dependency section from the original prompt
-            const dependencyMatch = dependencyPrompt.match(/Here are the dependent type definitions:[\s\S]*?```typescript([\s\S]*?)```[\s\S]*?Here is the abstract class/m);
-            const dependenciesText = dependencyMatch && dependencyMatch[1] ? dependencyMatch[1].trim() : '';
-            
-            // Check if code appears to be truncated
-            const isTruncated = currentCode.trim().endsWith('//') || 
-                               currentCode.trim().endsWith('/*') || 
-                               !currentCode.includes('}') ||
-                               currentCode.split('{').length !== currentCode.split('}').length;
-            
-            const fixPrompt = `The following TypeScript code has validation errors${isTruncated ? ' and appears to be incomplete/truncated' : ''}. Please fix the code to resolve these issues.
-
-${dependenciesText ? `Here are the dependent type definitions:
-\`\`\`typescript
-${dependenciesText}
-\`\`\`
-
-` : ''}Current code with errors:
-\`\`\`typescript
-${currentCode}
-\`\`\`
-
-Validation errors:
-${errors.map(err => `- ${err}`).join('\n')}
-
-CRITICAL REQUIREMENTS:
-1. ${isTruncated ? 'COMPLETE the truncated/incomplete code - ensure ALL methods are fully implemented with proper closing braces' : 'Fix all validation errors listed above'}
-2. Implement ALL abstract methods from the parent class/interface completely
-3. Use correct import syntax for dependencies (default imports vs named imports)
-4. Follow the provided type definitions and API documentation exactly
-5. Ensure proper TypeScript syntax with matching braces and complete method implementations
-6. Return ONLY the complete, corrected TypeScript code wrapped in \`\`\`typescript code blocks
-7. Do NOT include explanations, comments, or text outside the code block
-
-${isTruncated ? 'IMPORTANT: The provided code appears incomplete. Make sure to complete ALL methods and ensure proper code structure.' : ''}
-
-Generate the complete, working TypeScript implementation now:`;
+            // Use the dedicated generateFixPrompt function instead of regex extraction
+            const fixPrompt = generateFixPrompt(
+                declaration,
+                originalImportPath,
+                implFilePath,
+                currentCode,
+                errors,
+                provider
+            );
             
             // Use the same model and provider as the original generation
             const fixedResponse = await callOllamaModel(fixPrompt, `${interfaceName}-fix-${retryCount}`, model, verbose, provider);
