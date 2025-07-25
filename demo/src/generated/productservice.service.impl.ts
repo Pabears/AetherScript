@@ -8,9 +8,9 @@ export class ProductServiceImpl extends ProductService {
         if (name.length === 0 || price <= 0 || stock < 0) {
             throw new Error('Invalid product details');
         }
-        const id = crypto.randomUUID();
-        const product = new Product(id, name, price, stock, category, description);
-        this.db?.saveObject(id, product);
+        const productId = crypto.randomUUID();
+        const product = new Product(productId, name, price, stock, category, description);
+        this.db?.saveObject(productId, product);
         return product;
     }
 
@@ -43,16 +43,8 @@ export class ProductServiceImpl extends ProductService {
         return true;
     }
 
-    public getAllProducts(page?: number, pageSize?: number): Product[] {
-        const allKeys = this.db?.getAllKeys() || [];
-        const products = allKeys.map(key => this.db?.findObject(key) as Product).filter(product => product !== undefined);
-        
-        if (page !== undefined && pageSize !== undefined) {
-            const start = (page - 1) * pageSize;
-            const end = start + pageSize;
-            return products.slice(start, end);
-        }
-        
-        return products;
+    public getAllProducts(): Product[] {
+        const keys = this.db?.getAllKeys() || [];
+        return keys.map(key => this.db?.findObject(key) as Product).filter(product => product instanceof Product);
     }
 }

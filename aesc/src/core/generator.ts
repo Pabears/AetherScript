@@ -73,7 +73,23 @@ export async function getAllExistingServices(
             if (classes.length > 0) {
                 const implClass = classes[0];
                 if (implClass) {
-                    const { constructorDeps, propertyDeps } = getDependencies(implClass);
+                    // Try to find the original abstract class/interface to get dependencies
+                    let constructorDeps: string[] = [];
+                    let propertyDeps: any[] = [];
+                    
+                    // Look for the base class (the abstract class this implementation extends)
+                    const baseClass = implClass.getBaseClass();
+                    if (baseClass) {
+                        // Get dependencies from the original abstract class
+                        const baseDeps = getDependencies(baseClass);
+                        constructorDeps = baseDeps.constructorDeps;
+                        propertyDeps = baseDeps.propertyDeps;
+                    } else {
+                        // Fallback: try to get dependencies from implementation class (might be empty)
+                        const implDeps = getDependencies(implClass);
+                        constructorDeps = implDeps.constructorDeps;
+                        propertyDeps = implDeps.propertyDeps;
+                    }
                     
                     allServices.push({
                         interfaceName,
@@ -90,6 +106,143 @@ export async function getAllExistingServices(
     }
     
     return allServices;
+}
+
+/**
+ * Generate a single service implementation concurrently
+ */
+async function generateSingleService(
+    interfaceName: string,
+    declaration: InterfaceDeclaration | ClassDeclaration,
+    outputDir: string,
+    lockedFiles: string[],
+    options: GenerateOptions,
+    generatedServices: GeneratedService[]
+): Promise<FileStats> {
+    const fileStartTime = Date.now();
+    const implName = `${interfaceName}Impl`;
+    const implFileName = `${interfaceName.toLowerCase()}.service.impl.ts`;
+    const implFilePath = path.join(outputDir, implFileName);
+
+    try {
+        if (lockedFiles.includes(path.resolve(implFilePath))) {
+            console.log(`  -> SKIPPED (locked): ${implFilePath}`);
+            return {
+                interfaceName,
+                status: 'locked',
+                duration: Date.now() - fileStartTime
+            };
+        }
+        
+        // If force is used with specific files, delete only the corresponding impl file
+        if (options.force && options.files.length > 0 && fs.existsSync(implFilePath)) {
+            console.log(`  -> FORCE: Deleting existing file: ${implFilePath}`);
+            fs.unlinkSync(implFilePath);
+        }
+        
+        if (fs.existsSync(implFilePath) && !options.force) {
+            console.log(`  -> SKIPPED: ${implFilePath} already exists. Use --force to overwrite.`);
+            return {
+                interfaceName,
+                status: 'skipped',
+                duration: Date.now() - fileStartTime
+            };
+        }
+
+        console.log(`  -> Generating implementation for ${interfaceName}...`);
+        const originalImportPath = path.relative(path.dirname(implFilePath), declaration.getSourceFile().getFilePath()).replace(/\\/g, '/').replace(/\.ts$/, '');
+        
+        // Step 2: Prompt Generate
+        const prompt = generatePrompt(declaration, originalImportPath, implFilePath, options.provider);
+        
+        // Step 3: Model Call
+        const rawResponse = await callOllamaModel(prompt, interfaceName, options.model, options.verbose, options.provider);
+        
+        // Step 4: Code Clear
+        const cleanedCode = cleanGeneratedCode(rawResponse, interfaceName, options.verbose);
+        
+        // Step 5: Post Process
+        let processedCode = postProcessGeneratedCode(cleanedCode, declaration, implFilePath);
+        
+        if (options.verbose) {
+            console.log("--- CODE AFTER POST-PROCESSING ---");
+            console.log(processedCode);
+            console.log("--------------------------------");
+        }
+
+        let { isValid, errors } = await validateGeneratedCode(processedCode, declaration, implFilePath);
+        
+        // If validation fails, try to fix the code using the same model and provider
+        if (!isValid) {
+            const fixResult = await fixGeneratedCode(
+                processedCode,
+                declaration,
+                implFilePath,
+                originalImportPath,
+                interfaceName,
+                errors,
+                options.model,
+                options.verbose,
+                options.provider
+            );
+            
+            if (fixResult.success && fixResult.fixedCode) {
+                processedCode = fixResult.fixedCode;
+                isValid = true;
+            } else {
+                // If fix failed, record error and return
+                const fileDuration = Date.now() - fileStartTime;
+                return {
+                    interfaceName,
+                    status: 'error',
+                    duration: fileDuration,
+                    error: `Validation failed after ${fixResult.attempts} retry attempts`
+                };
+            }
+        }
+
+        // Step 6: Save File
+        saveGeneratedFile(implFilePath, processedCode);
+
+        // Extract dependencies from the original declaration, not the generated implementation
+        const { constructorDeps, propertyDeps } = Node.isClassDeclaration(declaration) 
+            ? getDependencies(declaration as any)
+            : { constructorDeps: [], propertyDeps: [] };
+            
+        if (options.verbose) {
+            console.log(`  -> Dependencies for ${interfaceName}:`);
+            console.log(`     Constructor deps: ${JSON.stringify(constructorDeps)}`);
+            console.log(`     Property deps: ${JSON.stringify(propertyDeps)}`);
+        }
+        
+        // Thread-safe push to shared array
+        generatedServices.push({
+            interfaceName,
+            implName,
+            implFilePath: `./${implFileName}`,
+            constructorDependencies: constructorDeps || [],
+            propertyDependencies: propertyDeps || [],
+        });
+        
+        const fileDuration = Date.now() - fileStartTime;
+        console.log(`  -> ✅ ${interfaceName} completed in ${(fileDuration / 1000).toFixed(2)}s`);
+        
+        return {
+            interfaceName,
+            status: 'generated',
+            duration: fileDuration
+        };
+    } catch (error) {
+        const fileDuration = Date.now() - fileStartTime;
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        console.error(`  -> ❌ Failed to generate ${interfaceName}: ${errorMessage}`);
+        return {
+            interfaceName,
+            status: 'error',
+            duration: fileDuration,
+            error: errorMessage
+        };
+    }
 }
 
 /**
@@ -177,134 +330,59 @@ export async function generateCode(options: GenerateOptions): Promise<Generation
     // Statistics tracking
     const fileStats: FileStats[] = [];
 
-    // Step 2-6: Generate implementations for each unique service using workflow
-    for (const [interfaceName, { declaration, sourceFile }] of servicesToGenerate.entries()) {
-        const fileStartTime = Date.now();
-        const implName = `${interfaceName}Impl`;
-        const implFileName = `${interfaceName.toLowerCase()}.service.impl.ts`;
-        const implFilePath = path.join(outputDir, implFileName);
-
-        try {
-            if (lockedFiles.includes(path.resolve(implFilePath))) {
-                console.log(`  -> SKIPPED (locked): ${implFilePath}`);
-                fileStats.push({
-                    interfaceName,
-                    status: 'locked',
-                    duration: Date.now() - fileStartTime
-                });
-                continue;
-            }
-            
-            // If force is used with specific files, delete only the corresponding impl file
-            if (options.force && options.files.length > 0 && fs.existsSync(implFilePath)) {
-                console.log(`  -> FORCE: Deleting existing file: ${implFilePath}`);
-                fs.unlinkSync(implFilePath);
-            }
-            
-            if (fs.existsSync(implFilePath) && !options.force) {
-                console.log(`  -> SKIPPED: ${implFilePath} already exists. Use --force to overwrite.`);
-                fileStats.push({
-                    interfaceName,
-                    status: 'skipped',
-                    duration: Date.now() - fileStartTime
-                });
-                continue;
-            }
-
-            console.log(`  -> Generating implementation for ${interfaceName}...`);
-            const originalImportPath = path.relative(path.dirname(implFilePath), declaration.getSourceFile().getFilePath()).replace(/\\/g, '/').replace(/\.ts$/, '');
-            
-            // Step 2: Prompt Generate
-            const prompt = generatePrompt(declaration, originalImportPath, implFilePath, options.provider);
-            
-            // Step 3: Model Call
-            const rawResponse = await callOllamaModel(prompt, interfaceName, options.model, options.verbose, options.provider);
-            
-            // Step 4: Code Clear
-            const cleanedCode = cleanGeneratedCode(rawResponse, interfaceName, options.verbose);
-            
-            // Step 5: Post Process
-            let processedCode = postProcessGeneratedCode(cleanedCode, declaration, implFilePath);
-            
-            if (options.verbose) {
-                console.log("--- CODE AFTER POST-PROCESSING ---");
-                console.log(processedCode);
-                console.log("--------------------------------");
-            }
-
-            let { isValid, errors } = await validateGeneratedCode(processedCode, declaration, implFilePath);
-            
-            // If validation fails, try to fix the code using the same model and provider
-            if (!isValid) {
-                const fixResult = await fixGeneratedCode(
-                    processedCode,
-                    declaration,
-                    implFilePath,
-                    originalImportPath,
-                    interfaceName,
-                    errors,
-                    options.model,
-                    options.verbose,
-                    options.provider
-                );
-                
-                if (fixResult.success && fixResult.fixedCode) {
-                    processedCode = fixResult.fixedCode;
-                    isValid = true;
-                } else {
-                    // If fix failed, record error and continue to next file
-                    const fileDuration = Date.now() - fileStartTime;
-                    fileStats.push({
-                        interfaceName,
-                        status: 'error',
-                        duration: fileDuration,
-                        error: `Validation failed after ${fixResult.attempts} retry attempts`
-                    });
-                    continue;
-                }
-            }
-
-            // Step 6: Save File
-            saveGeneratedFile(implFilePath, processedCode);
-
-            // Extract dependencies from the original declaration, not the generated implementation
-            const { constructorDeps, propertyDeps } = Node.isClassDeclaration(declaration) 
-                ? getDependencies(declaration as any)
-                : { constructorDeps: [], propertyDeps: [] };
-                
-            if (options.verbose) {
-                console.log(`  -> Dependencies for ${interfaceName}:`);
-                console.log(`     Constructor deps: ${JSON.stringify(constructorDeps)}`);
-                console.log(`     Property deps: ${JSON.stringify(propertyDeps)}`);
-            }
-                
-            generatedServices.push({
-                interfaceName,
-                implName,
-                implFilePath: `./${implFileName}`,
-                constructorDependencies: constructorDeps,
-                propertyDependencies: propertyDeps,
-            });
-            
-            const fileDuration = Date.now() - fileStartTime;
+    // Step 2-6: Generate implementations for each unique service concurrently
+    console.log(`🚀 Starting concurrent generation of ${servicesToGenerate.size} service(s)...`);
+    
+    // Create concurrent generation tasks
+    const generationTasks = Array.from(servicesToGenerate.entries()).map(([interfaceName, { declaration, sourceFile }]) => 
+        generateSingleService(
+            interfaceName, 
+            declaration, 
+            outputDir, 
+            lockedFiles, 
+            options, 
+            generatedServices
+        )
+    );
+    
+    // Execute all generation tasks concurrently
+    const results = await Promise.allSettled(generationTasks);
+    
+    // Process results and collect statistics
+    results.forEach((result, index) => {
+        const interfaceNames = Array.from(servicesToGenerate.keys());
+        const interfaceName = interfaceNames[index];
+        
+        if (result.status === 'fulfilled') {
+            fileStats.push(result.value);
+        } else {
+            const errorMessage = result.reason instanceof Error ? result.reason.message : String(result.reason);
+            console.error(`  -> ❌ Failed to generate ${interfaceName || 'Unknown'}: ${errorMessage}`);
             fileStats.push({
-                interfaceName,
-                status: 'generated',
-                duration: fileDuration
-            });
-            
-            console.log(`  -> ✅ ${interfaceName} completed in ${(fileDuration / 1000).toFixed(2)}s`);
-        } catch (error) {
-            const fileDuration = Date.now() - fileStartTime;
-            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-            console.error(`  -> ❌ Failed to generate ${interfaceName}: ${errorMessage}`);
-            fileStats.push({
-                interfaceName,
+                interfaceName: interfaceName || 'Unknown',
                 status: 'error',
-                duration: fileDuration,
+                duration: 0,
                 error: errorMessage
             });
         }
+    });
+    
+    // Log completion summary
+    const successCount = fileStats.filter(f => f.status === 'generated').length;
+    const skipCount = fileStats.filter(f => f.status === 'skipped' || f.status === 'locked').length;
+    const errorCount = fileStats.filter(f => f.status === 'error').length;
+    
+    console.log(`\n📊 Generation Summary:`);
+    console.log(`   ✅ Generated: ${successCount}`);
+    console.log(`   ⏭️  Skipped: ${skipCount}`);
+    console.log(`   ❌ Errors: ${errorCount}`);
+    console.log(`   🕒 Total: ${servicesToGenerate.size}`);
+    
+    if (successCount > 0) {
+        const avgDuration = fileStats
+            .filter(f => f.status === 'generated' && f.duration)
+            .reduce((sum, f) => sum + (f.duration || 0), 0) / successCount;
+        console.log(`   ⚡ Average generation time: ${(avgDuration / 1000).toFixed(2)}s`);
     }
 
     // Always generate container to include all existing services, not just newly processed ones

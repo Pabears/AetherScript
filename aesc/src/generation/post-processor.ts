@@ -163,7 +163,15 @@ export function postProcessGeneratedCode(
             /new\s+(\w+)\s*\(/g,  // Constructor calls: "new Order("
         ];
         
+        // ENHANCEMENT: Look for function call patterns to detect third-party library usage
+        const functionCallPatterns = [
+            /(\w+)\s*\(/g,  // Function calls: "uuidv4(", "uuid(", etc.
+        ];
+        
         const potentialTypes = new Set<string>();
+        const potentialFunctions = new Set<string>();
+        
+        // Extract types
         typePatterns.forEach(pattern => {
             let match;
             while ((match = pattern.exec(implText)) !== null) {
@@ -174,7 +182,29 @@ export function postProcessGeneratedCode(
             }
         });
         
+        // Extract function calls
+        functionCallPatterns.forEach(pattern => {
+            let match;
+            while ((match = pattern.exec(implText)) !== null) {
+                const functionName = match[1];
+                // Skip common built-in functions and methods
+                const builtInFunctions = ['console', 'parseInt', 'parseFloat', 'isNaN', 'Array', 'Object', 'JSON', 'Math', 'Date', 'String', 'Number', 'Boolean', 'Error', 'Promise', 'setTimeout', 'setInterval', 'clearTimeout', 'clearInterval'];
+                const commonMethods = ['push', 'pop', 'shift', 'unshift', 'slice', 'splice', 'join', 'split', 'map', 'filter', 'reduce', 'forEach', 'find', 'findIndex', 'includes', 'indexOf', 'toString', 'valueOf', 'hasOwnProperty', 'length', 'test', 'match', 'replace', 'trim', 'toLowerCase', 'toUpperCase'];
+                
+                if (functionName && 
+                    !builtInFunctions.includes(functionName) && 
+                    !commonMethods.includes(functionName) &&
+                    !/^[A-Z]/.test(functionName) && // Not a constructor
+                    functionName !== 'super' && // Not super call
+                    functionName !== 'this' && // Not this reference
+                    functionName.length > 1) { // Not single character
+                    potentialFunctions.add(functionName);
+                }
+            }
+        });
+        
         console.log(`  -> INFO: Found potential types in implementation: ${Array.from(potentialTypes).join(', ')}`);
+        console.log(`  -> INFO: Found potential functions in implementation: ${Array.from(potentialFunctions).join(', ')}`);
         
         // For each potential type, try to find its import in the original file
         potentialTypes.forEach(typeName => {
@@ -209,6 +239,79 @@ export function postProcessGeneratedCode(
                     console.log(`  -> INFO: Adding missing import for '${typeName}' from '${customerImportPath}'`);
                 }
                 // Add more type mappings as needed
+            }
+        });
+        
+        // ENHANCEMENT: For each potential function, try to find its import in the original file
+        potentialFunctions.forEach(functionName => {
+            // Check if this function was already imported from the original file
+            let found = false;
+            
+            // Check named imports
+            for (const [importPath, importedNames] of namedImportsMap.entries()) {
+                if (importedNames.has(functionName)) {
+                    found = true;
+                    break;
+                }
+            }
+            
+            // Check default imports
+            if (!found) {
+                for (const [importPath, defaultImportName] of defaultImportsMap.entries()) {
+                    if (defaultImportName === functionName) {
+                        found = true;
+                        break;
+                    }
+                }
+            }
+            
+            // Check namespace imports (e.g., uuid.v4)
+            if (!found) {
+                for (const [importPath, namespaceImportName] of namespaceImportsMap.entries()) {
+                    // Check if function is called as namespace.function
+                    if (implText.includes(`${namespaceImportName}.${functionName}`)) {
+                        found = true;
+                        break;
+                    }
+                }
+            }
+            
+            if (!found) {
+                // Try to find this function in the original file's imports
+                const originalSourceFile = declaration.getSourceFile();
+                originalSourceFile.getImportDeclarations().forEach((importDecl: import("ts-morph").ImportDeclaration) => {
+                    const moduleSpecifier = importDecl.getModuleSpecifierValue();
+                    
+                    // Check named imports
+                    const namedImports = importDecl.getNamedImports();
+                    namedImports.forEach((namedImport: import("ts-morph").ImportSpecifier) => {
+                        const importName = namedImport.getName();
+                        const aliasName = namedImport.getAliasNode()?.getText() || importName;
+                        
+                        if (aliasName === functionName) {
+                            const importPath = moduleSpecifier;
+                            if (!namedImportsMap.has(importPath)) {
+                                namedImportsMap.set(importPath, new Set());
+                            }
+                            namedImportsMap.get(importPath)!.add(importName === aliasName ? importName : `${importName} as ${aliasName}`);
+                            console.log(`  -> INFO: Adding missing function import for '${functionName}' from '${importPath}'`);
+                            found = true;
+                        }
+                    });
+                    
+                    // Check default imports
+                    const defaultImport = importDecl.getDefaultImport();
+                    if (defaultImport && defaultImport.getText() === functionName) {
+                        const importPath = moduleSpecifier;
+                        defaultImportsMap.set(importPath, functionName);
+                        console.log(`  -> INFO: Adding missing default function import for '${functionName}' from '${importPath}'`);
+                        found = true;
+                    }
+                });
+            }
+            
+            if (!found) {
+                console.log(`  -> WARNING: Could not find import for function '${functionName}' in original file`);
             }
         });
     }

@@ -11,21 +11,25 @@ import { AutoGen } from "aesc";
 export class OrderServiceImpl extends OrderService {
     public createOrder(customerId: string, items: Omit<OrderItem, 'unitPrice'>[]): Order {
         const orderId = uuid();
+        let totalAmount = 0;
         const orderItems: OrderItem[] = [];
 
         for (const item of items) {
             const product = this.productService?.findProductById(item.productId);
             if (!product || !product.canFulfill(item.quantity)) {
-                throw new Error(`Product ${item.productId} is not available or insufficient stock.`);
+                throw new Error(`Product ${item.productId} is out of stock or does not exist.`);
             }
             orderItems.push({ ...item, unitPrice: product.price });
+            totalAmount += product.price * item.quantity;
         }
 
-        const totalAmount = orderItems.reduce((total, item) => total + (item.quantity * item.unitPrice), 0);
         const order = new Order(orderId, customerId, orderItems, OrderStatus.PENDING, new Date(), totalAmount);
-
         this.db?.saveObject(orderId, order);
-        this.notificationService?.sendOrderConfirmation(new Customer(customerId, '', ''), order);
+
+        const customer = this.db?.findObject(customerId) as Customer | undefined;
+        if (customer) {
+            this.notificationService?.sendOrderConfirmation(customer, order);
+        }
 
         return order;
     }
@@ -44,7 +48,11 @@ export class OrderServiceImpl extends OrderService {
 
         order.status = OrderStatus.CONFIRMED;
         this.db?.saveObject(orderId, order);
-        this.notificationService?.sendOrderConfirmed(new Customer(order.customerId, '', ''), order);
+
+        const customer = this.db?.findObject(order.customerId) as Customer | undefined;
+        if (customer) {
+            this.notificationService?.sendOrderConfirmed(customer, order);
+        }
 
         return true;
     }
@@ -57,7 +65,11 @@ export class OrderServiceImpl extends OrderService {
 
         order.status = OrderStatus.PAID;
         this.db?.saveObject(orderId, order);
-        this.notificationService?.sendPaymentConfirmation(new Customer(order.customerId, '', ''), order);
+
+        const customer = this.db?.findObject(order.customerId) as Customer | undefined;
+        if (customer) {
+            this.notificationService?.sendPaymentConfirmation(customer, order);
+        }
 
         return true;
     }
@@ -73,14 +85,18 @@ export class OrderServiceImpl extends OrderService {
                 const product = this.productService?.findProductById(item.productId);
                 if (product) {
                     product.stock += item.quantity;
-                    this.productService?.updateStock(item.productId, product.stock);
+                    this.productService?.updateStock(product.id, product.stock);
                 }
             }
         }
 
         order.status = OrderStatus.CANCELLED;
         this.db?.saveObject(orderId, order);
-        this.notificationService?.sendOrderCancellation(new Customer(order.customerId, '', ''), order);
+
+        const customer = this.db?.findObject(order.customerId) as Customer | undefined;
+        if (customer) {
+            this.notificationService?.sendOrderCancellation(customer, order);
+        }
 
         return true;
     }
@@ -101,6 +117,6 @@ export class OrderServiceImpl extends OrderService {
 
     public getAllOrders(): Order[] {
         const keys = this.db?.getAllKeys() || [];
-        return keys.map(key => this.db?.findObject(key) as Order).filter(order => order !== undefined);
+        return keys.map(key => this.db?.findObject(key) as Order).filter(order => order instanceof Order);
     }
 }

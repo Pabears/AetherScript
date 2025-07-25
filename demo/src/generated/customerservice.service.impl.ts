@@ -5,20 +5,19 @@ import { AutoGen } from "aesc";
 
 export class CustomerServiceImpl extends CustomerService {
     public createCustomer(name: string, email: string, phone?: string, address?: string): Customer {
-        if (name.length === 0) {
-            throw new Error('Name must be provided');
+        if (name.length <= 0 || !/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(email)) {
+            throw new Error('Invalid name or email');
         }
-        const customer = new Customer('', name, email, phone, address);
-        if (!customer.isValidEmail()) {
-            throw new Error('Invalid email format');
-        }
-        const existingCustomer = this.findCustomerByEmail(email);
-        if (existingCustomer) {
+
+        const customerId = crypto.randomUUID();
+        const newCustomer = new Customer(customerId, name, email, phone, address);
+
+        if (this.findCustomerByEmail(email)) {
             throw new Error('Email already exists');
         }
-        customer.id = crypto.randomUUID();
-        this.db?.saveObject(customer.id, customer);
-        return customer;
+
+        this.db?.saveObject(customerId, newCustomer);
+        return newCustomer;
     }
 
     public findCustomerById(customerId: string): Customer | undefined {
@@ -26,8 +25,8 @@ export class CustomerServiceImpl extends CustomerService {
     }
 
     public findCustomerByEmail(email: string): Customer | undefined {
-        const keys = this.db?.getAllKeys() || [];
-        for (const key of keys) {
+        const allKeys = this.db?.getAllKeys() || [];
+        for (const key of allKeys) {
             const customer = this.db?.findObject(key) as Customer | undefined;
             if (customer && customer.email === email) {
                 return customer;
@@ -41,13 +40,14 @@ export class CustomerServiceImpl extends CustomerService {
         if (!customer) {
             return false;
         }
+
         Object.assign(customer, updates);
         this.db?.saveObject(customerId, customer);
         return true;
     }
 
     public getAllCustomers(): Customer[] {
-        const keys = this.db?.getAllKeys() || [];
-        return keys.map(key => this.db?.findObject(key) as Customer);
+        const allKeys = this.db?.getAllKeys() || [];
+        return allKeys.map(key => this.db?.findObject(key) as Customer).filter((c): c is Customer => !!c);
     }
 }

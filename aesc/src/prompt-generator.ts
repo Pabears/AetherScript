@@ -23,7 +23,11 @@ function generateDependencyInfo(
     // Find dependencies by analyzing the declaration
     const originalCode = declaration.getFullText();
     
-    // Extract project dependencies
+    // Extract project dependencies with recursive analysis
+    const processedTypes = new Set<string>();
+    const typesToProcess = new Set<string>();
+    
+    // Find initial dependencies from the original code
     allSourceFiles.forEach(file => {
         if (file === sourceFile) return;
         
@@ -34,15 +38,85 @@ function generateDependencyInfo(
         [...classes, ...interfaces, ...enums].forEach(node => {
             const name = node.getName();
             if (name && originalCode.includes(name)) {
-                const relativePath = path.relative(path.dirname(originalImportPath), file.getFilePath());
-                dependentTypes.set(name, {
-                    path: relativePath,
-                    code: node.getFullText().trim(),
-                    isExternal: false
-                });
+                typesToProcess.add(name);
             }
         });
     });
+    
+    // Recursively process dependencies
+    while (typesToProcess.size > 0) {
+        const currentType = typesToProcess.values().next().value;
+        if (!currentType) {
+            break;
+        }
+        
+        typesToProcess.delete(currentType);
+        
+        if (processedTypes.has(currentType)) {
+            continue;
+        }
+        
+        processedTypes.add(currentType);
+        
+        // Find the type definition
+        allSourceFiles.forEach(file => {
+            if (file === sourceFile) return;
+            
+            const classes = file.getClasses();
+            const interfaces = file.getInterfaces();
+            const enums = file.getEnums();
+            
+            [...classes, ...interfaces, ...enums].forEach(node => {
+                const name = node.getName();
+                if (name && name === currentType) {
+                    const relativePath = path.relative(path.dirname(originalImportPath), file.getFilePath());
+                    const nodeCode = node.getFullText().trim();
+                    
+                    dependentTypes.set(name, {
+                        path: relativePath,
+                        code: nodeCode,
+                        isExternal: false
+                    });
+                    
+                    // ENHANCEMENT: Include all types from the same file to capture related enums/interfaces
+                    // This fixes issues like missing OrderStatus when Order is included
+                    const sameFileClasses = file.getClasses();
+                    const sameFileInterfaces = file.getInterfaces();
+                    const sameFileEnums = file.getEnums();
+                    
+                    [...sameFileClasses, ...sameFileInterfaces, ...sameFileEnums].forEach(sameFileNode => {
+                        const sameFileName = sameFileNode.getName();
+                        if (sameFileName && sameFileName !== name && !processedTypes.has(sameFileName)) {
+                            const sameFileCode = sameFileNode.getFullText().trim();
+                            dependentTypes.set(sameFileName, {
+                                path: relativePath,
+                                code: sameFileCode,
+                                isExternal: false
+                            });
+                            processedTypes.add(sameFileName);
+                            console.log(`[Dependency] Auto-included same-file type: ${sameFileName} (related to ${name})`);
+                        }
+                    });
+                    
+                    // Find additional dependencies in this type's code
+                    allSourceFiles.forEach(depFile => {
+                        if (depFile === sourceFile) return;
+                        
+                        const depClasses = depFile.getClasses();
+                        const depInterfaces = depFile.getInterfaces();
+                        const depEnums = depFile.getEnums();
+                        
+                        [...depClasses, ...depInterfaces, ...depEnums].forEach(depNode => {
+                            const depName = depNode.getName();
+                            if (depName && nodeCode.includes(depName) && !processedTypes.has(depName)) {
+                                typesToProcess.add(depName);
+                            }
+                        });
+                    });
+                }
+            });
+        });
+    }
     
     // Extract third-party dependencies
     const thirdPartyLibraries = extractThirdPartyLibraries(originalCode);
