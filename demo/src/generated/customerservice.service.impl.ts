@@ -5,7 +5,7 @@ import { AutoGen } from "aesc";
 
 export class CustomerServiceImpl extends CustomerService {
     public createCustomer(name: string, email: string, phone?: string, address?: string): Customer {
-        if (name.length <= 0 || !/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(email)) {
+        if (name.length <= 0 || !this.validateEmail(email)) {
             throw new Error('Invalid name or email');
         }
 
@@ -25,14 +25,8 @@ export class CustomerServiceImpl extends CustomerService {
     }
 
     public findCustomerByEmail(email: string): Customer | undefined {
-        const allKeys = this.db?.getAllKeys() || [];
-        for (const key of allKeys) {
-            const customer = this.db?.findObject(key) as Customer | undefined;
-            if (customer && customer.email === email) {
-                return customer;
-            }
-        }
-        return undefined;
+        const allCustomers = this.getAllCustomers();
+        return allCustomers.find(customer => customer.email === email);
     }
 
     public updateCustomer(customerId: string, updates: Partial<Pick<Customer, 'name' | 'phone' | 'address'>>): boolean {
@@ -48,6 +42,11 @@ export class CustomerServiceImpl extends CustomerService {
 
     public getAllCustomers(): Customer[] {
         const allKeys = this.db?.getAllKeys() || [];
-        return allKeys.map(key => this.db?.findObject(key) as Customer).filter((c): c is Customer => !!c);
+        return allKeys.map(key => this.db?.findObject(key) as Customer).filter(customer => customer instanceof Customer);
+    }
+
+    private validateEmail(email: string): boolean {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return emailRegex.test(email);
     }
 }

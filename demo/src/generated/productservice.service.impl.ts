@@ -6,11 +6,11 @@ import { AutoGen } from "aesc";
 export class ProductServiceImpl extends ProductService {
     public createProduct(name: string, price: number, stock: number, category: string, description?: string): Product {
         if (name.length === 0 || price <= 0 || stock < 0) {
-            throw new Error('Invalid product details');
+            throw new Error("Invalid product details");
         }
-        const productId = crypto.randomUUID();
-        const product = new Product(productId, name, price, stock, category, description);
-        this.db?.saveObject(productId, product);
+        const id = crypto.randomUUID();
+        const product = new Product(id, name, price, stock, category, description);
+        this.db?.saveObject(id, product);
         return product;
     }
 
@@ -19,8 +19,8 @@ export class ProductServiceImpl extends ProductService {
     }
 
     public findProductsByCategory(category: string): Product[] {
-        const allProducts = this.getAllProducts();
-        return allProducts.filter(product => product.category === category);
+        const allKeys = this.db?.getAllKeys() || [];
+        return allKeys.map(key => this.db?.findObject(key) as Product).filter(product => product.category === category);
     }
 
     public updateStock(productId: string, newStock: number): boolean {
@@ -44,7 +44,7 @@ export class ProductServiceImpl extends ProductService {
     }
 
     public getAllProducts(): Product[] {
-        const keys = this.db?.getAllKeys() || [];
-        return keys.map(key => this.db?.findObject(key) as Product).filter(product => product instanceof Product);
+        const allKeys = this.db?.getAllKeys() || [];
+        return allKeys.map(key => this.db?.findObject(key) as Product);
     }
 }
