@@ -1,15 +1,19 @@
-import { InterfaceDeclaration, ClassDeclaration } from "ts-morph";
-import { ProviderManager, type ProviderOptions } from './providers';
+import { InterfaceDeclaration, ClassDeclaration } from 'ts-morph'
+import {
+  ProviderManager,
+  ProviderFactory,
+  type ProviderOptions,
+} from './providers'
 
 export interface OllamaResponse {
-    response: string;
+  response: string
 }
 
 // Global provider manager instance
-const providerManager = new ProviderManager();
+const providerManager = new ProviderManager()
 
 // Initialize provider manager with environment variables
-providerManager.loadFromEnvironment();
+providerManager.loadFromEnvironment()
 
 /**
  * Call AI model using the configured provider system
@@ -22,49 +26,53 @@ providerManager.loadFromEnvironment();
  * @returns Generated response text
  */
 export async function callOllamaModel(
-    prompt: string,
-    interfaceName: string,
-    model: string,
-    verbose: boolean,
-    providerName?: string,
-    providerOptions?: ProviderOptions
+  prompt: string,
+  interfaceName: string,
+  model: string,
+  verbose: boolean,
+  providerName?: string,
+  providerOptions?: ProviderOptions,
 ): Promise<string> {
-    try {
-        const { provider, config } = providerManager.createProvider(providerName);
-        
-        // Merge configuration with provided options
-        const options: ProviderOptions = {
-            verbose,
-            endpoint: config.settings.endpoint,
-            auth: config.settings.auth,
-            ...config.settings,
-            ...providerOptions,
-        };
+  try {
+    const { provider, config } = providerManager.createProvider(providerName)
 
-        // Use the configured default model if no specific model is provided
-        const modelToUse = model || config.defaultModel || 'codellama';
-
-        console.log(`  -> Using provider: ${provider.name} with model: ${modelToUse}`);
-        
-        return await provider.generate(prompt, modelToUse, options);
-    } catch (error) {
-        console.error(`Failed to generate code using provider: ${error instanceof Error ? error.message : 'Unknown error'}`);
-        throw error;
+    // Merge configuration with provided options
+    const options: ProviderOptions = {
+      verbose,
+      endpoint: config.settings.endpoint,
+      auth: config.settings.auth,
+      ...config.settings,
+      ...providerOptions,
     }
+
+    // Use the configured default model if no specific model is provided
+    const modelToUse = model || config.defaultModel || 'codellama'
+
+    console.log(
+      `  -> Using provider: ${provider.name} with model: ${modelToUse}`,
+    )
+
+    return await provider.generate(prompt, modelToUse, options)
+  } catch (error) {
+    console.error(
+      `Failed to generate code using provider: ${error instanceof Error ? error.message : 'Unknown error'}`,
+    )
+    throw error
+  }
 }
 
 /**
  * Legacy function name for backward compatibility
  * @deprecated Use callOllamaModel instead
  */
-export const callModel = callOllamaModel;
+export const callModel = callOllamaModel
 
 /**
  * Get the global provider manager instance
  * Useful for configuration and provider management
  */
 export function getProviderManager(): ProviderManager {
-    return providerManager;
+  return providerManager
 }
 
 /**
@@ -75,16 +83,16 @@ export function getProviderManager(): ProviderManager {
  * @param defaultModel Default model for this provider
  */
 export function configureProvider(
-    name: string, 
-    type: string, 
-    settings: Record<string, any>, 
-    defaultModel?: string
+  name: string,
+  type: string,
+  settings: Record<string, unknown>,
+  defaultModel?: string,
 ): void {
-    providerManager.setProviderConfig(name, {
-        type,
-        defaultModel,
-        settings
-    });
+  providerManager.setProviderConfig(name, {
+    type,
+    defaultModel,
+    settings,
+  })
 }
 
 /**
@@ -92,16 +100,15 @@ export function configureProvider(
  * @param providerName Name of the configured provider
  */
 export function setDefaultProvider(providerName: string): void {
-    providerManager.setDefaultProvider(providerName);
+  providerManager.setDefaultProvider(providerName)
 }
 
 /**
  * List all available and configured providers
  */
 export function listProviders(): { available: string[]; configured: string[] } {
-    const { ProviderFactory } = require('./providers');
-    return {
-        available: ProviderFactory.getAvailableProviders(),
-        configured: providerManager.getConfiguredProviders()
-    };
+  return {
+    available: ProviderFactory.getAvailableProviders(),
+    configured: providerManager.getConfiguredProviders(),
+  }
 }
