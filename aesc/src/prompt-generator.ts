@@ -34,6 +34,16 @@ function generateDependencyInfo(
   const typesToProcess = new Set<string>()
 
   // Find initial dependencies from the original code
+  declaration.getSourceFile().getImportDeclarations().forEach(importDecl => {
+      importDecl.getNamedImports().forEach(namedImport => {
+          typesToProcess.add(namedImport.getName());
+      });
+      const defaultImport = importDecl.getDefaultImport();
+      if (defaultImport) {
+          typesToProcess.add(defaultImport.getText());
+      }
+  });
+
   allSourceFiles.forEach((file) => {
     if (file === sourceFile) return
 
@@ -79,7 +89,7 @@ function generateDependencyInfo(
             path.dirname(originalImportPath),
             file.getFilePath(),
           )
-          const nodeCode = node.getFullText().trim()
+          const nodeCode = node.getSourceFile().getFullText().trim()
 
           dependentTypes.set(name, {
             path: relativePath,
@@ -204,7 +214,7 @@ function generateDependencyInfo(
  * Extract third-party library information from code context
  * Build mapping between class names and package names by parsing import statements
  */
-function extractThirdPartyLibraries(
+export function extractThirdPartyLibraries(
   codeContext: string,
 ): { className: string; packageName: string }[] {
   const classToPackageMap = new Map<string, string>()

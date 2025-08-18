@@ -184,7 +184,8 @@ export function getLockData(): string[] {
   if (fs.existsSync(LOCK_FILE)) {
     try {
       return JSON.parse(fs.readFileSync(LOCK_FILE, 'utf-8')) || []
-    } catch {
+    } catch (err) {
+      console.error('Error reading or parsing lock file:', err)
       return []
     }
   }

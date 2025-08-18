@@ -7,7 +7,7 @@ export function postProcessGeneratedCode(
   declaration: InterfaceDeclaration | ClassDeclaration,
   generatedFilePath: string,
 ): string {
-  const project = new Project({ useInMemoryFileSystem: true })
+  const project = declaration.getProject();
   const sourceFile = project.createSourceFile(generatedFilePath, code, {
     overwrite: true,
   })
@@ -174,6 +174,11 @@ export function postProcessGeneratedCode(
       addImport(p.getType())
     })
 
+    // Add imports for constructor parameters
+    implClass.getConstructors().forEach((ctor) => {
+      ctor.getParameters().forEach((p) => addImport(p.getType()));
+    });
+
     // Add imports for all types used in the implementation class methods
     implClass.getMethods().forEach((m) => {
       // Method parameters
@@ -194,7 +199,7 @@ export function postProcessGeneratedCode(
     // Look for common type patterns that might be missed
     const typePatterns = [
       /\bas\s+(\w+)/g, // Type assertions: "as Customer"
-      /:\s*(\w+)\s*[\|\&\?\[\]]/g, // Type annotations: ": Customer |"
+      /:\s*(\w+)/g, // Type annotations: ": Customer"
       /new\s+(\w+)\s*\(/g, // Constructor calls: "new Order("
     ]
 
@@ -317,19 +322,21 @@ export function postProcessGeneratedCode(
       }
 
       if (!found) {
-        // Try to find where this type is defined and add appropriate import
-        // Look for common entity patterns
-        if (typeName === 'Customer') {
-          const customerImportPath = '../entity/customer'
-          if (!namedImportsMap.has(customerImportPath)) {
-            namedImportsMap.set(customerImportPath, new Set())
-          }
-          namedImportsMap.get(customerImportPath)!.add('Customer')
-          console.log(
-            `  -> INFO: Adding missing import for '${typeName}' from '${customerImportPath}'`,
-          )
+        const sourceFiles = declaration.getProject().getSourceFiles();
+        for (const sourceFile of sourceFiles) {
+            if (sourceFile.getClass(typeName) || sourceFile.getInterface(typeName) || sourceFile.getEnum(typeName) || sourceFile.getTypeAlias(typeName)) {
+                // Found the type. Add import.
+                const importPath = path.relative(path.dirname(generatedFilePath), sourceFile.getFilePath()).replace(/\\/g, '/').replace(/\.ts$/, '');
+                const finalPath = importPath.startsWith('.') ? importPath : `./${importPath}`;
+                if (!namedImportsMap.has(finalPath)) {
+                    namedImportsMap.set(finalPath, new Set());
+                }
+                namedImportsMap.get(finalPath)!.add(typeName);
+                console.log(`  -> INFO: Adding missing import for '${typeName}' from '${finalPath}'`);
+                found = true;
+                break;
+            }
         }
-        // Add more type mappings as needed
       }
     })
 

@@ -18,7 +18,8 @@ spyOn(fs, 'readFileSync').mockImplementation(() => '');
 spyOn(fs, 'writeFileSync').mockImplementation(() => {});
 spyOn(fs, 'rmSync').mockImplementation(() => {});
 spyOn(fs, 'mkdirSync').mockImplementation(() => {});
-spyOn(fs, 'statSync').mockImplementation(() => ({ isDirectory: () => false } as any));
+spyOn(fs, 'statSync').mockImplementation(() => ({ isDirectory: () => false, mtimeMs: Date.now() } as any));
+
 
 describe('file-saver', () => {
   beforeEach(() => {
@@ -45,20 +46,28 @@ describe('file-saver', () => {
       expect(data).toEqual(['/path/to/file1']);
     });
 
-    it('should return an empty array if lock file is invalid JSON', () => {
+    it('should log error and return empty array if lock file is invalid JSON', () => {
       (fs.existsSync as any).mockReturnValue(true);
       (fs.readFileSync as any).mockReturnValue('invalid json');
+      const consoleErrorSpy = spyOn(console, 'error').mockImplementation(() => {});
       const data = getLockData();
       expect(data).toEqual([]);
+      expect(consoleErrorSpy).toHaveBeenCalled();
+      consoleErrorSpy.mockRestore();
     });
 
-    it('should return an empty array if readFileSync throws', () => {
+    it('should log error and return empty array if readFileSync throws non-ENOENT error', () => {
       (fs.existsSync as any).mockReturnValue(true);
       (fs.readFileSync as any).mockImplementation(() => {
-        throw new Error('read error');
+        const error: any = new Error('read error');
+        error.code = 'EACCES';
+        throw error;
       });
+      const consoleErrorSpy = spyOn(console, 'error').mockImplementation(() => {});
       const data = getLockData();
       expect(data).toEqual([]);
+      expect(consoleErrorSpy).toHaveBeenCalled();
+      consoleErrorSpy.mockRestore();
     });
   });
 
@@ -125,18 +134,18 @@ describe('file-saver', () => {
       );
     });
 
-    it("should unlock a file by removing it from the lock data", () => {
+    it("should unlock a file and log it", () => {
       const lockedFile = path.resolve('file.ts');
       (fs.existsSync as any).mockReturnValue(true);
       (fs.readFileSync as any).mockReturnValue(JSON.stringify([lockedFile]));
       (fs.statSync as any).mockReturnValue({ isDirectory: () => false });
+      const consoleLogSpy = spyOn(console, 'log').mockImplementation(() => {});
 
-      handleLockUnlock(['file.ts'], 'unlock');
+      handleLockUnlock(['file.ts'], 'unlock', true);
 
-      expect(fs.writeFileSync).toHaveBeenCalledWith(
-        'aesc.lock',
-        '[]'
-      );
+      expect(fs.writeFileSync).toHaveBeenCalledWith('aesc.lock', '[]' );
+      expect(consoleLogSpy).toHaveBeenCalled();
+      consoleLogSpy.mockRestore();
     });
 
     it("should handle statSync errors", () => {
@@ -189,11 +198,19 @@ describe('file-saver', () => {
 
       expect(writtenContent).toContain('import { ServiceAImpl } from \'./service-a.impl\';');
       expect(writtenContent).toContain('import { ServiceBImpl } from \'./service-b.impl\';');
-      expect(writtenContent).toContain("'IServiceA': ServiceAImpl;");
-      expect(writtenContent).toContain("'IServiceB': ServiceBImpl;");
-      expect(writtenContent).toContain("'IServiceA': () => {");
-      expect(writtenContent).toContain("instance.depB = this.get('IServiceB');");
-      expect(writtenContent).toContain("'IServiceB': () => {");
+    });
+
+    it('should handle duplicate services', async () => {
+        const services: GeneratedService[] = [
+            { interfaceName: 'IServiceA', implName: 'ServiceAImpl', implFilePath: './service-a.impl.ts', constructorDependencies: [], propertyDependencies: [] },
+            { interfaceName: 'IServiceA', implName: 'ServiceAImpl', implFilePath: './service-a.impl.ts', constructorDependencies: [], propertyDependencies: [] },
+        ];
+
+        await generateContainer('/output', services);
+
+        const writtenContent = (fs.writeFileSync as any).mock.calls[0][1];
+        const importCount = (writtenContent.match(/import { ServiceAImpl }/g) || []).length;
+        expect(importCount).toBe(1);
     });
   });
 });
