@@ -1,33 +1,36 @@
-import { describe, it, expect, beforeEach, spyOn, afterEach } from 'bun:test'
-import { CloudflareProvider } from './cloudflare-provider'
+import { describe, it, expect, beforeEach, spyOn, afterEach } from 'bun:test';
+import { CloudflareProvider } from './cloudflare-provider';
 
 describe('CloudflareProvider', () => {
-  let provider: CloudflareProvider
-  let fetchSpy: any
+  let provider: CloudflareProvider;
+  const spies: { mockRestore: () => void }[] = [];
+  let fetchSpy: any; // Use a dedicated variable for the fetch spy
 
   beforeEach(() => {
-    provider = new CloudflareProvider()
-    fetchSpy = spyOn(globalThis, 'fetch')
-  })
+    provider = new CloudflareProvider();
+    fetchSpy = spyOn(globalThis, 'fetch');
+    spies.push(fetchSpy); // Add to array for cleanup
+  });
 
   afterEach(() => {
-    fetchSpy.mockRestore()
-  })
+    spies.forEach(s => s.mockRestore());
+    spies.length = 0;
+  });
 
   describe('generate', () => {
     it('should throw if no endpoint is provided', async () => {
-      await expect(provider.generate('prompt', 'model')).rejects.toThrow('Cloudflare provider requires an endpoint URL')
-    })
+      await expect(provider.generate('prompt', 'model')).rejects.toThrow('Cloudflare provider requires an endpoint URL');
+    });
 
     it('should send a valid request and handle a simple JSON response', async () => {
-      const responseData = { result: { response: 'test response' } }
-      fetchSpy.mockResolvedValue(new Response(JSON.stringify(responseData)))
+      const responseData = { result: { response: 'test response' } };
+      fetchSpy.mockResolvedValue(new Response(JSON.stringify(responseData)));
 
-      const response = await provider.generate('prompt', 'model', { endpoint: 'test-endpoint' })
+      const response = await provider.generate('prompt', 'model', { endpoint: 'test-endpoint' });
 
-      expect(fetchSpy).toHaveBeenCalledWith('test-endpoint', expect.any(Object))
-      expect(response).toBe('test response')
-    })
+      expect(fetchSpy).toHaveBeenCalledWith('test-endpoint', expect.any(Object));
+      expect(response).toBe('test response');
+    });
 
     it('should handle streaming text/event-stream response', async () => {
         const streamResponse = `data: {"response": "hello "}\n\ndata: {"response": "world"}\n\n`;
@@ -41,25 +44,25 @@ describe('CloudflareProvider', () => {
     });
 
     it('should throw on non-ok response', async () => {
-      fetchSpy.mockResolvedValue(new Response('Error', { status: 500 }))
-      await expect(provider.generate('prompt', 'model', { endpoint: 'test-endpoint' })).rejects.toThrow(/Cloudflare request failed/)
-    })
-  })
+      fetchSpy.mockResolvedValue(new Response('Error', { status: 500 }));
+      await expect(provider.generate('prompt', 'model', { endpoint: 'test-endpoint' })).rejects.toThrow(/Cloudflare request failed/);
+    });
+  });
 
   describe('validateConnection', () => {
     it('should warn if env vars are not set', () => {
-      const consoleWarnSpy = spyOn(console, 'warn')
-      provider.validateConnection()
-      expect(consoleWarnSpy).toHaveBeenCalled()
-      consoleWarnSpy.mockRestore()
-    })
-  })
+      const consoleWarnSpy = spyOn(console, 'warn');
+      spies.push(consoleWarnSpy); // Track the spy
+      provider.validateConnection();
+      expect(consoleWarnSpy).toHaveBeenCalled();
+    });
+  });
 
   describe('getAvailableModels', () => {
     it('should return a list of models', async () => {
-      const models = await provider.getAvailableModels()
-      expect(models.length).toBeGreaterThan(0)
-      expect(models).toContain('@cf/meta/llama-2-7b-chat-int8')
-    })
-  })
-})
+      const models = await provider.getAvailableModels();
+      expect(models.length).toBeGreaterThan(0);
+      expect(models).toContain('@cf/meta/llama-2-7b-chat-int8');
+    });
+  });
+});

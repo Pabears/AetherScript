@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, spyOn } from 'bun:test';
+import { describe, it, expect, beforeEach, spyOn, afterEach } from 'bun:test';
 import * as fs from 'fs';
 import * as path from 'path';
 import { Project } from 'ts-morph';
@@ -12,24 +12,23 @@ import {
   saveGeneratedFile,
 } from './file-saver';
 
-// Mock fs module
-spyOn(fs, 'existsSync').mockImplementation(() => false);
-spyOn(fs, 'readFileSync').mockImplementation(() => '');
-spyOn(fs, 'writeFileSync').mockImplementation(() => {});
-spyOn(fs, 'rmSync').mockImplementation(() => {});
-spyOn(fs, 'mkdirSync').mockImplementation(() => {});
-spyOn(fs, 'statSync').mockImplementation(() => ({ isDirectory: () => false, mtimeMs: Date.now() } as any));
-
-
 describe('file-saver', () => {
+  const spies: any[] = [];
+
   beforeEach(() => {
-    // Reset mocks before each test
-    (fs.existsSync as any).mockClear();
-    (fs.readFileSync as any).mockClear();
-    (fs.writeFileSync as any).mockClear();
-    (fs.rmSync as any).mockClear();
-    (fs.mkdirSync as any).mockClear();
-    (fs.statSync as any).mockClear();
+    spies.push(spyOn(fs, 'existsSync').mockImplementation(() => false));
+    spies.push(spyOn(fs, 'readFileSync').mockImplementation(() => ''));
+    spies.push(spyOn(fs, 'writeFileSync').mockImplementation(() => {}));
+    spies.push(spyOn(fs, 'rmSync').mockImplementation(() => {}));
+    spies.push(spyOn(fs, 'mkdirSync').mockImplementation(() => {}));
+    spies.push(spyOn(fs, 'statSync').mockImplementation(() => ({ isDirectory: () => false, mtimeMs: Date.now() } as any)));
+  });
+
+  afterEach(() => {
+    for (const spy of spies) {
+      spy.mockRestore();
+    }
+    spies.length = 0;
   });
 
   describe('getLockData', () => {
@@ -50,10 +49,10 @@ describe('file-saver', () => {
       (fs.existsSync as any).mockReturnValue(true);
       (fs.readFileSync as any).mockReturnValue('invalid json');
       const consoleErrorSpy = spyOn(console, 'error').mockImplementation(() => {});
+      spies.push(consoleErrorSpy);
       const data = getLockData();
       expect(data).toEqual([]);
       expect(consoleErrorSpy).toHaveBeenCalled();
-      consoleErrorSpy.mockRestore();
     });
 
     it('should log error and return empty array if readFileSync throws non-ENOENT error', () => {
@@ -64,10 +63,10 @@ describe('file-saver', () => {
         throw error;
       });
       const consoleErrorSpy = spyOn(console, 'error').mockImplementation(() => {});
+      spies.push(consoleErrorSpy);
       const data = getLockData();
       expect(data).toEqual([]);
       expect(consoleErrorSpy).toHaveBeenCalled();
-      consoleErrorSpy.mockRestore();
     });
   });
 
@@ -140,12 +139,12 @@ describe('file-saver', () => {
       (fs.readFileSync as any).mockReturnValue(JSON.stringify([lockedFile]));
       (fs.statSync as any).mockReturnValue({ isDirectory: () => false });
       const consoleLogSpy = spyOn(console, 'log').mockImplementation(() => {});
+      spies.push(consoleLogSpy);
 
       handleLockUnlock(['file.ts'], 'unlock', true);
 
       expect(fs.writeFileSync).toHaveBeenCalledWith('aesc.lock', '[]' );
       expect(consoleLogSpy).toHaveBeenCalled();
-      consoleLogSpy.mockRestore();
     });
 
     it("should handle statSync errors", () => {
@@ -153,6 +152,7 @@ describe('file-saver', () => {
         throw new Error('stat error');
       });
       const consoleErrorSpy = spyOn(console, 'error').mockImplementation(() => {});
+      spies.push(consoleErrorSpy);
       handleLockUnlock(['file.ts'], 'lock');
       expect(consoleErrorSpy).toHaveBeenCalled();
     });

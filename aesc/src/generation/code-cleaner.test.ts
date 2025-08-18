@@ -1,7 +1,14 @@
-import { describe, it, expect, spyOn } from 'bun:test'
+import { describe, it, expect, spyOn, afterEach } from 'bun:test'
 import { cleanGeneratedCode } from './code-cleaner'
 
 describe('cleanGeneratedCode', () => {
+  const spies: any[] = [];
+  afterEach(() => {
+    for (const spy of spies) {
+      spy.mockRestore();
+    }
+    spies.length = 0;
+  });
   it('should extract code from a TypeScript block and find the impl class', () => {
     const rawResponse = `
 Some text before the code block.
@@ -47,7 +54,8 @@ export class AnotherClass {
   })
 
   it('should log verbose output when verbose is true', () => {
-    const consoleLogSpy = spyOn(console, 'log')
+    const consoleLogSpy = spyOn(console, 'log').mockImplementation(() => {})
+    spies.push(consoleLogSpy);
     const rawResponse = `
 \`\`\`typescript
 export class TestImpl implements ITest {
@@ -57,11 +65,11 @@ export class TestImpl implements ITest {
     `
     cleanGeneratedCode(rawResponse, 'Test', true)
     expect(consoleLogSpy).toHaveBeenCalled()
-    consoleLogSpy.mockRestore()
   })
 
   it('should log verbose warning when impl class is not found and verbose is true', () => {
-    const consoleLogSpy = spyOn(console, 'log')
+    const consoleLogSpy = spyOn(console, 'log').mockImplementation(() => {})
+    spies.push(consoleLogSpy);
     const rawResponse = `
 \`\`\`typescript
 export class AnotherClass {
@@ -73,6 +81,5 @@ export class AnotherClass {
     expect(consoleLogSpy).toHaveBeenCalledWith(
       `  -> WARN: Could not extract 'TestImpl' from response. Using the full response as fallback.`
     )
-    consoleLogSpy.mockRestore()
   })
 })
