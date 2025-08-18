@@ -109,8 +109,12 @@ export class JSDocFormatter {
       unknown: 'any',
     }
 
+    function escapeRegExp(string: string) {
+        return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // $& means the whole matched string
+    }
+
     for (const [complex, simple] of Object.entries(typeMap)) {
-      simplified = simplified.replace(new RegExp(complex, 'g'), simple)
+      simplified = simplified.replace(new RegExp(escapeRegExp(complex), 'g'), simple)
     }
 
     // If type is too complex, simplify to any

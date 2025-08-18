@@ -44,9 +44,9 @@ export class JSDocExtractor {
   private jsdocDir: string
   private projectPath: string
 
-  constructor(projectPath: string) {
+  constructor(projectPath: string, project?: Project) {
     this.projectPath = projectPath
-    this.project = new Project({
+    this.project = project || new Project({
       tsConfigFilePath: path.join(projectPath, 'tsconfig.json'),
     })
     this.jsdocDir = path.join(projectPath, '.jsdoc')
@@ -157,28 +157,6 @@ export class JSDocExtractor {
         const sourceFile = this.project.addSourceFileAtPath(filePath)
 
         console.log(`[JSDoc] Processing file: ${filePath}`)
-
-        // Find main class or interface declarations
-        const classes = sourceFile.getClasses()
-        const interfaces = sourceFile.getInterfaces()
-
-        console.log(
-          `[JSDoc] Found ${classes.length} classes and ${interfaces.length} interfaces`,
-        )
-
-        // Process all class declarations (not just name-matching ones)
-        for (const classDecl of classes) {
-          const className = classDecl.getName()
-          console.log(`[JSDoc] Processing class: ${className}`)
-          this.extractFromClassDeclaration(classDecl, jsdocInfo)
-        }
-
-        // Process all interface declarations
-        for (const interfaceDecl of interfaces) {
-          const interfaceName = interfaceDecl.getName()
-          console.log(`[JSDoc] Processing interface: ${interfaceName}`)
-          this.extractFromInterfaceDeclaration(interfaceDecl, jsdocInfo)
-        }
 
         // Find exported declarations
         const exportedDeclarations = sourceFile.getExportedDeclarations()

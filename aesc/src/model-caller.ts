@@ -9,11 +9,15 @@ export interface OllamaResponse {
   response: string
 }
 
-// Global provider manager instance
-const providerManager = new ProviderManager()
+let defaultManager: ProviderManager | undefined;
 
-// Initialize provider manager with environment variables
-providerManager.loadFromEnvironment()
+function getDefaultProviderManager(): ProviderManager {
+    if (!defaultManager) {
+        defaultManager = new ProviderManager();
+        defaultManager.loadFromEnvironment();
+    }
+    return defaultManager;
+}
 
 /**
  * Call AI model using the configured provider system
@@ -23,6 +27,7 @@ providerManager.loadFromEnvironment()
  * @param verbose Enable verbose logging
  * @param providerName Optional provider name (defaults to configured default)
  * @param providerOptions Optional provider-specific options
+ * @param manager Optional ProviderManager instance
  * @returns Generated response text
  */
 export async function callOllamaModel(
@@ -32,7 +37,9 @@ export async function callOllamaModel(
   verbose: boolean,
   providerName?: string,
   providerOptions?: ProviderOptions,
+  manager?: ProviderManager,
 ): Promise<string> {
+  const providerManager = manager || getDefaultProviderManager();
   try {
     const { provider, config } = providerManager.createProvider(providerName)
 
@@ -72,7 +79,7 @@ export const callModel = callOllamaModel
  * Useful for configuration and provider management
  */
 export function getProviderManager(): ProviderManager {
-  return providerManager
+  return getDefaultProviderManager();
 }
 
 /**
@@ -81,13 +88,16 @@ export function getProviderManager(): ProviderManager {
  * @param type Provider type (ollama, cloudflare, etc.)
  * @param settings Provider-specific settings
  * @param defaultModel Default model for this provider
+ * @param manager Optional ProviderManager instance
  */
 export function configureProvider(
   name: string,
   type: string,
   settings: Record<string, unknown>,
   defaultModel?: string,
+  manager?: ProviderManager,
 ): void {
+  const providerManager = manager || getDefaultProviderManager();
   providerManager.setProviderConfig(name, {
     type,
     defaultModel,
@@ -98,15 +108,19 @@ export function configureProvider(
 /**
  * Set the default provider to use
  * @param providerName Name of the configured provider
+ * @param manager Optional ProviderManager instance
  */
-export function setDefaultProvider(providerName: string): void {
+export function setDefaultProvider(providerName: string, manager?: ProviderManager): void {
+  const providerManager = manager || getDefaultProviderManager();
   providerManager.setDefaultProvider(providerName)
 }
 
 /**
  * List all available and configured providers
+ * @param manager Optional ProviderManager instance
  */
-export function listProviders(): { available: string[]; configured: string[] } {
+export function listProviders(manager?: ProviderManager): { available: string[]; configured: string[] } {
+  const providerManager = manager || getDefaultProviderManager();
   return {
     available: ProviderFactory.getAvailableProviders(),
     configured: providerManager.getConfiguredProviders(),
