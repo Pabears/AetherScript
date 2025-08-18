@@ -1,6 +1,6 @@
-import { Project, ClassDeclaration, SourceFile } from 'ts-morph';
-import { getDependencies, analyzeSourceFiles, PropertyDependency } from './file-analysis';
-import * as path from 'path';
+import { Project } from 'ts-morph';
+import { getDependencies, analyzeSourceFiles } from './file-analysis';
+import { describe, it, expect, beforeEach, afterEach, spyOn } from 'bun:test';
 
 // Dummy AutoGen decorator for testing purposes
 function AutoGen() {
@@ -9,21 +9,25 @@ function AutoGen() {
 
 describe('file-analysis', () => {
   let project: Project;
+  const spies: { mockRestore: () => void }[] = [];
 
   beforeEach(() => {
     project = new Project({
       useInMemoryFileSystem: true,
       compilerOptions: {
-        lib: ["es5", "dom"], // Added this
+        lib: ["es5", "dom"],
       },
     });
   });
 
+  afterEach(() => {
+    spies.forEach(s => s.mockRestore());
+    spies.length = 0;
+  });
+
   describe('getDependencies', () => {
     it('should correctly extract constructor and AutoGen property dependencies', () => {
-      const sourceFile = project.createSourceFile('src/test.ts', ` // Changed path to src/
-        import { AutoGen } from './decorators'; // Mocking AutoGen import
-
+      const sourceFile = project.createSourceFile('src/test.ts', `
         interface DependencyA {}
         interface DependencyB {}
         interface DependencyC {}
@@ -34,7 +38,7 @@ describe('file-analysis', () => {
           @AutoGen()
           myProp1: DependencyC;
 
-          myProp2: string; // Should be ignored
+          myProp2: string;
         }
       `);
 
@@ -46,7 +50,7 @@ describe('file-analysis', () => {
     });
 
     it('should handle classes with no constructor or no AutoGen properties', () => {
-      const sourceFile = project.createSourceFile('src/test2.ts', ` // Changed path to src/
+      const sourceFile = project.createSourceFile('src/test2.ts', `
         class AnotherService {
           someField: string;
         }
@@ -60,9 +64,7 @@ describe('file-analysis', () => {
     });
 
     it('should handle union types for AutoGen properties', () => {
-      const sourceFile = project.createSourceFile('src/test3.ts', ` // Changed path to src/
-        import { AutoGen } from './decorators';
-
+      const sourceFile = project.createSourceFile('src/test3.ts', `
         interface DependencyD {}
 
         class UnionService {
@@ -81,8 +83,8 @@ describe('file-analysis', () => {
 
   describe('analyzeSourceFiles', () => {
     it('should identify services with AutoGen properties across multiple files', () => {
-      project.createSourceFile('src/decorators.ts', `export function AutoGen() { return (target: object, propertyKey: string) => {}; }`); // Changed path to src/
-      const file1 = project.createSourceFile('src/serviceA.ts', ` // Changed path to src/
+      project.createSourceFile('src/decorators.ts', `export function AutoGen() { return (target: object, propertyKey: string) => {}; }`);
+      project.createSourceFile('src/serviceA.ts', `
         import { AutoGen } from './decorators';
         interface IServiceA {}
         class ServiceAImpl implements IServiceA {
@@ -90,45 +92,38 @@ describe('file-analysis', () => {
           dep: IServiceB;
         }
       `);
-      const file2 = project.createSourceFile('src/serviceB.ts', ` // Changed path to src/
+      project.createSourceFile('src/serviceB.ts', `
         interface IServiceB {}
         abstract class ServiceBBase implements IServiceB {}
       `);
-      const file3 = project.createSourceFile('src/serviceC.ts', ` // Changed path to src/
+      project.createSourceFile('src/serviceC.ts', `
         interface IServiceC {}
         class ServiceCImpl implements IServiceC {
           constructor(private serviceA: IServiceA) {}
         }
       `);
 
+      const logMessages: string[] = [];
+      const logSpy = spyOn(console, 'log').mockImplementation((...args: unknown[]) => {
+        logMessages.push(args.join(' '));
+      });
+      spies.push(logSpy);
+
       const servicesToGenerate = analyzeSourceFiles(project, []);
       
       expect(servicesToGenerate.size).toBe(1);
-      expect(servicesToGenerate.has('ServiceBBase')).toBe(true); // Changed from 'IServiceB' to 'ServiceBBase'
-      const serviceBEntry = servicesToGenerate.get('ServiceBBase'); // Changed from 'IServiceB' to 'ServiceBBase'
+      expect(servicesToGenerate.has('ServiceBBase')).toBe(true);
+      const serviceBEntry = servicesToGenerate.get('ServiceBBase');
       expect(serviceBEntry?.declaration.getName()).toBe('ServiceBBase');
       expect(serviceBEntry?.sourceFile.getFilePath()).toContain('src/serviceB.ts');
 
-      const originalConsoleLog = console.log;
-      let logCalls = 0;
-      const logMessages: string[] = [];
-      console.log = (...args: unknown[]) => {
-        logCalls++;
-        logMessages.push(args.join(' '));
-      };
-
-      // Rerun analysis to capture log
-      analyzeSourceFiles(project, []);
-
-      expect(logCalls).toBe(1);
+      expect(logSpy).toHaveBeenCalled();
       expect(logMessages[0]).toContain('Found @AutoGen on ServiceAImpl.dep');
-
-      console.log = originalConsoleLog;
     });
 
     it('should filter files if a file list is provided', () => {
-      project.createSourceFile('src/decorators.ts', `export function AutoGen() { return (target: object, propertyKey: string) => {}; }`); // Changed path to src/
-      const file1 = project.createSourceFile('src/serviceX.ts', ` // Changed path to src/
+      project.createSourceFile('src/decorators.ts', `export function AutoGen() { return (target: object, propertyKey: string) => {}; }`);
+      project.createSourceFile('src/serviceX.ts', `
         import { AutoGen } from './decorators';
         interface IX {}
         class XImpl implements IX {
@@ -136,11 +131,11 @@ describe('file-analysis', () => {
           dep: IY;
         }
       `);
-      const file2 = project.createSourceFile('src/serviceY.ts', ` // Changed path to src/
+      project.createSourceFile('src/serviceY.ts', `
         interface IY {}
         abstract class YBase implements IY {}
       `);
-      const file3 = project.createSourceFile('src/serviceZ.ts', ` // Changed path to src/
+      project.createSourceFile('src/serviceZ.ts', `
         import { AutoGen } from './decorators';
         interface IZ {}
         class ZImpl implements IZ {
@@ -148,81 +143,69 @@ describe('file-analysis', () => {
           dep: IW;
         }
       `);
-      const file4 = project.createSourceFile('src/serviceW.ts', ` // Changed path to src/
+      project.createSourceFile('src/serviceW.ts', `
         interface IW {}
         abstract class WBase implements IW {} 
       `);
 
-      const servicesToGenerate = analyzeSourceFiles(project, ['servicex.ts', 'servicew.ts']); // Filenames remain the same for filtering
+      const servicesToGenerate = analyzeSourceFiles(project, ['servicex.ts', 'servicew.ts']);
 
       expect(servicesToGenerate.size).toBe(1);
-      expect(servicesToGenerate.has('YBase')).toBe(true); // Changed from 'IY' to 'YBase'
-      const serviceYEntry = servicesToGenerate.get('YBase'); // Changed from 'IY' to 'YBase'
+      expect(servicesToGenerate.has('YBase')).toBe(true);
+      const serviceYEntry = servicesToGenerate.get('YBase');
       expect(serviceYEntry?.declaration.getName()).toBe('YBase');
       expect(serviceYEntry?.sourceFile.getFilePath()).toContain('src/serviceY.ts');
     });
 
     it('should handle cases where AutoGen type cannot be resolved or is not an interface/abstract class', () => {
-      project.createSourceFile('src/decorators.ts', `export function AutoGen() { return (target: object, propertyKey: string) => {}; }`); // Changed path to src/
-      const file1 = project.createSourceFile('src/invalidService.ts', ` // Changed path to src/
+      project.createSourceFile('src/decorators.ts', `export function AutoGen() { return (target: object, propertyKey: string) => {}; }`);
+      project.createSourceFile('src/invalidService.ts', `
         import { AutoGen } from './decorators';
         class InvalidService {
           @AutoGen()
-          dep: string; // Primitive type, should be ignored/error
+          dep: string;
         }
       `);
-      const file2 = project.createSourceFile('src/anotherInvalidService.ts', ` // Changed path to src/
+      project.createSourceFile('src/anotherInvalidService.ts', `
         import { AutoGen } from './decorators';
         class AnotherInvalidService {
           @AutoGen()
-          dep: NotAValidType; // Unresolved type (should hit !typeSymbol)
+          dep: NotAValidType;
         }
       `);
-      const file3 = project.createSourceFile('src/undefinedUnion.ts', ` // New file for undefined union
+      project.createSourceFile('src/undefinedUnion.ts', `
         import { AutoGen } from './decorators';
         class UndefinedUnionService {
           @AutoGen()
-          dep: undefined | undefined; // Union of only undefined types (should hit !targetType)
+          dep: undefined | undefined;
         }
       `);
 
-      // Temporarily reassign console.error for mocking
-      const originalConsoleError = console.error;
-      let errorCalls = 0;
-      console.error = (...args: unknown[]) => {
-        errorCalls++;
-        // Optionally log for debugging: originalConsoleError(...args);
-      };
+      const errorSpy = spyOn(console, 'error').mockImplementation(() => {});
+      spies.push(errorSpy);
 
       const servicesToGenerate = analyzeSourceFiles(project, []);
       
       expect(servicesToGenerate.size).toBe(0);
-      expect(errorCalls).toBe(3); // Expecting errors for invalidService, anotherInvalidService, and undefinedUnion
-
-      // Restore original console.error
-      console.error = originalConsoleError;
+      expect(errorSpy).toHaveBeenCalledTimes(3);
     });
 
     it('should log an error if an AutoGen interface has no abstract class implementation', () => {
       project.createSourceFile('src/decorators.ts', `export function AutoGen() { return (target: object, propertyKey: string) => {}; }`);
       project.createSourceFile('src/noImplInterface.ts', `
         import { AutoGen } from './decorators';
-        interface IMyInterface {} // No abstract class implements this
+        interface IMyInterface {}
         class ServiceUsingInterface {
           @AutoGen()
           dep: IMyInterface;
         }
       `);
 
-      const originalConsoleError = console.error;
-      let errorCalls = 0;
-      console.error = (...args: unknown[]) => {
-        errorCalls++;
-      };
+      const errorSpy = spyOn(console, 'error').mockImplementation(() => {});
+      spies.push(errorSpy);
 
       analyzeSourceFiles(project, []);
-      expect(errorCalls).toBe(1);
-      console.error = originalConsoleError;
+      expect(errorSpy).toHaveBeenCalledTimes(1);
     });
 
     it('should handle unresolvable type symbols', () => {
@@ -235,20 +218,16 @@ describe('file-analysis', () => {
         }
       `);
 
-      const originalConsoleError = console.error;
-      let errorCalls = 0;
       const errorMessages: string[] = [];
-      console.error = (...args: unknown[]) => {
-        errorCalls++;
+      const errorSpy = spyOn(console, 'error').mockImplementation((...args: unknown[]) => {
         errorMessages.push(args.join(' '));
-      };
+      });
+      spies.push(errorSpy);
 
       analyzeSourceFiles(project, []);
 
-      expect(errorCalls).toBe(1);
+      expect(errorSpy).toHaveBeenCalledTimes(1);
       expect(errorMessages[0]).toContain('Error: Could not find symbol for type UnresolvableType');
-
-      console.error = originalConsoleError;
     });
   });
 });
