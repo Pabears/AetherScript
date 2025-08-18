@@ -68,7 +68,11 @@ export async function getAllExistingServices(
       .join('')
 
     // Skip if already in newly generated services
-    if (newlyGeneratedServices.some((s) => s.interfaceName === interfaceName)) {
+    if (
+      newlyGeneratedServices.some(
+        (s) => s.interfaceName.toLowerCase() === interfaceName.toLowerCase(),
+      )
+    ) {
       continue
     }
 
