@@ -8,7 +8,7 @@ import { hideBin } from 'yargs/helpers';
 
 // Import workflow modules
 import { analyzeSourceFiles, getDependencies, type GeneratedService } from './file-analysis';
-import { generatePrompt } from './prompt-generator';
+import { generatePrompt } from './prompts/implementation';
 import { callOllamaModel } from './model-caller';
 import { cleanGeneratedCode } from './code-cleaner';
 import { postProcessGeneratedCode, validateGeneratedCode } from './post-processor';

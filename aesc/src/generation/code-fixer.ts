@@ -2,7 +2,8 @@ import { ClassDeclaration, InterfaceDeclaration } from 'ts-morph';
 import { callOllamaModel } from '../model-caller';
 import { cleanGeneratedCode } from './code-cleaner';
 import { postProcessGeneratedCode, validateGeneratedCode } from './post-processor';
-import { generatePrompt, generateFixPrompt } from '../prompt-generator';
+import { generateFixPrompt } from '../prompts/implementation';
+import { generateDependencyInfo } from '../core/dependency-analyzer';
 
 export interface CodeFixResult {
     success: boolean;
@@ -44,10 +45,14 @@ export async function fixGeneratedCode(
         
         try {
             // Use the dedicated generateFixPrompt function instead of regex extraction
-            const fixPrompt = generateFixPrompt(
+            const { dependenciesText } = generateDependencyInfo(
                 declaration,
                 originalImportPath,
-                implFilePath,
+                implFilePath
+            );
+            const fixPrompt = generateFixPrompt(
+                declaration,
+                dependenciesText,
                 currentCode,
                 errors,
                 provider

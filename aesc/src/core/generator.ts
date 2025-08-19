@@ -4,7 +4,8 @@ import * as fs from 'fs';
 
 // Import workflow modules
 import { analyzeSourceFiles, getDependencies, type GeneratedService } from '../file-analysis';
-import { generatePrompt } from '../prompt-generator';
+import { generateDependencyInfo } from './dependency-analyzer';
+import { generatePrompt } from '../prompts/implementation';
 import { callOllamaModel } from '../model-caller';
 import { cleanGeneratedCode } from '../generation/code-cleaner';
 import { postProcessGeneratedCode, validateGeneratedCode } from '../generation/post-processor';
@@ -152,10 +153,17 @@ async function generateSingleService(
         console.log(`  -> Generating implementation for ${interfaceName}...`);
         const originalImportPath = path.relative(path.dirname(implFilePath), declaration.getSourceFile().getFilePath()).replace(/\\/g, '/').replace(/\.ts$/, '');
         
-        // Step 2: Prompt Generate
-        const prompt = generatePrompt(declaration, originalImportPath, implFilePath, options.provider);
+        // Step 2: Dependency Analysis
+        const { dependenciesText, originalCode } = generateDependencyInfo(
+            declaration,
+            originalImportPath,
+            implFilePath
+        );
+
+        // Step 3: Prompt Generate
+        const prompt = generatePrompt(declaration, dependenciesText, originalCode, options.provider);
         
-        // Step 3: Model Call
+        // Step 4: Model Call
         const rawResponse = await callOllamaModel(prompt, interfaceName, options.model, options.verbose, options.provider);
         
         // Step 4: Code Clear
