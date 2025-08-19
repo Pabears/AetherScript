@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'bun:test'
-import { DEFAULT_CONFIG, validateConfig } from './index'
+import { DEFAULT_CONFIG, validateConfig } from '../../src/config'
 
 describe('config', () => {
   describe('validateConfig', () => {

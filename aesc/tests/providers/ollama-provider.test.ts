@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, spyOn, afterEach } from 'bun:test';
-import { OllamaProvider } from './ollama-provider';
+import { OllamaProvider } from '../../src/providers/ollama-provider';
 
 describe('OllamaProvider', () => {
   let provider: OllamaProvider;

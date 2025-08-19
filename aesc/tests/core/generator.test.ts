@@ -9,14 +9,32 @@ import {
 } from 'bun:test'
 import * as fs from 'fs'
 import * as path from 'path'
-import { Project, ClassDeclaration, InterfaceDeclaration } from 'ts-morph'
+import * as tsMorph from 'ts-morph'
 import {
   getAllExistingServices,
   generateCode,
   type GenerationResult,
   type FileStats,
-} from './generator'
-import type { GenerateOptions } from '../types'
+} from '../../src/core/generator'
+import type { GenerateOptions } from '../../src/types'
+
+mock.module('ts-morph', () => {
+  return {
+    ...tsMorph,
+    Project: class extends tsMorph.Project {
+      constructor(options?: any) {
+        if (options && options.useInMemoryFileSystem) {
+          super(options);
+        } else {
+          super({
+            ...options,
+            tsConfigFilePath: path.join(__dirname, '../../tsconfig.json'),
+          });
+        }
+      }
+    },
+  };
+});
 
 // Mock child modules
 const fileAnalysis = {
@@ -58,22 +76,22 @@ const jsdoc = {
   })),
 }
 
-mock.module('../file-analysis', () => fileAnalysis)
-mock.module('../prompt-generator', () => promptGenerator)
-mock.module('../model-caller', () => modelCaller)
-mock.module('../generation/code-cleaner', () => codeCleaner)
-mock.module('../generation/post-processor', () => postProcessor)
-mock.module('../file-saver', () => fileSaver)
-mock.module('../generation/code-fixer', () => codeFixer)
-mock.module('../config', () => config)
-mock.module('../jsdoc/indexer', () => ({ JSDocIndexer: jsdoc.JSDocIndexer }))
+mock.module('../../src/file-analysis', () => fileAnalysis)
+mock.module('../../src/prompt-generator', () => promptGenerator)
+mock.module('../../src/model-caller', () => modelCaller)
+mock.module('../../src/generation/code-cleaner', () => codeCleaner)
+mock.module('../../src/generation/post-processor', () => postProcessor)
+mock.module('../../src/file-saver', () => fileSaver)
+mock.module('../../src/generation/code-fixer', () => codeFixer)
+mock.module('../../src/config', () => config)
+mock.module('../../src/jsdoc/indexer', () => ({ JSDocIndexer: jsdoc.JSDocIndexer }))
 
 describe('generator', () => {
-  let project: Project
+  let project: tsMorph.Project
   const spies: { mockRestore: () => void }[] = []
 
   beforeEach(() => {
-    project = new Project({ useInMemoryFileSystem: true })
+    project = new tsMorph.Project({ useInMemoryFileSystem: true })
     // Reset mocks before each test
     Object.values(fileAnalysis).forEach((m) => m.mockClear())
     Object.values(promptGenerator).forEach((m) => m.mockClear())

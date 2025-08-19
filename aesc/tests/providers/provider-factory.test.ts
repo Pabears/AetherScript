@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'bun:test';
-import { ProviderFactory, ProviderManager } from './provider-factory';
-import { OllamaProvider } from './ollama-provider';
-import { CloudflareProvider } from './cloudflare-provider';
+import { ProviderFactory, ProviderManager } from '../../src/providers/provider-factory';
+import { OllamaProvider } from '../../src/providers/ollama-provider';
+import { CloudflareProvider } from '../../src/providers/cloudflare-provider';
 
 describe('ProviderFactory', () => {
   // This test suite modifies the static ProviderFactory, so we need to clean up

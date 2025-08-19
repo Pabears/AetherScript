@@ -4,8 +4,8 @@ import {
   configureProvider,
   setDefaultProvider,
   listProviders,
-} from './model-caller';
-import { type ModelProvider, ProviderFactory, ProviderManager } from './providers';
+} from '../src/model-caller';
+import { type ModelProvider, ProviderFactory, ProviderManager } from '../src/providers';
 
 // Mock the concrete providers that ProviderFactory might create
 const mockProvider: ModelProvider = {

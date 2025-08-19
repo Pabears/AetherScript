@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'bun:test'
 import { Project, InterfaceDeclaration, ClassDeclaration } from 'ts-morph'
-import { postProcessGeneratedCode, validateGeneratedCode } from './post-processor'
+import { postProcessGeneratedCode, validateGeneratedCode } from '../../src/generation/post-processor'
 import * as path from 'path'
 
 describe('post-processor', () => {

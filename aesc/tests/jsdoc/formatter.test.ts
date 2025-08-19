@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'bun:test'
-import { JSDocFormatter } from './formatter'
-import type { JSDocInfo } from './extractor'
+import { JSDocFormatter } from '../../src/jsdoc/formatter'
+import type { JSDocInfo } from '../../src/jsdoc/extractor'
 
 describe('JSDocFormatter', () => {
   const formatter = new JSDocFormatter()

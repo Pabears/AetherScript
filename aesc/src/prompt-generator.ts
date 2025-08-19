@@ -35,13 +35,13 @@ function generateDependencyInfo(
 
   // Find initial dependencies from the original code
   declaration.getSourceFile().getImportDeclarations().forEach(importDecl => {
-      importDecl.getNamedImports().forEach(namedImport => {
-          typesToProcess.add(namedImport.getName());
-      });
-      const defaultImport = importDecl.getDefaultImport();
-      if (defaultImport) {
-          typesToProcess.add(defaultImport.getText());
-      }
+    importDecl.getNamedImports().forEach(namedImport => {
+      typesToProcess.add(namedImport.getName());
+    });
+    const defaultImport = importDecl.getDefaultImport();
+    if (defaultImport) {
+      typesToProcess.add(defaultImport.getText());
+    }
   });
 
   allSourceFiles.forEach((file) => {
@@ -51,12 +51,12 @@ function generateDependencyInfo(
     const interfaces = file.getInterfaces()
     const enums = file.getEnums()
 
-    ;[...classes, ...interfaces, ...enums].forEach((node) => {
-      const name = node.getName()
-      if (name && originalCode.includes(name)) {
-        typesToProcess.add(name)
-      }
-    })
+      ;[...classes, ...interfaces, ...enums].forEach((node) => {
+        const name = node.getName()
+        if (name && originalCode.includes(name)) {
+          typesToProcess.add(name)
+        }
+      })
   })
 
   // Recursively process dependencies
@@ -82,74 +82,74 @@ function generateDependencyInfo(
       const interfaces = file.getInterfaces()
       const enums = file.getEnums()
 
-      ;[...classes, ...interfaces, ...enums].forEach((node) => {
-        const name = node.getName()
-        if (name && name === currentType) {
-          const relativePath = path.relative(
-            path.dirname(originalImportPath),
-            file.getFilePath(),
-          )
-          const nodeCode = node.getSourceFile().getFullText().trim()
-
-          dependentTypes.set(name, {
-            path: relativePath,
-            code: nodeCode,
-            isExternal: false,
-          })
-
-          // ENHANCEMENT: Include all types from the same file to capture related enums/interfaces
-          // This fixes issues like missing OrderStatus when Order is included
-          const sameFileClasses = file.getClasses()
-          const sameFileInterfaces = file.getInterfaces()
-          const sameFileEnums = file.getEnums()
-
-          ;[
-            ...sameFileClasses,
-            ...sameFileInterfaces,
-            ...sameFileEnums,
-          ].forEach((sameFileNode) => {
-            const sameFileName = sameFileNode.getName()
-            if (
-              sameFileName &&
-              sameFileName !== name &&
-              !processedTypes.has(sameFileName)
-            ) {
-              const sameFileCode = sameFileNode.getFullText().trim()
-              dependentTypes.set(sameFileName, {
-                path: relativePath,
-                code: sameFileCode,
-                isExternal: false,
-              })
-              processedTypes.add(sameFileName)
-              console.log(
-                `[Dependency] Auto-included same-file type: ${sameFileName} (related to ${name})`,
-              )
-            }
-          })
-
-          // Find additional dependencies in this type's code
-          allSourceFiles.forEach((depFile) => {
-            if (depFile === sourceFile) return
-
-            const depClasses = depFile.getClasses()
-            const depInterfaces = depFile.getInterfaces()
-            const depEnums = depFile.getEnums()
-
-            ;[...depClasses, ...depInterfaces, ...depEnums].forEach(
-              (depNode) => {
-                const depName = depNode.getName()
-                if (
-                  depName &&
-                  nodeCode.includes(depName) &&
-                  !processedTypes.has(depName)
-                ) {
-                  typesToProcess.add(depName)
-                }
-              },
+        ;[...classes, ...interfaces, ...enums].forEach((node) => {
+          const name = node.getName()
+          if (name && name === currentType) {
+            const relativePath = path.relative(
+              path.dirname(originalImportPath),
+              file.getFilePath(),
             )
-          })
-        }
-      })
+            const nodeCode = node.getSourceFile().getFullText().trim()
+
+            dependentTypes.set(name, {
+              path: relativePath,
+              code: nodeCode,
+              isExternal: false,
+            })
+
+            // ENHANCEMENT: Include all types from the same file to capture related enums/interfaces
+            // This fixes issues like missing OrderStatus when Order is included
+            const sameFileClasses = file.getClasses()
+            const sameFileInterfaces = file.getInterfaces()
+            const sameFileEnums = file.getEnums()
+
+              ;[
+                ...sameFileClasses,
+                ...sameFileInterfaces,
+                ...sameFileEnums,
+              ].forEach((sameFileNode) => {
+                const sameFileName = sameFileNode.getName()
+                if (
+                  sameFileName &&
+                  sameFileName !== name &&
+                  !processedTypes.has(sameFileName)
+                ) {
+                  const sameFileCode = sameFileNode.getFullText().trim()
+                  dependentTypes.set(sameFileName, {
+                    path: relativePath,
+                    code: sameFileCode,
+                    isExternal: false,
+                  })
+                  processedTypes.add(sameFileName)
+                  console.log(
+                    `[Dependency] Auto-included same-file type: ${sameFileName} (related to ${name})`,
+                  )
+                }
+              })
+
+            // Find additional dependencies in this type's code
+            allSourceFiles.forEach((depFile) => {
+              if (depFile === sourceFile) return
+
+              const depClasses = depFile.getClasses()
+              const depInterfaces = depFile.getInterfaces()
+              const depEnums = depFile.getEnums()
+
+                ;[...depClasses, ...depInterfaces, ...depEnums].forEach(
+                  (depNode) => {
+                    const depName = depNode.getName()
+                    if (
+                      depName &&
+                      nodeCode.includes(depName) &&
+                      !processedTypes.has(depName)
+                    ) {
+                      typesToProcess.add(depName)
+                    }
+                  },
+                )
+            })
+          }
+        })
     })
   }
 
@@ -190,7 +190,8 @@ function generateDependencyInfo(
         // Fallback to basic type definition for unknown libraries
         dependentTypes.set(className, {
           path: `external: ${packageName}`,
-          code: `// ${className} - Third-party library (documentation not available)\n// Please refer to the library's official documentation for usage details\nclass ${className} {\n    constructor(...args: any[]);\n    [key: string]: any;\n}`,
+          code: `// ${className} - Third-party library (documentation not available)\n// Please refer to the library's official documentation for usage details\nclass ${className} {\n    constructor(...args: any[]);\n    [key: string]: any;
+}`,
           isExternal: true,
         })
       }
@@ -222,7 +223,7 @@ export function extractThirdPartyLibraries(
 
   // 1. First parse all import statements to build class name to package name mapping
   const importRegex =
-    /import\s+(?:([A-Z][a-zA-Z0-9_]*)|\{([^}]+)\}|\*\s+as\s+([A-Z][a-zA-Z0-9_]*))\s+from\s+['"]([^'"]+)['"]/g
+    /import\s+(?:([A-Z][a-zA-Z0-9_]*)|\{([^}]+)\}\s*|\*\s+as\s+([A-Z][a-zA-Z0-9_]*))\s+from\s+['"]([^'"\n]+)['"]/g
   let match
 
   while ((match = importRegex.exec(codeContext)) !== null) {
@@ -390,23 +391,23 @@ export function generatePrompt(
   // Type-specific configurations
   const config = isInterface
     ? {
-        task: 'implement the following interface',
-        action: 'implement',
-        target: 'interface',
-        methodType: 'interface methods',
-        propertyRule:
-          'You MUST implement all properties defined in the interface.',
-        declarationLabel: 'interface you must implement',
-      }
+      task: 'implement the following interface',
+      action: 'implement',
+      target: 'interface',
+      methodType: 'interface methods',
+      propertyRule:
+        'You MUST implement all properties defined in the interface.',
+      declarationLabel: 'interface you must implement',
+    }
     : {
-        task: 'extend the following abstract class and implement its abstract methods',
-        action: 'extend',
-        target: 'abstract class',
-        methodType: 'abstract methods',
-        propertyRule:
-          "You MUST NOT redeclare any properties already present in the base class. Access them with 'this'.",
-        declarationLabel: 'abstract class you must extend',
-      }
+      task: 'extend the following abstract class and implement its abstract methods',
+      action: 'extend',
+      target: 'abstract class',
+      methodType: 'abstract methods',
+      propertyRule:
+        "You MUST NOT redeclare any properties already present in the base class. Access them with 'this'.",
+      declarationLabel: 'abstract class you must extend',
+    }
 
   // Construct unified prompt with type-specific parts
   const prompt = `You are a TypeScript code generation engine.
@@ -418,7 +419,6 @@ You must follow these rules strictly:
 4. ${config.propertyRule}
 5. IMPORTANT: Do NOT create unnecessary temporary objects for validation or processing. Validate data directly using appropriate methods (e.g., regex for email validation, direct string/number checks).
 6. Your response MUST be only the raw TypeScript code. No explanations, no markdown.
-
 Here are the dependent type definitions:
 \`\`\`typescript
 ${dependenciesText}
@@ -444,57 +444,50 @@ export function generateFixPrompt(
   currentCode: string,
   validationErrors: string[],
 ): string {
-  const interfaceName = declaration.getName()
+  const interfaceName = declaration.getName();
   if (!interfaceName) {
-    throw new Error('Declaration must have a name')
+    throw new Error('Declaration must have a name');
   }
 
-  // Get the original declaration code
-  const originalDeclarationCode = declaration.getFullText().trim()
-
-  // Use the shared dependency analysis function
+  const originalDeclarationCode = declaration.getFullText().trim();
   const { dependenciesText } = generateDependencyInfo(
     declaration,
     originalImportPath,
     generatedFilePath,
-  )
+  );
 
-  // Determine declaration type and get type-specific configurations
-  const isInterface = Node.isInterfaceDeclaration(declaration)
-  const isAbstractClass = Node.isClassDeclaration(declaration)
+  const isInterface = Node.isInterfaceDeclaration(declaration);
+  const isAbstractClass = Node.isClassDeclaration(declaration);
 
   if (!isInterface && !isAbstractClass) {
     throw new Error(
       `Unsupported declaration type for ${interfaceName}. Only interfaces and abstract classes are supported.`,
-    )
+    );
   }
 
-  // Type-specific configurations (same as generatePrompt)
   const config = isInterface
     ? {
-        action: 'implement',
-        target: 'interface',
-        methodType: 'interface methods',
-        propertyRule:
-          'You MUST implement all properties defined in the interface.',
-      }
+      action: 'implement',
+      target: 'interface',
+      methodType: 'interface methods',
+      propertyRule:
+        'You MUST implement all properties defined in the interface.',
+    }
     : {
-        action: 'extend',
-        target: 'abstract class',
-        methodType: 'abstract methods',
-        propertyRule:
-          "You MUST NOT redeclare any properties already present in the base class. Access them with 'this'.",
-      }
+      action: 'extend',
+      target: 'abstract class',
+      methodType: 'abstract methods',
+      propertyRule:
+        "You MUST NOT redeclare any properties already present in the base class. Access them with 'this'.",
+    };
 
-  // Check if code appears to be truncated
   const isTruncated =
     currentCode.trim().endsWith('//') ||
     currentCode.trim().endsWith('/*') ||
     !currentCode.includes('}') ||
-    currentCode.split('{').length !== currentCode.split('}').length
+    currentCode.split('{').length !== currentCode.split('}').length;
 
-  // Construct unified fix prompt with type-specific parts
-  const fixPrompt = `You are a TypeScript code generation engine.
+  let prompt = `You are a TypeScript code generation engine.
 Your task is to fix the following ${config.target} implementation that has validation errors.
 
 You must follow these rules strictly:
@@ -506,30 +499,45 @@ You must follow these rules strictly:
 6. Fix all validation errors listed below.
 7. ${isTruncated ? 'COMPLETE the truncated/incomplete code - ensure ALL methods are fully implemented with proper closing braces.' : 'Ensure the code is complete and syntactically correct.'}
 8. Your response MUST be only the raw TypeScript code. No explanations, no markdown.
+`;
 
-${
-  dependenciesText
-    ? `Here are the dependent type definitions:
+  if (dependenciesText) {
+    prompt += `
+Here are the dependent type definitions:
 \`\`\`typescript
 ${dependenciesText}
 \`\`\`
+`;
+  }
 
-`
-    : ''
-}Here is the original ${config.target} you must ${config.action}:
+  prompt += `
+  Here is the original ${config.target} you must ${config.action}:
 \`\`\`typescript
-${originalDeclarationCode}
-\`\`\`
+  ${originalDeclarationCode}
+  \`\`\`
+`;
 
-Here is the current implementation with errors:
+  prompt += `
+  Here is the current implementation with errors:
 \`\`\`typescript
 ${currentCode}
-\`\`\`
+  \`\`\`
+`;
 
+  prompt += `
 Validation errors that must be fixed:
 ${validationErrors.map((err) => `- ${err}`).join('\n')}
+`;
 
-${isTruncated ? 'CRITICAL: The code appears incomplete/truncated. You must complete ALL methods with proper implementation and closing braces.\n\n' : 'Generate the complete, corrected ${interfaceName}Impl implementation:`
+  if (isTruncated) {
+    prompt += `
+CRITICAL: The code appears incomplete/truncated. You must complete ALL methods with proper implementation and closing braces.
 
-  return fixPrompt
+`;
+  } else {
+    prompt += `
+Generate the complete, corrected ${interfaceName}Impl implementation:`;
+  }
+
+  return prompt;
 }

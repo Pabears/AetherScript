@@ -10,7 +10,7 @@ import {
   ensureOutputDirectory,
   generateContainer,
   saveGeneratedFile,
-} from './file-saver';
+} from '../src/file-saver';
 
 describe('file-saver', () => {
   const spies: any[] = [];

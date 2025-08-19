@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, spyOn, afterEach } from 'bun:test';
-import { CloudflareProvider } from './cloudflare-provider';
+import { CloudflareProvider } from '../../src/providers/cloudflare-provider';
 
 describe('CloudflareProvider', () => {
   let provider: CloudflareProvider;
@@ -19,16 +19,16 @@ describe('CloudflareProvider', () => {
 
   describe('generate', () => {
     it('should throw if no endpoint is provided', async () => {
-      await expect(provider.generate('prompt', 'model')).rejects.toThrow('Cloudflare provider requires an endpoint URL');
+      await expect(provider.generate('prompt', 'model')).rejects.toThrow('Cloudflare provider requires endpoint, accountId, and apiToken.');
     });
 
     it('should send a valid request and handle a simple JSON response', async () => {
       const responseData = { result: { response: 'test response' } };
-      fetchSpy.mockResolvedValue(new Response(JSON.stringify(responseData)));
+      fetchSpy.mockResolvedValue(new Response(JSON.stringify(responseData), { headers: { 'Content-Type': 'application/json' } }));
 
-      const response = await provider.generate('prompt', 'model', { endpoint: 'test-endpoint' });
+      const response = await provider.generate('prompt', 'model', { endpoint: 'test-endpoint', auth: { accountId: 'test', apiToken: 'test' } });
 
-      expect(fetchSpy).toHaveBeenCalledWith('test-endpoint', expect.any(Object));
+      expect(fetchSpy).toHaveBeenCalledWith('test-endpoint/test/ai/run/model', expect.any(Object));
       expect(response).toBe('test response');
     });
 
@@ -39,13 +39,13 @@ describe('CloudflareProvider', () => {
         });
         fetchSpy.mockResolvedValue(mockResponse);
 
-        const result = await provider.generate('prompt', 'model', { endpoint: 'test-endpoint' });
+        const result = await provider.generate('prompt', 'model', { endpoint: 'test-endpoint', auth: { accountId: 'test', apiToken: 'test' } });
         expect(result).toBe('hello world');
     });
 
     it('should throw on non-ok response', async () => {
       fetchSpy.mockResolvedValue(new Response('Error', { status: 500 }));
-      await expect(provider.generate('prompt', 'model', { endpoint: 'test-endpoint' })).rejects.toThrow(/Cloudflare request failed/);
+      await expect(provider.generate('prompt', 'model', { endpoint: 'test-endpoint', auth: { accountId: 'test', apiToken: 'test' } })).rejects.toThrow(/^Cloudflare API request failed/);
     });
   });
 

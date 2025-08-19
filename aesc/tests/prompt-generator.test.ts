@@ -1,10 +1,10 @@
 import { describe, it, expect, beforeEach, mock } from 'bun:test'
 import { Project, InterfaceDeclaration, ClassDeclaration } from 'ts-morph'
-import { generatePrompt, generateFixPrompt, extractThirdPartyLibraries } from './prompt-generator'
-import { JSDocIndexer } from './jsdoc/indexer'
+import { generatePrompt, generateFixPrompt, extractThirdPartyLibraries } from '../src/prompt-generator'
+import { JSDocIndexer } from '../src/jsdoc/indexer'
 
 // Mock the JSDocIndexer
-mock.module('./jsdoc/indexer', () => {
+mock.module('../src/jsdoc/indexer', () => {
     return {
         JSDocIndexer: class {
             loadLibraryJSDoc() {

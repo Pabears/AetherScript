@@ -1,9 +1,9 @@
 import { describe, it, expect, spyOn, beforeEach, afterEach } from 'bun:test';
-import { fixGeneratedCode } from './code-fixer';
-import * as modelCaller from '../model-caller';
-import * as codeCleaner from './code-cleaner';
-import * as postProcessor from './post-processor';
-import * as promptGenerator from '../prompt-generator';
+import { fixGeneratedCode } from '../../src/generation/code-fixer';
+import * as modelCaller from '../../src/model-caller';
+import * as codeCleaner from '../../src/generation/code-cleaner';
+import * as postProcessor from '../../src/generation/post-processor';
+import * as promptGenerator from '../../src/prompt-generator';
 import { Project, InterfaceDeclaration } from 'ts-morph';
 
 describe('fixGeneratedCode', () => {

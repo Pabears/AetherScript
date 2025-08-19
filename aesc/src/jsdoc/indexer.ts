@@ -67,6 +67,35 @@ export class JSDocIndexer {
     return Object.keys(this.cache)
   }
 
+  public loadLibraryJSDoc(libraryName: string): any | null {
+    if (this.cache[libraryName]) {
+      const libCachePath = this.cache[libraryName].path
+      if (this.fs_.existsSync(libCachePath)) {
+        try {
+          const fileContent = this.fs_.readFileSync(libCachePath, 'utf-8')
+          return JSON.parse(fileContent)
+        } catch (error) {
+          console.error(`Error reading JSDoc cache for ${libraryName}:`, error)
+          return null
+        }
+      }
+    }
+    // If not in cache, try to index it on-the-fly
+    console.log(`[JSDoc] Cache miss for ${libraryName}. Indexing on-the-fly...`)
+    const extractor = new JSDocExtractor(this.projectPath)
+    const jsdoc = extractor.extractLibraryJSDoc(libraryName)
+    if (jsdoc) {
+      this.cache[libraryName] = {
+        path: path.join(this.jsdocDir, `${libraryName}.json`),
+        indexedAt: new Date().toISOString(),
+      }
+      this.saveCache()
+      // Now that it's cached, we can return the jsdoc
+      return jsdoc
+    }
+    return null
+  }
+
   public async indexAllDependencies() {
     const packageJsonPath = path.join(this.projectPath, 'package.json')
     if (!this.fs_.existsSync(packageJsonPath)) {

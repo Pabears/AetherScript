@@ -1,5 +1,5 @@
 import { Project } from 'ts-morph';
-import { getDependencies, analyzeSourceFiles } from './file-analysis';
+import { getDependencies, analyzeSourceFiles } from '../src/file-analysis';
 import { describe, it, expect, beforeEach, afterEach, spyOn } from 'bun:test';
 
 // Dummy AutoGen decorator for testing purposes

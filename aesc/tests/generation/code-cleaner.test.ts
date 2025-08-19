@@ -1,5 +1,5 @@
 import { describe, it, expect, spyOn, afterEach } from 'bun:test'
-import { cleanGeneratedCode } from './code-cleaner'
+import { cleanGeneratedCode } from '../../src/generation/code-cleaner'
 
 describe('cleanGeneratedCode', () => {
   const spies: any[] = [];

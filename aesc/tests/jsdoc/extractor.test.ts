@@ -1,7 +1,7 @@
 import { describe, it, expect, mock, spyOn, beforeEach, afterEach } from 'bun:test';
 import * as fs from 'fs';
 import * as path from 'path';
-import { JSDocExtractor, type JSDocInfo } from './extractor';
+import { JSDocExtractor, type JSDocInfo } from '../../src/jsdoc/extractor';
 import { Project } from 'ts-morph';
 
 // Mock fs for JSDocIndexer, but not for ts-morph inside JSDocExtractor
