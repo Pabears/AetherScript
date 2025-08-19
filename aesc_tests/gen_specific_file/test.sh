@@ -4,8 +4,11 @@ set -e
 
 echo "--- Running Specific File Gen Test ---"
 
+echo "-> Installing dependencies..."
+bun install --silent
+
 echo "-> Generating code for user-controller.ts only..."
-bun $AESC_PATH gen src/user-controller.ts -v
+bun $AESC_PATH gen src/user-controller.ts -vm qwen2.5-coder:32b
 
 echo "-> Checking generated files..."
 if [ ! -f "src/generated/userservice.service.impl.ts" ]; then

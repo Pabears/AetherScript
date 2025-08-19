@@ -4,11 +4,14 @@ set -e
 
 echo "--- Running Force Gen Test ---"
 
+echo "-> Installing dependencies..."
+bun install --silent
+
 echo "-> Generating code for the first time..."
-aesc gen -v
+bun $AESC_PATH gen -vm qwen2.5-coder:32b
 
 echo "-> Generating code again with --force..."
-aesc gen -v --force
+bun $AESC_PATH gen -vm qwen2.5-coder:32b --force
 
 echo "-> Running application..."
 bun run start

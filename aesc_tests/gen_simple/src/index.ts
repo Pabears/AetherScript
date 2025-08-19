@@ -12,7 +12,7 @@ userController.create(newUser);
 
 const foundUser = userController.find('TestUser');
 
-console.assert(foundUser, 'Test Failed: User not found');
+console.assert(foundUser!=undefined, 'Test Failed: User not found');
 console.assert(foundUser?.name === 'TestUser', 'Test Failed: User name does not match');
 console.assert(foundUser?.age === 25, 'Test Failed: User age does not match');
 
