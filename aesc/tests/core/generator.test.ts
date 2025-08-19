@@ -6,6 +6,7 @@ import {
   spyOn,
   afterEach,
   beforeEach,
+  afterAll,
 } from 'bun:test'
 import * as fs from 'fs'
 import * as path from 'path'
@@ -271,5 +272,18 @@ describe('generator', () => {
       expect(existsSyncSpy).toHaveBeenCalledWith('/output')
       expect(readdirSyncSpy).toHaveBeenCalledWith('/output')
     })
+  })
+
+  afterAll(() => {
+    // Restore original modules after all tests in this file have run
+    mock.module('../../src/file-analysis', () => import('../../src/file-analysis'))
+    mock.module('../../src/prompt-generator', () => import('../../src/prompt-generator'))
+    mock.module('../../src/model-caller', () => import('../../src/model-caller'))
+    mock.module('../../src/generation/code-cleaner', () => import('../../src/generation/code-cleaner'))
+    mock.module('../../src/generation/post-processor', () => import('../../src/generation/post-processor'))
+    mock.module('../../src/file-saver', () => import('../../src/file-saver'))
+    mock.module('../../src/generation/code-fixer', () => import('../../src/generation/code-fixer'))
+    mock.module('../../src/config', () => import('../../src/config'))
+    mock.module('../../src/jsdoc/indexer', () => import('../../src/jsdoc/indexer'))
   })
 })
