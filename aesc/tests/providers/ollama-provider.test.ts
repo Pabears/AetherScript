@@ -70,6 +70,8 @@ describe('OllamaProvider', () => {
     });
 
     it('should return an empty array on fetch failure', async () => {
+      const consoleWarnSpy = spyOn(console, 'warn').mockImplementation(() => {});
+      spies.push(consoleWarnSpy);
       fetchSpy.mockResolvedValue(new Response('Error', { status: 500 }));
       const models = await provider.getAvailableModels();
       expect(models).toEqual([]);

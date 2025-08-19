@@ -182,6 +182,8 @@ describe('generator', () => {
 
     it('should handle generation errors gracefully', async () => {
       // Arrange
+      const consoleErrorSpy = spyOn(console, 'error').mockImplementation(() => {})
+      spies.push(consoleErrorSpy)
       const sourceFile = project.createSourceFile(
         'src/services/user-service.ts',
         'export abstract class UserService {}',
