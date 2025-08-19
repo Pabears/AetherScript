@@ -1,132 +1,111 @@
-import * as fs from 'fs'
-import * as path from 'path'
-import type { GeneratedService } from './file-analysis'
-import { Project } from 'ts-morph'
+import * as fs from 'fs';
+import * as path from 'path';
+import type { GeneratedService } from './file-analysis';
 
-export async function generateContainer(
-  outputDir: string,
-  services: GeneratedService[],
-) {
-  // Extract the actual class name from interface name
-  // Use the original interface/class name as service identifier (e.g., "DB", "ProductService", "CacheService")
-  const normalizeServiceId = (interfaceName: string): string => {
-    // Simply return the interface name as-is since it's already the correct class name
-    // Examples: "DB" -> "DB", "ProductService" -> "ProductService", "CacheService" -> "CacheService"
-    return interfaceName
-  }
+export async function generateContainer(outputDir: string, services: GeneratedService[]) {
+    // Extract the actual class name from interface name
+    // Use the original interface/class name as service identifier (e.g., "DB", "ProductService", "CacheService")
+    const normalizeServiceId = (interfaceName: string): string => {
+        // Simply return the interface name as-is since it's already the correct class name
+        // Examples: "DB" -> "DB", "ProductService" -> "ProductService", "CacheService" -> "CacheService"
+        return interfaceName;
+    };
 
-  // Helper function to extract interface name from type string and normalize it
-  const extractInterfaceName = (typeStr: string): string => {
-    // Handle types like "import(\"/path/to/file\").InterfaceName" or "InterfaceName"
-    if (typeStr.includes('import(')) {
-      // Extract from import("...").InterfaceName
-      const match = typeStr.match(/\)\.([A-Za-z_][A-Za-z0-9_]*)$/)
-      const rawName = match?.[1] || typeStr
-      return normalizeServiceId(rawName)
-    }
-    // Handle simple interface names
-    return normalizeServiceId(typeStr)
-  }
+    // Helper function to extract interface name from type string and normalize it
+    const extractInterfaceName = (typeStr: string): string => {
+        // Handle types like "import(\"/path/to/file\").InterfaceName" or "InterfaceName"
+        if (typeStr.includes('import(')) {
+            // Extract from import("...").InterfaceName
+            const match = typeStr.match(/\)\.([A-Za-z_][A-Za-z0-9_]*)$/);
+            const rawName = match?.[1] || typeStr;
+            return normalizeServiceId(rawName);
+        }
+        // Handle simple interface names
+        return normalizeServiceId(typeStr);
+    };
 
-  // Deduplicate services by normalized interface name to prevent duplicate definitions
-  const uniqueServices = services.reduce((acc, service) => {
-    const normalizedName = normalizeServiceId(service.interfaceName)
-    const existingIndex = acc.findIndex(
-      (s) => normalizeServiceId(s.interfaceName) === normalizedName,
-    )
-    if (existingIndex >= 0) {
-      // Replace with newer service definition (in case of updates)
-      acc[existingIndex] = service
-    } else {
-      acc.push(service)
-    }
-    return acc
-  }, [] as GeneratedService[])
+    // Deduplicate services by normalized interface name to prevent duplicate definitions
+    const uniqueServices = services.reduce((acc, service) => {
+        const normalizedName = normalizeServiceId(service.interfaceName);
+        const existingIndex = acc.findIndex(s => normalizeServiceId(s.interfaceName) === normalizedName);
+        if (existingIndex >= 0) {
+            // Replace with newer service definition (in case of updates)
+            acc[existingIndex] = service;
+        } else {
+            acc.push(service);
+        }
+        return acc;
+    }, [] as GeneratedService[]);
+    
+    console.log(`[Container] Generating container with ${uniqueServices.length} unique services (deduplicated from ${services.length} total)`);
+    
+    // Generate imports using normalized service names
+    const imports = uniqueServices.map(s => {
+        const normalizedPath = s.implFilePath.replace(/\\/g, '/').replace(/\.ts$/, '');
+        return `import { ${s.implName} } from '${normalizedPath}';`;
+    }).join('\n');
 
-  console.log(
-    `[Container] Generating container with ${uniqueServices.length} unique services (deduplicated from ${services.length} total)`,
-  )
+    // Generate type mappings using normalized service identifiers
+    const typeMappings = uniqueServices.map(s => {
+        const serviceId = normalizeServiceId(s.interfaceName);
+        return `    '${serviceId}': ${s.implName};`;
+    }).join('\n');
 
-  // Generate imports using normalized service names
-  const imports = uniqueServices
-    .map((s) => {
-      const normalizedPath = s.implFilePath
-        .replace(/\\/g, '/')
-        .replace(/\.ts$/, '')
-      return `import { ${s.implName} } from '${normalizedPath}';`
-    })
-    .join('\n')
+    const factoryMappings = uniqueServices.map(s => {
+        const serviceId = normalizeServiceId(s.interfaceName);
+        console.log(`[Container] Processing service: ${serviceId}`);
+        console.log(`[Container] Property dependencies:`, s.propertyDependencies);
+        
+        let factoryCode = `        '${serviceId}': () => {\n`;
+        factoryCode += `            const instance = new ${s.implName}();\n`;
+        
+        s.propertyDependencies.forEach(dep => {
+            const depInterfaceName = extractInterfaceName(dep.type);
+            console.log(`[Container] Adding dependency injection: instance.${dep.name} = this.get('${depInterfaceName}')`);
+            factoryCode += `            instance.${dep.name} = this.get('${depInterfaceName}');\n`;
+        });
+        
+        factoryCode += `            return instance;\n`;
+        factoryCode += `        }`;
+        
+        console.log(`[Container] Generated factory code for ${serviceId}:`);
+        console.log(factoryCode);
+        
+        return factoryCode;
+    }).join(',\n');
 
-  // Generate type mappings using normalized service identifiers
-  const typeMappings = uniqueServices
-    .map((s) => {
-      const serviceId = normalizeServiceId(s.interfaceName)
-      return `    '${serviceId}': ${s.implName};`
-    })
-    .join('\n')
+    // Generate container code using template configuration
+    const generateContainerTemplate = () => {
+        const timestamp = new Date().toISOString();
+        const errorMessage = 'Service not found for identifier: ';
+        
+        return {
+            header: `// Generated by AutoGen at ${timestamp}`,
+            imports,
+            serviceMapInterface: {
+                name: 'ServiceMap',
+                mappings: typeMappings
+            },
+            containerClass: {
+                name: 'Container',
+                instancesField: 'private instances: Map<keyof ServiceMap, any> = new Map();',
+                factoriesField: 'private factories: { [K in keyof ServiceMap]: () => ServiceMap[K] };',
+                constructor: {
+                    factoryMappings
+                },
+                getMethod: {
+                    name: 'get',
+                    signature: 'public get<K extends keyof ServiceMap>(identifier: K): ServiceMap[K]',
+                    errorMessage
+                }
+            },
+            exportStatement: 'export const container = new Container();'
+        };
+    };
 
-  const factoryMappings = uniqueServices
-    .map((s) => {
-      const serviceId = normalizeServiceId(s.interfaceName)
-      console.log(`[Container] Processing service: ${serviceId}`)
-      console.log(`[Container] Property dependencies:`, s.propertyDependencies)
-
-      let factoryCode = `        '${serviceId}': () => {\n`
-      factoryCode += `            const instance = new ${s.implName}();\n`
-
-      s.propertyDependencies.forEach((dep) => {
-        const depInterfaceName = extractInterfaceName(dep.type)
-        console.log(
-          `[Container] Adding dependency injection: instance.${dep.name} = this.get('${depInterfaceName}')`,
-        )
-        factoryCode += `            instance.${dep.name} = this.get('${depInterfaceName}');\n`
-      })
-
-      factoryCode += `            return instance;\n`
-      factoryCode += `        }`
-
-      console.log(`[Container] Generated factory code for ${serviceId}:`)
-      console.log(factoryCode)
-
-      return factoryCode
-    })
-    .join(',\n')
-
-  // Generate container code using template configuration
-  const generateContainerTemplate = () => {
-    const timestamp = new Date().toISOString()
-    const errorMessage = 'Service not found for identifier: '
-
-    return {
-      header: `// Generated by AutoGen at ${timestamp}`,
-      imports,
-      serviceMapInterface: {
-        name: 'ServiceMap',
-        mappings: typeMappings,
-      },
-      containerClass: {
-        name: 'Container',
-        instancesField:
-          'private instances: Map<keyof ServiceMap, any> = new Map();',
-        factoriesField:
-          'private factories: { [K in keyof ServiceMap]: () => ServiceMap[K] };',
-        constructor: {
-          factoryMappings,
-        },
-        getMethod: {
-          name: 'get',
-          signature:
-            'public get<K extends keyof ServiceMap>(identifier: K): ServiceMap[K]',
-          errorMessage,
-        },
-      },
-      exportStatement: 'export const container = new Container();',
-    }
-  }
-
-  const template = generateContainerTemplate()
-
-  const containerCode = `${template.header}
+    const template = generateContainerTemplate();
+    
+    const containerCode = `${template.header}
 ${template.imports}
 
 interface ${template.serviceMapInterface.name} {
@@ -158,107 +137,102 @@ ${template.containerClass.constructor.factoryMappings}
 }
 
 ${template.exportStatement}
-`
+`;
 
-  const outputPath = path.join(outputDir, 'container.ts')
-  fs.writeFileSync(outputPath, containerCode)
+    const outputPath = path.join(outputDir, 'container.ts');
+    fs.writeFileSync(outputPath, containerCode);
 }
 
 export function saveGeneratedFile(filePath: string, content: string): void {
-  fs.writeFileSync(filePath, content)
-  console.log(`  -> Wrote to ${filePath}`)
+    fs.writeFileSync(filePath, content);
+    console.log(`  -> Wrote to ${filePath}`);
 }
 
 export function ensureOutputDirectory(outputDir: string, force: boolean): void {
-  if (force) {
-    console.log(`--force specified, cleaning directory: ${outputDir}`)
-    fs.rmSync(outputDir, { recursive: true, force: true })
-  }
-  fs.mkdirSync(outputDir, { recursive: true })
+    if (force) {
+        console.log(`--force specified, cleaning directory: ${outputDir}`);
+        fs.rmSync(outputDir, { recursive: true, force: true });
+    }
+    fs.mkdirSync(outputDir, { recursive: true });
 }
 
 // --- Lock File Management ---
-const LOCK_FILE = 'aesc.lock'
+const LOCK_FILE = 'aesc.lock';
 
 export function getLockData(): string[] {
-  if (fs.existsSync(LOCK_FILE)) {
-    try {
-      return JSON.parse(fs.readFileSync(LOCK_FILE, 'utf-8')) || []
-    } catch (err) {
-      console.error('Error reading or parsing lock file:', err)
-      return []
+    if (fs.existsSync(LOCK_FILE)) {
+        try {
+            return JSON.parse(fs.readFileSync(LOCK_FILE, 'utf-8')) || [];
+        } catch { return []; }
     }
-  }
-  return []
+    return [];
 }
 
 export function saveLockData(data: string[]) {
-  fs.writeFileSync(
-    LOCK_FILE,
-    JSON.stringify(Array.from(new Set(data)), null, 2),
-  )
+    fs.writeFileSync(LOCK_FILE, JSON.stringify(Array.from(new Set(data)), null, 2));
 }
 
 export function handleLockUnlock(paths: string[], action: 'lock' | 'unlock') {
-  const actionFunc = action === 'lock' ? lockFile : unlockFile
-  const actionDirFunc = action === 'lock' ? lockDirectory : unlockDirectory
-  for (const p of paths) {
-    try {
-      if (fs.statSync(p).isDirectory()) {
-        actionDirFunc(p)
-      } else {
-        actionFunc(p)
-      }
-    } catch (error: unknown) {
-      console.error(`Error accessing path ${p}:`, (error as Error).message)
+    const actionFunc = action === 'lock' ? lockFile : unlockFile;
+    const actionDirFunc = action === 'lock' ? lockDirectory : unlockDirectory;
+    for (const p of paths) {
+        try {
+            if (fs.statSync(p).isDirectory()) {
+                actionDirFunc(p);
+            } else {
+                actionFunc(p);
+            }
+        } catch (error: any) {
+            console.error(`Error accessing path ${p}:`, error.message);
+        }
     }
-  }
 }
 
 function lockFile(filePath: string) {
-  const lockedFiles = getLockData()
-  const absolutePath = path.resolve(filePath)
-  if (!lockedFiles.includes(absolutePath)) {
-    lockedFiles.push(absolutePath)
-    saveLockData(lockedFiles)
-    console.log(`  -> Locked ${filePath}`)
-  }
+    const lockedFiles = getLockData();
+    const absolutePath = path.resolve(filePath);
+    if (!lockedFiles.includes(absolutePath)) {
+        lockedFiles.push(absolutePath);
+        saveLockData(lockedFiles);
+        console.log(`  -> Locked ${filePath}`);
+    }
 }
 
 function unlockFile(filePath: string) {
-  let lockedFiles = getLockData()
-  const absolutePath = path.resolve(filePath)
-  const initialCount = lockedFiles.length
-  lockedFiles = lockedFiles.filter((p) => p !== absolutePath)
-  if (lockedFiles.length < initialCount) {
-    saveLockData(lockedFiles)
-    console.log(`  -> Unlocked ${filePath}`)
-  }
+    let lockedFiles = getLockData();
+    const absolutePath = path.resolve(filePath);
+    const initialCount = lockedFiles.length;
+    lockedFiles = lockedFiles.filter(p => p !== absolutePath);
+    if (lockedFiles.length < initialCount) {
+        saveLockData(lockedFiles);
+        console.log(`  -> Unlocked ${filePath}`);
+    }
 }
 
 function lockDirectory(dirPath: string) {
-  const project = new Project()
-  project.addSourceFilesAtPaths(`${dirPath}/**/*.ts`)
-  const lockedFiles = getLockData()
-  let changed = false
-  for (const sourceFile of project.getSourceFiles()) {
-    const filePath = path.resolve(sourceFile.getFilePath())
-    if (!lockedFiles.includes(filePath)) {
-      lockedFiles.push(filePath)
-      changed = true
+    const { Project } = require("ts-morph");
+    const project = new Project();
+    project.addSourceFilesAtPaths(`${dirPath}/**/*.ts`);
+    const lockedFiles = getLockData();
+    let changed = false;
+    for (const sourceFile of project.getSourceFiles()) {
+        const filePath = path.resolve(sourceFile.getFilePath());
+        if (!lockedFiles.includes(filePath)) {
+            lockedFiles.push(filePath);
+            changed = true;
+        }
     }
-  }
-  if (changed) saveLockData(lockedFiles)
-  console.log(`  -> Locked all files in ${dirPath}`)
+    if (changed) saveLockData(lockedFiles);
+    console.log(`  -> Locked all files in ${dirPath}`);
 }
 
 function unlockDirectory(dirPath: string) {
-  let lockedFiles = getLockData()
-  const absoluteDirPath = path.resolve(dirPath)
-  const initialCount = lockedFiles.length
-  lockedFiles = lockedFiles.filter((p) => !p.startsWith(absoluteDirPath))
-  if (lockedFiles.length < initialCount) {
-    saveLockData(lockedFiles)
-    console.log(`  -> Unlocked all files in ${dirPath}`)
-  }
+    let lockedFiles = getLockData();
+    const absoluteDirPath = path.resolve(dirPath);
+    const initialCount = lockedFiles.length;
+    lockedFiles = lockedFiles.filter(p => !p.startsWith(absoluteDirPath));
+    if (lockedFiles.length < initialCount) {
+        saveLockData(lockedFiles);
+        console.log(`  -> Unlocked all files in ${dirPath}`);
+    }
 }

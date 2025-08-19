@@ -28,13 +28,7 @@
   "devDependencies": {
     "@types/bun": "latest",
     "@types/yargs": "^17.0.33",
-    "@typescript-eslint/eslint-plugin": "^8.39.1",
-    "@typescript-eslint/parser": "^8.39.1",
-    "bun-types": "^1.2.18",
-    "eslint": "^9.33.0",
-    "eslint-config-prettier": "^10.1.8",
-    "prettier": "^3.6.2",
-    "typescript-eslint": "^8.39.1"
+    "bun-types": "^1.2.18"
   },
   "peerDependencies": {
     "typescript": "^5.0.0"
@@ -44,10 +38,6 @@
     "yargs": "^18.0.0"
   },
   "scripts": {
-    "build": "bun tsc",
-    "test": "bun test --serial tests/",
-    "format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\"",
-    "lint": "eslint . --ext .ts",
-    "lint:fix": "eslint . --ext .ts --fix"
+    "build": "bun tsc"
   }
 }
