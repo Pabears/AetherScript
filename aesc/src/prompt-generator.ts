@@ -529,7 +529,7 @@ ${currentCode}
 Validation errors that must be fixed:
 ${validationErrors.map((err) => `- ${err}`).join('\n')}
 
-${isTruncated ? 'CRITICAL: The code appears incomplete/truncated. You must complete ALL methods with proper implementation and closing braces.\n\n' : ''}Generate the complete, corrected ${interfaceName}Impl implementation:`
+${isTruncated ? 'CRITICAL: The code appears incomplete/truncated. You must complete ALL methods with proper implementation and closing braces.\n\n' : 'Generate the complete, corrected ${interfaceName}Impl implementation:`
 
   return fixPrompt
 }

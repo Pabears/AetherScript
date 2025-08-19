@@ -1,28 +1,10 @@
 /**
- * Error handling utilities for AetherScript
- */
-
-/**
  * Base error class for AetherScript
  */
 export class AescError extends Error {
-  constructor(
-    message: string,
-    public readonly code: string,
-    public readonly details?: unknown,
-  ) {
+  constructor(message: string) {
     super(message)
     this.name = 'AescError'
-  }
-}
-
-/**
- * Code generation related errors
- */
-export class GenerationError extends AescError {
-  constructor(message: string, details?: unknown) {
-    super(message, 'GENERATION_ERROR', details)
-    this.name = 'GenerationError'
   }
 }
 
@@ -30,9 +12,19 @@ export class GenerationError extends AescError {
  * Provider related errors
  */
 export class ProviderError extends AescError {
-  constructor(message: string, details?: unknown) {
-    super(message, 'PROVIDER_ERROR', details)
+  constructor(message: string) {
+    super(message)
     this.name = 'ProviderError'
+  }
+}
+
+/**
+ * File operation related errors
+ */
+export class FileError extends AescError {
+  constructor(message: string, public path?: string) {
+    super(message)
+    this.name = 'FileError'
   }
 }
 
@@ -40,97 +32,113 @@ export class ProviderError extends AescError {
  * Configuration related errors
  */
 export class ConfigError extends AescError {
-  constructor(message: string, details?: unknown) {
-    super(message, 'CONFIG_ERROR', details)
+  constructor(message: string) {
+    super(message)
     this.name = 'ConfigError'
   }
 }
 
 /**
- * File system related errors
+ * Error during code generation
  */
-export class FileSystemError extends AescError {
-  constructor(message: string, details?: unknown) {
-    super(message, 'FILESYSTEM_ERROR', details)
-    this.name = 'FileSystemError'
+export class GenerationError extends AescError {
+  constructor(message: string) {
+    super(message)
+    this.name = 'GenerationError'
   }
 }
 
 /**
- * Validation related errors
+ * Type to represent a function that might throw an error
  */
-export class ValidationError extends AescError {
-  constructor(message: string, details?: unknown) {
-    super(message, 'VALIDATION_ERROR', details)
-    this.name = 'ValidationError'
+type Fallible<T extends (...args: any[]) => any> = (
+  ...args: Parameters<T>
+) => ReturnType<T>
+
+/**
+ * Type to represent a function that returns a result object with either a value or an error
+ */
+type Result<T, E> = { value: T; error: null } | { value: null; error: E }
+
+/**
+ * Type to represent a function that has been wrapped to handle errors gracefully
+ */
+type Safe<T extends (...args: any[]) => any> = (
+  ...args: Parameters<T>
+) => Result<ReturnType<T>, Error>
+
+/**
+ * Higher-order function to wrap a fallible function and return a result object
+ * @param fn The function to wrap
+ * @returns A new function that returns a result object instead of throwing
+ */
+export function makeSafe<T extends (...args: any[]) => any>(
+  fn: Fallible<T>,
+): Safe<T> {
+  return (...args: Parameters<T>): Result<ReturnType<T>, Error> => {
+    try {
+      const value = fn(...args)
+      return { value, error: null }
+    } catch (e: unknown) {
+      return { value: null, error: e instanceof Error ? e : new Error(String(e)) }
+    }
   }
 }
 
 /**
- * Error handler utility
+ * Higher-order function to wrap an async fallible function
+ * @param fn The async function to wrap
+ * @returns A new async function that returns a result object
  */
-export class ErrorHandler {
-  /**
-   * Handle and format errors for user display
-   */
-  static handle(error: unknown, context?: string): void {
-    const prefix = context ? `[${context}] ` : ''
-
-    if (error instanceof AescError) {
-      console.error(`❌ ${prefix}${error.message}`)
-      if (error.details) {
-        console.error(`   Details: ${JSON.stringify(error.details, null, 2)}`)
-      }
-    } else if (error instanceof Error) {
-      console.error(`❌ ${prefix}${error.message}`)
-      if (process.env.NODE_ENV === 'development') {
-        console.error(error.stack)
-      }
-    } else {
-      console.error(`❌ ${prefix}Unknown error:`, error)
+export function makeSafeAsync<T extends (...args: any[]) => Promise<any>>(
+  fn: T,
+): (...args: Parameters<T>) => Promise<Result<Awaited<ReturnType<T>>, Error>> {
+  return async (
+    ...args: Parameters<T>
+  ): Promise<Result<Awaited<ReturnType<T>>, Error>> => {
+    try {
+      const value = await fn(...args)
+      return { value, error: null }
+    } catch (e: unknown) {
+      return { value: null, error: e instanceof Error ? e : new Error(String(e)) }
     }
   }
+}
 
-  /**
-   * Wrap a function with error handling
-   */
-  static wrap<T extends (...args: unknown[]) => unknown>(
-    fn: T,
-    context?: string,
-  ): (...args: Parameters<T>) => ReturnType<T> {
-    return (...args: Parameters<T>): ReturnType<T> => {
-      try {
-        const result = fn(...args)
-
-        // Handle async functions
-        if (result instanceof Promise) {
-          return result.catch((error) => {
-            ErrorHandler.handle(error, context)
-            throw error
-          }) as ReturnType<T>
-        }
-
-        return result
-      } catch (error) {
-        ErrorHandler.handle(error, context)
-        throw error
-      }
+/**
+ * Higher-order function to add logging and error suppression to a function
+ * @param fn The function to wrap
+ * @param options Configuration for logging and error handling
+ * @returns A new function with added logging and error suppression
+ */
+export function withLogging<T extends (...args: any[]) => any>(
+  fn: T,
+  options: {
+    verbose?: boolean
+    startMessage?: string
+    endMessage?: string
+    errorMessage?: string
+    suppressErrors?: boolean
+  },
+): (...args: Parameters<T>) => ReturnType<T> | undefined {
+  return (...args: Parameters<T>) => {
+    if (options.verbose && options.startMessage) {
+      console.log(options.startMessage)
     }
-  }
-
-  /**
-   * Create a safe version of a function that doesn't throw
-   */
-  static safe<T extends (...args: unknown[]) => unknown>(
-    fn: T,
-    fallback?: ReturnType<T>,
-  ): (...args: Parameters<T>) => ReturnType<T> | undefined {
-    return (...args: Parameters<T>) => {
-      try {
-        return fn(...args)
-      } catch {
-        return fallback
+    try {
+      const result = fn(...args)
+      if (options.verbose && options.endMessage) {
+        console.log(options.endMessage)
       }
+      return result as ReturnType<T>
+    } catch (error) {
+      const errorMessage =
+        options.errorMessage || 'An unexpected error occurred'
+      console.error(`${errorMessage}:`, error)
+      if (options.suppressErrors) {
+        return undefined
+      }
+      throw error
     }
   }
 }

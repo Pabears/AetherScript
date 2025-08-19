@@ -7,6 +7,7 @@ import {
   analyzeSourceFiles,
   getDependencies,
   type GeneratedService,
+  type PropertyDependency,
 } from '../file-analysis'
 import { generatePrompt } from '../prompt-generator'
 import { callOllamaModel } from '../model-caller'
@@ -182,7 +183,6 @@ async function generateSingleService(
       declaration,
       originalImportPath,
       implFilePath,
-      options.provider,
     )
 
     // Step 3: Model Call

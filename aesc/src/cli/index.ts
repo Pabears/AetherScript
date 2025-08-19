@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 
-import { parseArgs, argsToGenerateOptions } from './args-parser'
+import { parseArgs, getGenerateOptions } from './args-parser'
 import { handleGenerate } from './commands/generate'
 import { handleLockUnlock } from '../file-saver'
 
@@ -22,16 +22,16 @@ import {
 export async function main(): Promise<void> {
   try {
     const args = parseArgs()
-    const command = args._[0]
+    const command = (args as any)._[0]
 
     switch (command) {
       case 'gen':
-        const options = argsToGenerateOptions(args)
+        const options = getGenerateOptions(args)
         await handleGenerate(options)
         break
 
       case 'test-generation':
-        await testGenerationCommand(args.provider, args.model)
+        await testGenerationCommand((args as any).provider, (args as any).model)
         break
 
       case 'list-providers':
@@ -39,7 +39,7 @@ export async function main(): Promise<void> {
         break
 
       case 'test-provider':
-        await testProviderCommand(args.provider)
+        await testProviderCommand((args as any).provider)
         break
 
       case 'show-provider-examples':
@@ -55,11 +55,11 @@ export async function main(): Promise<void> {
         break
 
       case 'lock':
-        handleLockUnlock(args.files, 'lock')
+        handleLockUnlock(((args as any).files || []).map(String), 'lock')
         break
 
       case 'unlock':
-        handleLockUnlock(args.files, 'unlock')
+        handleLockUnlock(((args as any).files || []).map(String), 'unlock')
         break
 
       default:

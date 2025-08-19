@@ -57,7 +57,6 @@ export async function fixGeneratedCode(
         implFilePath,
         currentCode,
         errors,
-        provider,
       )
 
       // Use the same model and provider as the original generation

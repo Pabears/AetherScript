@@ -210,7 +210,7 @@ export function handleLockUnlock(paths: string[], action: 'lock' | 'unlock') {
         actionFunc(p)
       }
     } catch (error: unknown) {
-      console.error(`Error accessing path ${p}:`, error.message)
+      console.error(`Error accessing path ${p}:`, (error as Error).message)
     }
   }
 }

@@ -45,6 +45,7 @@
   },
   "scripts": {
     "build": "bun tsc",
+    "test": "bun test src/",
     "format": "prettier --write \"src/**/*.ts\"",
     "lint": "eslint . --ext .ts",
     "lint:fix": "eslint . --ext .ts --fix"

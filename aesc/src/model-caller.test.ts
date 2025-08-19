@@ -5,12 +5,13 @@ import {
   setDefaultProvider,
   listProviders,
 } from './model-caller';
-import { Provider, ProviderFactory, ProviderManager } from './providers';
+import { type ModelProvider, ProviderFactory, ProviderManager } from './providers';
 
 // Mock the concrete providers that ProviderFactory might create
-const mockProvider: Provider = {
+const mockProvider: ModelProvider = {
   name: 'mock-provider',
   generate: mock(async (prompt, model, options) => 'generated code'),
+  validateConnection: mock(async () => {}),
 };
 
 describe('model-caller', () => {
@@ -23,7 +24,7 @@ describe('model-caller', () => {
     spies.push(spyOn(ProviderFactory, 'createProvider').mockReturnValue(mockProvider));
     spies.push(spyOn(ProviderFactory, 'getAvailableProviders').mockReturnValue(['mock-provider-type']));
     // Reset the generate mock itself
-    mockProvider.generate.mockClear();
+    (mockProvider.generate as any).mockClear();
   });
 
   afterEach(() => {
@@ -58,7 +59,7 @@ describe('model-caller', () => {
     it('should set the default on the provided manager', () => {
       configureProvider('my-provider', 'my-type', {}, undefined, manager);
       setDefaultProvider('my-provider', manager);
-      expect(manager.defaultProvider).toBe('my-provider');
+      expect(manager.getDefaultProvider()).toBe('my-provider');
     });
   });
 

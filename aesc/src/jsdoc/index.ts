@@ -1,78 +1,63 @@
-/**
- * JSDoc module - unified entry point for JSDoc functionality
- */
-
-// Re-export all JSDoc functionality
 export * from './extractor'
-export * from './formatter'
-export * from './indexer'
-
-// Convenience imports for common use cases
-import { JSDocExtractor } from './extractor'
+import { JSDocIndexer, type JSDocCache } from './indexer'
+import { JSDocExtractor, type JSDocInfo } from './extractor'
 import { JSDocFormatter } from './formatter'
-import { JSDocIndexer } from './indexer'
+
+let jsdocIndexer: JSDocIndexer | null = null
+let jsdocExtractor: JSDocExtractor | null = null
+let jsdocFormatter: JSDocFormatter | null = null
+
+function getJSDocIndexer(): JSDocIndexer {
+  if (!jsdocIndexer) {
+    jsdocIndexer = new JSDocIndexer(process.cwd())
+  }
+  return jsdocIndexer
+}
+
+function getJSDocExtractor(): JSDocExtractor {
+  if (!jsdocExtractor) {
+    jsdocExtractor = new JSDocExtractor(process.cwd())
+  }
+  return jsdocExtractor
+}
+
+function getJSDocFormatter(): JSDocFormatter {
+  if (!jsdocFormatter) {
+    jsdocFormatter = new JSDocFormatter()
+  }
+  return jsdocFormatter
+}
 
 /**
- * High-level JSDoc operations
+ * Index JSDoc documentation from all third-party dependencies
  */
-export class JSDocManager {
-  private extractor: JSDocExtractor
-  private formatter: JSDocFormatter
-  private indexer: JSDocIndexer
-  private projectPath: string
+export async function indexJSDoc(): Promise<void> {
+  await getJSDocIndexer().indexAllDependencies()
+}
 
-  constructor(projectPath: string = process.cwd()) {
-    this.projectPath = projectPath
-    this.extractor = new JSDocExtractor(projectPath)
-    this.formatter = new JSDocFormatter()
-    this.indexer = new JSDocIndexer(projectPath)
-  }
+/**
+ * Clear the JSDoc documentation cache
+ */
+export function clearJSDocCache(): void {
+  getJSDocIndexer().clearIndex()
+}
 
-  /**
-   * Extract and format JSDoc for a library
-   */
-  async processLibrary(libraryName: string): Promise<void> {
-    try {
-      // Extract JSDoc from library
-      const extractedData = this.extractor.extractLibraryJSDoc(libraryName)
+/**
+ * Get JSDoc for a specific library, extracting it if not already indexed
+ * @param libraryName The name of the library (e.g., 'react', '@angular/core')
+ * @returns The JSDoc information, or null if not found
+ */
+export function getLibraryJSDoc(libraryName: string): JSDocInfo | null {
+  const extractor = getJSDocExtractor()
+  return extractor.extractLibraryJSDoc(libraryName)
+}
 
-      if (extractedData) {
-        // Format the extracted data
-        const formattedData = this.formatter.formatForLLM(extractedData)
-
-        console.log(
-          `✅ Successfully processed JSDoc for library: ${libraryName}`,
-        )
-      } else {
-        console.log(`⚠️  No JSDoc found for library: ${libraryName}`)
-      }
-    } catch (error) {
-      console.error(
-        `❌ Failed to process JSDoc for library ${libraryName}:`,
-        error,
-      )
-      throw error
-    }
-  }
-
-  /**
-   * Get formatted JSDoc for a library
-   */
-  getLibraryJSDoc(libraryName: string): JSDocInfo | null {
-    return this.extractor.extractLibraryJSDoc(libraryName)
-  }
-
-  /**
-   * Index all dependencies from package.json
-   */
-  async indexAllDependencies(): Promise<void> {
-    await this.indexer.indexAllDependencies()
-  }
-
-  /**
-   * Clear JSDoc cache
-   */
-  clearCache(): void {
-    this.indexer.clearIndex()
-  }
+/**
+ * Format JSDoc information for use in an LLM prompt
+ * @param jsdoc The JSDoc information to format
+ * @returns A string containing the formatted JSDoc
+ */
+export function formatJSDocForLLM(jsdoc: JSDocInfo): string {
+  const formatter = getJSDocFormatter()
+  return formatter.formatForLLM(jsdoc)
 }
