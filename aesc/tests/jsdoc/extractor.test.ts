@@ -1,4 +1,4 @@
-import { describe, it, expect, mock, spyOn, beforeEach, afterEach } from 'bun:test';
+import { describe, it, expect, mock, spyOn, beforeEach, afterEach, afterAll } from 'bun:test';
 import * as fs from 'fs';
 import * as path from 'path';
 import { JSDocExtractor, type JSDocInfo } from '../../src/jsdoc/extractor';
@@ -28,19 +28,18 @@ describe('JSDocExtractor', () => {
   let testProject: Project;
   const spies: { mockRestore: () => void }[] = [];
 
+  afterAll(() => {
+    mock.module('fs', () => import('fs'));
+  });
+
   beforeEach(() => {
+    // Clear the in-memory file system before each test
     for (const key in memoryFS) {
       delete memoryFS[key];
     }
 
     testProject = new Project({ useInMemoryFileSystem: true });
     extractor = new JSDocExtractor(projectPath, testProject);
-
-    // Also need to mock the fs calls made by the extractor itself for caching
-    spies.push(spyOn(fs, 'existsSync').mockImplementation((p) => memoryFS.hasOwnProperty(p.toString())));
-    spies.push(spyOn(fs, 'mkdirSync').mockImplementation((p) => (memoryFS[p.toString()] = 'directory')));
-    spies.push(spyOn(fs, 'readFileSync').mockImplementation((p) => memoryFS[p.toString()]));
-    spies.push(spyOn(fs, 'writeFileSync').mockImplementation((p, data) => (memoryFS[p.toString()] = data.toString())));
   });
 
   afterEach(() => {
