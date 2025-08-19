@@ -3,117 +3,60 @@ import { hideBin } from 'yargs/helpers'
 import type { GenerateOptions } from '../types'
 import { getConfig } from '../config'
 
-interface CliArgs {
-  force?: boolean
-  files?: (string | number)[]
-  verbose?: boolean
-  model?: string
-  provider?: string
-}
-
-/**
- * Parse command line arguments and return structured options
- */
-export function parseArgs(): CliArgs {
+export function parseArgs() {
   const config = getConfig()
 
   return yargs(hideBin(process.argv))
-    .command('gen', 'Generate service implementations', (yargs) => {
+    .command('generate [files...]', 'Generate implementations for interfaces', (yargs) => {
       return yargs
+        .positional('files', {
+          describe: 'Glob patterns for files to process',
+          type: 'string',
+        })
+        .option('provider', {
+          alias: 'p',
+          type: 'string',
+          description: 'AI provider to use',
+          default: config.defaultProvider,
+        })
+        .option('model', {
+          alias: 'm',
+          type: 'string',
+          description: 'Model to use for generation',
+          default: config.defaultModel,
+        })
         .option('force', {
           alias: 'f',
           type: 'boolean',
-          description: 'Force overwrite existing files',
+          description: 'Force regeneration of all files',
           default: false,
-        })
-        .option('files', {
-          type: 'array',
-          description: 'Specific files to process',
-          default: [],
         })
         .option('verbose', {
           alias: 'v',
           type: 'boolean',
-          description: 'Enable verbose output',
+          description: 'Enable verbose logging',
           default: false,
         })
-        .option('model', {
-          alias: 'm',
-          type: 'string',
-          description: 'AI model to use',
-          default: config.defaultModel,
-        })
-        .option('provider', {
-          alias: 'p',
-          type: 'string',
-          description: 'AI provider to use (ollama, cloudflare)',
-          default: config.defaultProvider,
-        })
     })
-    .command(
-      'test-generation',
-      'Test code generation with timing statistics',
-      (yargs) => {
-        return yargs
-          .option('provider', {
-            alias: 'p',
-            type: 'string',
-            description: 'AI provider to use',
-          })
-          .option('model', {
-            alias: 'm',
-            type: 'string',
-            description: 'AI model to use',
-          })
-      },
-    )
-    .command('list-providers', 'List available AI providers')
-    .command('test-provider', 'Test AI provider connection', (yargs) => {
-      return yargs
-        .option('provider', {
-          alias: 'p',
-          type: 'string',
-          description: 'Provider to test',
-          demandOption: true,
-        })
-        .option('model', {
-          alias: 'm',
-          type: 'string',
-          description: 'Model to test',
-        })
-    })
-    .command('show-provider-examples', 'Show provider configuration examples')
-    .command('index-jsdoc', 'Index JSDoc documentation from dependencies')
-    .command('clear-jsdoc', 'Clear JSDoc documentation cache')
-    .command('lock', 'Lock generated files to prevent overwriting', (yargs) => {
-      return yargs.option('files', {
-        type: 'array',
-        description: 'Files to lock',
-        demandOption: true,
-      })
-    })
-    .command('unlock', 'Unlock generated files', (yargs) => {
-      return yargs.option('files', {
-        type: 'array',
-        description: 'Files to unlock',
-        demandOption: true,
-      })
-    })
+    .command('init', 'Initialize a new aesc.config.json file')
+    .command('lock <files...>', 'Lock files to prevent regeneration')
+    .command('unlock <files...>', 'Unlock files to allow regeneration')
+    .command('providers', 'List available and configured providers')
+    .command('test-provider [provider]', 'Test connection to a provider')
+    .command('provider-examples', 'Show provider configuration examples')
     .demandCommand(1, 'You need at least one command before moving on')
     .help()
-    .alias('help', 'h')
-    .parseSync()
+    .alias('h', 'help')
+    .parse()
 }
 
-/**
- * Convert parsed args to GenerateOptions
- */
-export function argsToGenerateOptions(args: CliArgs): GenerateOptions {
+export function getGenerateOptions(args: any): GenerateOptions {
+  const config = getConfig()
   return {
-    force: args.force || false,
-    files: args.files || [],
-    verbose: args.verbose || false,
-    model: args.model,
+    files: (args.files || []).map(String),
     provider: args.provider,
+    model: args.model || config.defaultModel,
+    force: args.force,
+    verbose: args.verbose,
   }
 }

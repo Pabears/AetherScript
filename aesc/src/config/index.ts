@@ -1,3 +1,5 @@
+import * as fs from 'fs'
+import * as path from 'path'
 import type { AescConfig } from '../types'
 
 // Default configuration
@@ -31,4 +33,14 @@ export function validateConfig(config: AescConfig): void {
   if (config.timeout && config.timeout < 1000) {
     throw new Error('Timeout must be at least 1000ms')
   }
+}
+
+export function initializeConfig(): void {
+  const configPath = path.join(process.cwd(), 'aesc.config.json');
+  if (fs.existsSync(configPath)) {
+    console.log('aesc.config.json already exists.');
+    return;
+  }
+  fs.writeFileSync(configPath, JSON.stringify(DEFAULT_CONFIG, null, 2));
+  console.log('aesc.config.json created successfully.');
 }

@@ -1,4 +1,6 @@
-import { Project, InterfaceDeclaration, ClassDeclaration, Node, SourceFile } from 'ts-morph' // Added SourceFile
+import { Project, SourceFile, InterfaceDeclaration, ClassDeclaration, Decorator, Type, ts, Node } from 'ts-morph'
+import { getProviderManager } from './model-caller'
+import { JSDocExtractor } from './jsdoc'
 import * as path from 'path'
 
 export type PropertyDependency = {
@@ -62,7 +64,7 @@ export function analyzeSourceFiles(
     { declaration: InterfaceDeclaration | ClassDeclaration; sourceFile: SourceFile }
   >()
 
-  let allSourceFiles = project.getSourceFiles('src/**/*.ts')
+  let allSourceFiles = project.getSourceFiles()
 
   if (files.length > 0) {
     const lowerCaseFiles = files.map((f) => f.toLowerCase())
@@ -119,7 +121,7 @@ export function analyzeSourceFiles(
                 cls.isAbstract() && cls.getImplements().some(impl => impl.getText() === decl.getName())
             );
             if (implementingClasses.length > 0) {
-                targetDeclaration = implementingClasses[0]; // Assuming one abstract implementation for simplicity
+                targetDeclaration = implementingClasses[0]!; // Assuming one abstract implementation for simplicity
             } else {
                 console.error(
                     `  -> Error: Interface ${decl.getName()} has no abstract class implementation found.`

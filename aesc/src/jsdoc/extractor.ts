@@ -13,6 +13,9 @@ import {
   ClassDeclaration,
   InterfaceDeclaration,
   TypeAliasDeclaration,
+  MethodSignature,
+  JSDocTag,
+  JSDocParameterTag,
 } from 'ts-morph'
 
 export interface JSDocInfo {
@@ -273,7 +276,7 @@ export class JSDocExtractor {
     }
   }
 
-  private extractMethodInfo(method: MethodDeclaration): {
+  private extractMethodInfo(method: MethodDeclaration | MethodSignature): {
     name: string
     signature: string
     description: string
@@ -312,7 +315,8 @@ export class JSDocExtractor {
     }
   }
 
-  private extractDescription(jsDoc: JSDoc): string {
+  private extractDescription(jsDoc: JSDoc | undefined): string {
+    if (!jsDoc) return ''
     try {
       const description = jsDoc.getDescription()
       return description || ''
@@ -329,8 +333,11 @@ export class JSDocExtractor {
       try {
         const tags = jsDoc.getTags()
         for (const tag of tags) {
-          if (tag.getTagName() === 'param' && tag.getName() === paramName) {
-            return tag.getComment() || ''
+          if (tag.getTagName() === 'param') {
+            const paramTag = tag as JSDocParameterTag
+            if (paramTag.getName() === paramName) {
+              return (paramTag.getComment() || '').toString()
+            }
           }
         }
       } catch {
@@ -346,7 +353,7 @@ export class JSDocExtractor {
         const tags = jsDoc.getTags()
         for (const tag of tags) {
           if (tag.getTagName() === 'returns' || tag.getTagName() === 'return') {
-            return tag.getComment() || ''
+            return (tag.getComment() || '').toString()
           }
         }
       } catch {
