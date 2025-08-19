@@ -4,11 +4,12 @@ export * from './decorators';
 // Import workflow modules (still needed for CLI commands)
 import { indexJSDocCommand, clearJSDocIndexCommand } from './commands/index-jsdoc';
 import { listProvidersCommand, testProviderCommand, showProviderExamplesCommand, testGenerationCommand } from './commands/provider-commands';
-import { handleLockUnlock } from './file-saver';
+import { handleLockUnlock } from './core/lock-manager';
 
 // Import new modular components
 import { printGenerationStatistics } from './core/statistics';
-import { generateCode, getAllExistingServices } from './core/generator';
+import { generateCode } from './core/generator';
+import { getAllExistingServices } from './core/service-generator';
 import { getConfig } from './config';
 import type { GenerateOptions } from './types';
 

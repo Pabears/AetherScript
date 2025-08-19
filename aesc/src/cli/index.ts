@@ -2,7 +2,7 @@
 
 import { parseArgs, argsToGenerateOptions } from './args-parser';
 import { handleGenerate } from './commands/generate';
-import { handleLockUnlock } from '../file-saver';
+import { handleLockUnlock } from '../core/lock-manager';
 
 // Import existing command handlers
 import { indexJSDocCommand, clearJSDocIndexCommand } from '../commands/index-jsdoc';
