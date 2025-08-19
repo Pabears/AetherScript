@@ -12,7 +12,7 @@ export function getConfig(): AescConfig {
   return {
     ...DEFAULT_CONFIG,
     // Allow environment variables to override defaults
-    defaultModel: process.env.AESC_DEFAULT_MODEL || DEFAULT_CONFIG.defaultModel,
+    defaultModel: process.env.AESC_DEFAULT_MODEL ?? DEFAULT_CONFIG.defaultModel,
     defaultProvider: process.env.AESC_DEFAULT_PROVIDER,
     timeout: process.env.AESC_TIMEOUT
       ? parseInt(process.env.AESC_TIMEOUT)
