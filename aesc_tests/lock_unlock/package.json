@@ -1,0 +1,7 @@
+{
+  "name": "gen_simple_test",
+  "version": "1.0.0",
+  "scripts": {
+    "start": "bun run src/index.ts"
+  }
+}
