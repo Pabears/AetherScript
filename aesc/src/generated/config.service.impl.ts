@@ -1,33 +1,39 @@
 import { ConfigService } from '../services/config-service';
 import type { AescConfig } from '../types';
-import { getConfig as originalGetConfig, validateConfig as originalValidateConfig } from '../config';
 
 /**
  * @class ConfigServiceImpl
  * @description
  * Concrete implementation of the ConfigService.
- * It uses the original, unmodified functions from the `src/config` directory.
+ * This class contains the actual logic for managing configuration.
  */
 export class ConfigServiceImpl extends ConfigService {
+
     /**
      * @override
-     * @method getConfig
-     * @description
-     * Retrieves the application configuration by calling the original getConfig function.
-     * @returns {AescConfig} The fully resolved application configuration.
      */
     getConfig(): AescConfig {
-        return originalGetConfig();
+        return {
+            ...ConfigServiceImpl.DEFAULT_CONFIG,
+            // Allow environment variables to override defaults
+            defaultModel: process.env.AESC_DEFAULT_MODEL || ConfigServiceImpl.DEFAULT_CONFIG.defaultModel,
+            defaultProvider: process.env.AESC_DEFAULT_PROVIDER,
+            timeout: process.env.AESC_TIMEOUT ? parseInt(process.env.AESC_TIMEOUT) : ConfigServiceImpl.DEFAULT_CONFIG.timeout,
+        };
     }
 
     /**
      * @override
-     * @method validateConfig
-     * @description
-     * Validates a configuration object by calling the original validateConfig function.
-     * @param {AescConfig} config - The configuration object to validate.
      */
     validateConfig(config: AescConfig): void {
-        originalValidateConfig(config);
+        if (!config.outputDir) {
+            throw new Error('Output directory is required');
+        }
+        if (!config.defaultModel) {
+            throw new Error('Default model is required');
+        }
+        if (config.timeout && config.timeout < 1000) {
+            throw new Error('Timeout must be at least 1000ms');
+        }
     }
 }

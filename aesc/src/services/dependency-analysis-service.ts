@@ -25,5 +25,5 @@ export abstract class DependencyAnalysisService {
         declaration: InterfaceDeclaration | ClassDeclaration,
         originalImportPath: string,
         generatedFilePath: string
-    ): { dependenciesText: string; originalCode: string };
+    ): Promise<{ dependenciesText: string; originalCode: string }>;
 }

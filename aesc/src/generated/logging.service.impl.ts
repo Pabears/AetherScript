@@ -1,43 +1,89 @@
 import { LoggingService } from '../services/logging-service';
-import type { LogLevel, LogEntry } from '../types';
-import { logger as originalLogger } from '../logging';
+import { LogLevel, type LogEntry } from '../types';
 
 /**
  * @class LoggingServiceImpl
  * @description
  * Concrete implementation of the LoggingService.
- * It wraps the original singleton logger instance from `src/logging/index.ts`.
+ * This class contains the actual logic for logging.
  */
 export class LoggingServiceImpl extends LoggingService {
-    setLevel(level: LogLevel): void {
-        originalLogger.setLevel(level);
+    private logLevel: LogLevel = LogLevel.INFO;
+    private logs: LogEntry[] = [];
+
+    public setLevel(level: LogLevel): void {
+        this.logLevel = level;
     }
 
-    error(message: string, context?: string, data?: any): void {
-        originalLogger.error(message, context, data);
+    public error(message: string, context?: string, data?: any): void {
+        this.log(LogLevel.ERROR, message, context, data);
     }
 
-    warn(message: string, context?: string, data?: any): void {
-        originalLogger.warn(message, context, data);
+    public warn(message: string, context?: string, data?: any): void {
+        this.log(LogLevel.WARN, message, context, data);
     }
 
-    info(message: string, context?: string, data?: any): void {
-        originalLogger.info(message, context, data);
+    public info(message: string, context?: string, data?: any): void {
+        this.log(LogLevel.INFO, message, context, data);
     }
 
-    debug(message: string, context?: string, data?: any): void {
-        originalLogger.debug(message, context, data);
+    public debug(message: string, context?: string, data?: any): void {
+        this.log(LogLevel.DEBUG, message, context, data);
     }
 
-    verbose(message: string, context?: string, data?: any): void {
-        originalLogger.verbose(message, context, data);
+    public verbose(message: string, context?: string, data?: any): void {
+        this.log(LogLevel.VERBOSE, message, context, data);
     }
 
-    getLogs(): LogEntry[] {
-        return originalLogger.getLogs();
+    public getLogs(): LogEntry[] {
+        return [...this.logs];
     }
 
-    clearLogs(): void {
-        originalLogger.clearLogs();
+    public clearLogs(): void {
+        this.logs = [];
+    }
+
+    private log(level: LogLevel, message: string, context?: string, data?: any): void {
+        if (level <= this.logLevel) {
+            const entry: LogEntry = {
+                level,
+                message,
+                timestamp: new Date(),
+                context,
+                data
+            };
+
+            this.logs.push(entry);
+            this.output(entry);
+        }
+    }
+
+    private output(entry: LogEntry): void {
+        const timestamp = entry.timestamp.toLocaleTimeString();
+        const levelName = LogLevel[entry.level];
+        const context = entry.context ? `[${entry.context}] ` : '';
+        const message = `${timestamp} ${levelName} ${context}${entry.message}`;
+
+        switch (entry.level) {
+            case LogLevel.ERROR:
+                console.error(`❌ ${message}`);
+                break;
+            case LogLevel.WARN:
+                console.warn(`⚠️  ${message}`);
+                break;
+            case LogLevel.INFO:
+                console.log(`ℹ️  ${message}`);
+                break;
+            case LogLevel.DEBUG:
+                console.log(`🐛 ${message}`);
+                break;
+            case LogLevel.VERBOSE:
+                console.log(`📝 ${message}`);
+                break;
+        }
+
+        if (entry.data) {
+            console.log('   Data:', JSON.stringify(entry.data, null, 2));
+        }
     }
 }

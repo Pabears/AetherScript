@@ -4,13 +4,28 @@ import { User } from "../user";
 import { AutoGen } from "aesc";
 
 export class UserServiceImpl extends UserService {
-  public create(user: User): void {
-    if (3 < user.name.length && user.name.length < 15 && 0 <= user.age && user.age <= 120) {
-      this.db?.save(user);
+    // 1. check: 3 < name.length < 15 and 0 <= age <= 120
+    // 2. db.save(user)
+    public create(user: User): void {
+        if (this.db === undefined) {
+            throw new Error("DB is not set");
+        }
+        
+        const { name, age } = user;
+        
+        if (name.length < 3 || name.length > 15 || age < 0 || age > 120) {
+            throw new Error(`Invalid user: ${name} - ${age}`);
+        }
+        
+        this.db.save(user);
     }
-  }
-  
-  public findByName(name: string): User | undefined {
-    return this.db?.find(name);
-  }
+    
+    // find user by name from db
+    public findByName(name: string): User | undefined {
+        if (this.db === undefined) {
+            throw new Error("DB is not set");
+        }
+        
+        return this.db.find(name);
+    }
 }

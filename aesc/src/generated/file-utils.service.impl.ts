@@ -1,21 +1,30 @@
 import { FileUtilsService } from '../services/file-utils-service';
-import {
-    saveGeneratedFile as originalSave,
-    ensureOutputDirectory as originalEnsure,
-} from '../utils/file-utils';
+import * as fs from 'fs';
+import * as path from 'path';
 
 /**
  * @class FileUtilsServiceImpl
  * @description
  * Concrete implementation of the FileUtilsService.
- * It wraps the original functions from `src/utils/file-utils.ts`.
+ * This class contains the actual logic for file system operations.
  */
 export class FileUtilsServiceImpl extends FileUtilsService {
+    /**
+     * @override
+     */
     saveGeneratedFile(filePath: string, content: string): void {
-        originalSave(filePath, content);
+        fs.writeFileSync(filePath, content);
+        console.log(`  -> Wrote to ${filePath}`);
     }
 
+    /**
+     * @override
+     */
     ensureOutputDirectory(outputDir: string, force: boolean): void {
-        originalEnsure(outputDir, force);
+        if (force) {
+            console.log(`--force specified, cleaning directory: ${outputDir}`);
+            fs.rmSync(outputDir, { recursive: true, force: true });
+        }
+        fs.mkdirSync(outputDir, { recursive: true });
     }
 }

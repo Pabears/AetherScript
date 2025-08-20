@@ -54,5 +54,5 @@ describe('GenerationService (E2E)', () => {
         expect(containerContent).toContain('DbServiceImpl');
         expect(containerContent).toContain("'DbService': () => {");
         expect(containerContent).toContain("const instance = new DbServiceImpl()");
-    }, 60000); // Increase timeout for this E2E test, as it involves a real model call
+    }, 120000); // Increase timeout for this E2E test, as it involves a real model call
 });

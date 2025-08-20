@@ -58,9 +58,11 @@ export class AppContainer {
         this.providerFactoryService = new ProviderFactoryServiceImpl();
         this.jsdocService = new JSDocServiceImpl();
         this.fileAnalysisService = new FileAnalysisServiceImpl();
-        this.dependencyAnalysisService = new DependencyAnalysisServiceImpl();
-        this.modelCallerService = new ModelCallerServiceImpl();
         this.generationService = new GenerationServiceImpl();
+
+        // Services with dependencies
+        this.dependencyAnalysisService = new DependencyAnalysisServiceImpl(this.jsdocService);
+        this.modelCallerService = new ModelCallerServiceImpl(this.providerFactoryService);
 
         // CommandService depends on other services, so it's instantiated last,
         // injecting the other service instances.
