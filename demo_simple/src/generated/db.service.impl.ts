@@ -3,48 +3,36 @@ import { User } from "../user";
 import NodeCache from "node-cache";
 
 export class DBImpl extends DB {
-    // save user to cache
+    constructor() {
+        super();
+        this.cache = new NodeCache({ stdTTL: 0 });
+    }
+
     public save(user: User): void {
-        if (typeof user.name !== 'string' || user.name.trim() === '' || typeof user.age !== 'number' || user.age < 0) {
-            throw new Error('Invalid user data');
-        }
-        this.cache.set(user.name, user);
+        this.cache.set(`user-${user.name}`, user);
     }
 
-    // find user from cache
     public find(name: string): User | undefined {
-        if (typeof name !== 'string' || name.trim() === '') {
-            throw new Error('Invalid name');
-        }
-        return this.cache.get(name) as User;
+        return this.cache.get(`user-${name}`);
     }
 
-    // save any object to cache with key
     public saveObject(key: string, data: any): void {
-        if (typeof key !== 'string' || key.trim() === '') {
-            throw new Error('Invalid key');
-        }
         this.cache.set(key, data);
     }
 
-    // find any object from cache by key
     public findObject(key: string): any {
-        if (typeof key !== 'string' || key.trim() === '') {
-            throw new Error('Invalid key');
-        }
         return this.cache.get(key);
     }
 
-    // get all keys from cache
     public getAllKeys(): string[] {
-        return this.cache.keys();
+        return Object.keys(this.cache.data);
     }
 
-    // delete object from cache
     public deleteObject(key: string): boolean {
-        if (typeof key !== 'string' || key.trim() === '') {
-            throw new Error('Invalid key');
+        if (this.cache.has(key)) {
+            this.cache.del(key);
+            return true;
         }
-        return this.cache.del(key) > 0;
+        return false;
     }
 }

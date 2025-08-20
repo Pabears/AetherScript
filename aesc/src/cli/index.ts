@@ -1,17 +1,15 @@
 #!/usr/bin/env bun
 
 import { parseArgs, argsToGenerateOptions } from './args-parser';
-import { handleGenerate } from './commands/generate';
-import { handleLockUnlock } from '../core/lock-manager';
+import { container } from '../generated/container';
 
-// Import existing command handlers
-import { indexJSDocCommand, clearJSDocIndexCommand } from '../commands/index-jsdoc';
+// Import command handlers for commands not yet migrated to the service container
 import { 
-    listProvidersCommand, 
     testProviderCommand, 
     showProviderExamplesCommand, 
     testGenerationCommand 
 } from '../commands/provider-commands';
+import { clearJSDocIndexCommand } from '../commands/index-jsdoc';
 
 /**
  * Main CLI entry point
@@ -24,7 +22,7 @@ export async function main(): Promise<void> {
         switch (command) {
             case 'gen':
                 const options = argsToGenerateOptions(args);
-                await handleGenerate(options);
+                await container.commandService.runGenerate(options);
                 break;
 
             case 'test-generation':
@@ -32,7 +30,7 @@ export async function main(): Promise<void> {
                 break;
 
             case 'list-providers':
-                await listProvidersCommand();
+                await container.commandService.runListProviders();
                 break;
 
             case 'test-provider':
@@ -44,7 +42,7 @@ export async function main(): Promise<void> {
                 break;
 
             case 'index-jsdoc':
-                await indexJSDocCommand();
+                await container.commandService.runJSDocIndex();
                 break;
 
             case 'clear-jsdoc':
@@ -52,11 +50,11 @@ export async function main(): Promise<void> {
                 break;
 
             case 'lock':
-                handleLockUnlock(args.files, 'lock');
+                container.lockManagerService.lock(args.files);
                 break;
 
             case 'unlock':
-                handleLockUnlock(args.files, 'unlock');
+                container.lockManagerService.unlock(args.files);
                 break;
 
             default:

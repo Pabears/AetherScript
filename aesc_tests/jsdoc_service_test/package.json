@@ -1,0 +1,7 @@
+{
+    "name": "jsdoc-test-project",
+    "version": "1.0.0",
+    "dependencies": {
+        "node-cache": "latest"
+    }
+}
