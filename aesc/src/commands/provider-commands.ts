@@ -1,15 +1,15 @@
-import { ProviderFactory, ProviderManager } from '../providers';
+import { container } from '../generated/container';
 
 /**
  * List all available and configured providers
  */
 export async function listProvidersCommand(): Promise<void> {
+    const providerService = container.get('ProviderService');
+
     console.log('=== AetherScript Providers ===\n');
     
-    const availableProviders = ProviderFactory.getAvailableProviders();
-    const providerManager = new ProviderManager();
-    providerManager.loadFromEnvironment();
-    const configuredProviders = providerManager.getConfiguredProviders();
+    const availableProviders = providerService.getAvailableProviders();
+    const configuredProviders = providerService.getConfiguredProviders();
     
     console.log('📦 Available Provider Types:');
     availableProviders.forEach(provider => {
@@ -18,9 +18,9 @@ export async function listProvidersCommand(): Promise<void> {
     
     console.log('\n⚙️  Configured Providers:');
     for (const providerName of configuredProviders) {
-        const config = providerManager.getProviderConfig(providerName);
+        const config = providerService.getProviderConfig(providerName);
         if (config) {
-            const isDefault = providerManager.getDefaultProvider() === providerName;
+            const isDefault = providerService.getDefaultProvider() === providerName;
             const defaultMark = isDefault ? ' (default)' : '';
             console.log(`  - ${providerName}${defaultMark}`);
             console.log(`    Type: ${config.type}`);
@@ -56,11 +56,10 @@ export async function listProvidersCommand(): Promise<void> {
  * Test connection to a specific provider
  */
 export async function testProviderCommand(providerName?: string): Promise<void> {
-    const providerManager = new ProviderManager();
-    providerManager.loadFromEnvironment();
+    const providerService = container.get('ProviderService');
     
     try {
-        const { provider, config } = providerManager.createProvider(providerName);
+        const { provider, config } = providerService.createProvider(providerName);
         
         console.log(`🔍 Testing connection to provider: ${provider.name}`);
         console.log(`   Configuration: ${providerName || 'default'}`);
@@ -132,11 +131,10 @@ export function showProviderExamplesCommand(): void {
  * Generate a simple test prompt to validate provider functionality
  */
 export async function testGenerationCommand(providerName?: string, model?: string): Promise<void> {
-    const providerManager = new ProviderManager();
-    providerManager.loadFromEnvironment();
+    const providerService = container.get('ProviderService');
     
     try {
-        const { provider, config } = providerManager.createProvider(providerName);
+        const { provider, config } = providerService.createProvider(providerName);
         const testModel = model || config.defaultModel || 'codellama';
         
         console.log(`🧪 Testing code generation with provider: ${provider.name}`);
