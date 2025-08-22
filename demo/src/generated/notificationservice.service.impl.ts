@@ -6,64 +6,76 @@ import { AutoGen } from "aesc";
 
 export class NotificationServiceImpl extends NotificationService {
     public async sendOrderConfirmation(customer: Customer, order: Order): Promise<boolean> {
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(customer.email)) {
-            console.error('Invalid customer email');
-            return false;
-        }
-
-        const emailTemplate = `
-            Dear ${customer.getDisplayName()},
-            Thank you for your order! Your order #${order.id} has been confirmed.
-            Total amount: $${order.calculateTotal().toFixed(2)}
-        `;
-        console.log(`Sending order confirmation email to ${customer.email}:`, emailTemplate);
-
-        await this.cacheService?.cacheData(`notification_${order.id}`, emailTemplate);
+        const subject = `Order Confirmation - ${order.id}`;
+        const body = `Dear ${customer.getDisplayName()}, your order ${order.id} has been confirmed. Total amount: $${order.calculateTotal().toFixed(2)}.`;
+        
+        console.log(`Sending email to ${customer.email}: ${subject}`);
+        
+        const cacheKey = `notification:${customer.id}:confirmation:${order.id}`;
+        await this.cacheService?.cacheData(cacheKey, {
+            subject,
+            body,
+            timestamp: new Date(),
+            orderId: order.id
+        });
+        
         return true;
     }
 
     public async sendOrderConfirmed(customer: Customer, order: Order): Promise<boolean> {
-        const confirmationTemplate = `
-            Dear ${customer.getDisplayName()},
-            Your order #${order.id} has been confirmed and will be shipped soon.
-            Items: ${order.items.map(item => `${item.productId} x ${item.quantity}`).join(', ')}
-            Estimated delivery: 3-5 business days
-        `;
-        console.log(`Sending order confirmation notification to ${customer.getDisplayName()}:`, confirmationTemplate);
-
-        await this.cacheService?.cacheData(`notification_${order.id}`, confirmationTemplate);
+        const subject = `Order Confirmed - ${order.id}`;
+        const body = `Dear ${customer.getDisplayName()}, your order ${order.id} has been confirmed. Items: ${order.getItemCount()}. Estimated delivery: 3-5 business days.`;
+        
+        console.log(`Sending notification to ${customer.email}: ${subject}`);
+        
+        const cacheKey = `notification:${customer.id}:confirmed:${order.id}`;
+        await this.cacheService?.cacheData(cacheKey, {
+            subject,
+            body,
+            timestamp: new Date(),
+            orderId: order.id
+        });
+        
         return true;
     }
 
     public async sendPaymentConfirmation(customer: Customer, order: Order): Promise<boolean> {
-        const paymentTemplate = `
-            Dear ${customer.getDisplayName()},
-            Your payment for order #${order.id} has been successfully processed.
-            Amount: $${order.calculateTotal().toFixed(2)}
-            Order details: ${order.items.map(item => `${item.productId} x ${item.quantity}`).join(', ')}
-        `;
-        console.log(`Sending payment confirmation notification to ${customer.getDisplayName()}:`, paymentTemplate);
-
-        await this.cacheService?.cacheData(`notification_${order.id}`, paymentTemplate);
+        const subject = `Payment Confirmation - ${order.id}`;
+        const body = `Dear ${customer.getDisplayName()}, your payment of $${order.calculateTotal().toFixed(2)} for order ${order.id} has been processed successfully.`;
+        
+        console.log(`Sending payment confirmation to ${customer.email}: ${subject}`);
+        
+        const cacheKey = `notification:${customer.id}:payment:${order.id}`;
+        await this.cacheService?.cacheData(cacheKey, {
+            subject,
+            body,
+            timestamp: new Date(),
+            orderId: order.id
+        });
+        
         return true;
     }
 
     public async sendOrderCancellation(customer: Customer, order: Order): Promise<boolean> {
-        const cancellationTemplate = `
-            Dear ${customer.getDisplayName()},
-            Your order #${order.id} has been cancelled.
-            Reason: Not specified
-            Refund will be processed shortly.
-        `;
-        console.log(`Sending order cancellation notification to ${customer.getDisplayName()}:`, cancellationTemplate);
-
-        await this.cacheService?.cacheData(`notification_${order.id}`, cancellationTemplate);
+        const subject = `Order Cancelled - ${order.id}`;
+        const body = `Dear ${customer.getDisplayName()}, your order ${order.id} has been cancelled. A refund of $${order.calculateTotal().toFixed(2)} will be processed to your account.`;
+        
+        console.log(`Sending cancellation notification to ${customer.email}: ${subject}`);
+        
+        const cacheKey = `notification:${customer.id}:cancelled:${order.id}`;
+        await this.cacheService?.cacheData(cacheKey, {
+            subject,
+            body,
+            timestamp: new Date(),
+            orderId: order.id
+        });
+        
         return true;
     }
 
     public async getNotificationHistory(customerId: string): Promise<string[]> {
-        const notifications = await this.cacheService?.getCachedData(`notifications_${customerId}`);
-        return notifications ? Array.isArray(notifications) ? notifications : [notifications] : [];
+        const cacheKey = `notification:${customerId}:history`;
+        const cachedData = await this.cacheService?.getCachedData(cacheKey);
+        return cachedData || [];
     }
 }

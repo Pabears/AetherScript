@@ -9,15 +9,18 @@ import * as path from 'path';
  * Concrete implementation of the DependencyAnalysisService.
  */
 export class DependencyAnalysisServiceImpl extends DependencyAnalysisService {
-    constructor(private readonly jsdocService: JSDocService) {
+    private jsdocService: JSDocService;
+
+    constructor(jsdocService: JSDocService) {
         super();
+        this.jsdocService = jsdocService;
     }
 
-    public async generateDependencyInfo(
+    public async getDependencyInfo(
         declaration: InterfaceDeclaration | ClassDeclaration,
-        originalImportPath: string,
         generatedFilePath: string
     ): Promise<{ dependenciesText: string; originalCode: string }> {
+        const originalImportPath = path.relative(path.dirname(generatedFilePath), declaration.getSourceFile().getFilePath()).replace(/\\/g, '/').replace(/\.ts$/, '');
         const dependentTypes = new Map<string, { path: string; code: string; isExternal: boolean }>();
         const sourceFile = declaration.getSourceFile();
         const project = sourceFile.getProject();

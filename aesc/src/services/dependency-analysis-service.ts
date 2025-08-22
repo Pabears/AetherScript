@@ -11,19 +11,17 @@ import type { InterfaceDeclaration, ClassDeclaration } from "ts-morph";
 export abstract class DependencyAnalysisService {
     /**
      * @abstract
-     * @method generateDependencyInfo
+     * @method getDependencyInfo
      * @description
      * Analyzes a declaration to produce a string containing the full source code
      * of all its dependencies, which can be injected into an LLM prompt.
      * @param {InterfaceDeclaration | ClassDeclaration} declaration - The class or interface to analyze.
-     * @param {string} originalImportPath - The original import path of the declaration.
      * @param {string} generatedFilePath - The path where the new file will be generated.
-     * @returns {{ dependenciesText: string; originalCode: string }} An object containing the
+     * @returns {Promise<{ dependenciesText: string; originalCode: string }>} An object containing the
      * full text of all dependencies and the original declaration's code.
      */
-    abstract generateDependencyInfo(
+    public abstract getDependencyInfo(
         declaration: InterfaceDeclaration | ClassDeclaration,
-        originalImportPath: string,
         generatedFilePath: string
     ): Promise<{ dependenciesText: string; originalCode: string }>;
 }

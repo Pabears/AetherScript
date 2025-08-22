@@ -4,49 +4,83 @@ import { Customer } from "../entity/customer";
 import { AutoGen } from "aesc";
 
 export class CustomerServiceImpl extends CustomerService {
-    public createCustomer(name: string, email: string, phone?: string, address?: string): Customer {
-        if (name.length <= 0 || !this.validateEmail(email)) {
-            throw new Error('Invalid name or email');
+    createCustomer(name: string, email: string, phone?: string, address?: string): Customer {
+        if (!name || name.length === 0) {
+            throw new Error("Name is required");
         }
 
-        const customerId = crypto.randomUUID();
-        const newCustomer = new Customer(customerId, name, email, phone, address);
-
-        if (this.findCustomerByEmail(email)) {
-            throw new Error('Email already exists');
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            throw new Error("Invalid email format");
         }
 
-        this.db?.saveObject(customerId, newCustomer);
-        return newCustomer;
+        const existingCustomer = this.findCustomerByEmail(email);
+        if (existingCustomer) {
+            throw new Error("Customer with this email already exists");
+        }
+
+        const id = crypto.randomUUID();
+        const customer = new Customer(id, name, email, phone, address);
+
+        this.db?.saveObject(`customer:${id}`, customer);
+        return customer;
     }
 
-    public findCustomerById(customerId: string): Customer | undefined {
-        return this.db?.findObject(customerId) as Customer | undefined;
+    findCustomerById(customerId: string): Customer | undefined {
+        return this.db?.findObject(`customer:${customerId}`);
     }
 
-    public findCustomerByEmail(email: string): Customer | undefined {
-        const allCustomers = this.getAllCustomers();
-        return allCustomers.find(customer => customer.email === email);
+    findCustomerByEmail(email: string): Customer | undefined {
+        const allKeys = this.db?.getAllKeys() || [];
+        for (const key of allKeys) {
+            if (key.startsWith("customer:")) {
+                const customer = this.db?.findObject(key);
+                if (customer && customer.email === email) {
+                    return customer;
+                }
+            }
+        }
+        return undefined;
     }
 
-    public updateCustomer(customerId: string, updates: Partial<Pick<Customer, 'name' | 'phone' | 'address'>>): boolean {
+    updateCustomer(customerId: string, updates: Partial<Pick<Customer, 'name' | 'phone' | 'address'>>): boolean {
         const customer = this.findCustomerById(customerId);
         if (!customer) {
             return false;
         }
 
-        Object.assign(customer, updates);
-        this.db?.saveObject(customerId, customer);
+        if (updates.name !== undefined) {
+            if (!updates.name || updates.name.length === 0) {
+                throw new Error("Name cannot be empty");
+            }
+            customer.name = updates.name;
+        }
+
+        if (updates.phone !== undefined) {
+            customer.phone = updates.phone;
+        }
+
+        if (updates.address !== undefined) {
+            customer.address = updates.address;
+        }
+
+        this.db?.saveObject(`customer:${customerId}`, customer);
         return true;
     }
 
-    public getAllCustomers(): Customer[] {
+    getAllCustomers(): Customer[] {
         const allKeys = this.db?.getAllKeys() || [];
-        return allKeys.map(key => this.db?.findObject(key) as Customer).filter(customer => customer instanceof Customer);
-    }
+        const customers: Customer[] = [];
 
-    private validateEmail(email: string): boolean {
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        return emailRegex.test(email);
+        for (const key of allKeys) {
+            if (key.startsWith("customer:")) {
+                const customer = this.db?.findObject(key);
+                if (customer) {
+                    customers.push(customer);
+                }
+            }
+        }
+
+        return customers;
     }
 }
