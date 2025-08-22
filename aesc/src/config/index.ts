@@ -3,7 +3,7 @@ import type { AescConfig } from '../types';
 // Default configuration
 export const DEFAULT_CONFIG: AescConfig = {
     outputDir: 'src/generated',
-    defaultModel: 'codellama',
+    defaultModel: 'qwen3-coder',
     timeout: 600000, // 10 minutes
 };
 

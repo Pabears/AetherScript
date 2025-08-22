@@ -33,7 +33,7 @@ export class ProviderFactoryServiceImpl extends ProviderFactoryService {
         // Set up default Ollama configuration
         this.configs.set('ollama', {
             type: 'ollama',
-            defaultModel: 'codellama',
+            defaultModel: 'qwen3-coder',
             settings: {
                 endpoint: 'http://localhost:11434/api/generate'
             }
