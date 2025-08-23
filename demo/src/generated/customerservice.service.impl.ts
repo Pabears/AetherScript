@@ -8,7 +8,7 @@ export class CustomerServiceImpl extends CustomerService {
         if (!name || name.length === 0) {
             throw new Error("Name is required");
         }
-
+        
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(email)) {
             throw new Error("Invalid email format");
@@ -21,7 +21,7 @@ export class CustomerServiceImpl extends CustomerService {
 
         const id = crypto.randomUUID();
         const customer = new Customer(id, name, email, phone, address);
-
+        
         this.db?.saveObject(`customer:${id}`, customer);
         return customer;
     }
@@ -71,7 +71,7 @@ export class CustomerServiceImpl extends CustomerService {
     getAllCustomers(): Customer[] {
         const allKeys = this.db?.getAllKeys() || [];
         const customers: Customer[] = [];
-
+        
         for (const key of allKeys) {
             if (key.startsWith("customer:")) {
                 const customer = this.db?.findObject(key);
@@ -80,7 +80,7 @@ export class CustomerServiceImpl extends CustomerService {
                 }
             }
         }
-
+        
         return customers;
     }
 }

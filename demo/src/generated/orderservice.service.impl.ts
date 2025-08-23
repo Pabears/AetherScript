@@ -19,7 +19,7 @@ export class OrderServiceImpl extends OrderService {
             }
             
             if (!product.canFulfill(item.quantity)) {
-                throw new Error(`Insufficient stock for product ${item.productId}`);
+                throw new Error(`Not enough stock for product ${item.productId}`);
             }
             
             orderItems.push({
@@ -29,72 +29,73 @@ export class OrderServiceImpl extends OrderService {
             });
         }
         
+        const totalAmount = orderItems.reduce((total, item) => {
+            return total + (item.quantity * item.unitPrice);
+        }, 0);
+        
         const order = new Order(
             orderId,
             customerId,
             orderItems,
-            OrderStatus.PENDING
+            OrderStatus.PENDING,
+            new Date(),
+            totalAmount
         );
-        
-        order.totalAmount = order.calculateTotal();
         
         this.db?.saveObject(`order:${orderId}`, order);
         
-        // Simulate sending notification
-        // In real implementation, we would call this.notificationService?.sendOrderConfirmation()
+        // Send confirmation notification
+        const customer = this.db?.findObject(`customer:${customerId}`);
+        if (customer) {
+            this.notificationService?.sendOrderConfirmation(customer, order);
+        }
         
         return order;
     }
 
     confirmOrder(orderId: string): boolean {
         const order = this.findOrderById(orderId);
-        if (!order) {
-            return false;
-        }
-        
-        if (order.status !== OrderStatus.PENDING) {
+        if (!order || order.status !== OrderStatus.PENDING) {
             return false;
         }
         
         for (const item of order.items) {
-            this.productService?.reduceStock(item.productId, item.quantity);
+            if (!this.productService?.reduceStock(item.productId, item.quantity)) {
+                return false;
+            }
         }
         
         order.status = OrderStatus.CONFIRMED;
         this.db?.saveObject(`order:${orderId}`, order);
         
-        // Simulate sending notification
-        // In real implementation, we would call this.notificationService?.sendOrderConfirmed()
+        const customer = this.db?.findObject(`customer:${order.customerId}`);
+        if (customer) {
+            this.notificationService?.sendOrderConfirmed(customer, order);
+        }
         
         return true;
     }
 
     processPayment(orderId: string): boolean {
         const order = this.findOrderById(orderId);
-        if (!order) {
-            return false;
-        }
-        
-        if (order.status !== OrderStatus.CONFIRMED) {
+        if (!order || order.status !== OrderStatus.CONFIRMED) {
             return false;
         }
         
         order.status = OrderStatus.PAID;
         this.db?.saveObject(`order:${orderId}`, order);
         
-        // Simulate sending notification
-        // In real implementation, we would call this.notificationService?.sendPaymentConfirmation()
+        const customer = this.db?.findObject(`customer:${order.customerId}`);
+        if (customer) {
+            this.notificationService?.sendPaymentConfirmation(customer, order);
+        }
         
         return true;
     }
 
     cancelOrder(orderId: string): boolean {
         const order = this.findOrderById(orderId);
-        if (!order) {
-            return false;
-        }
-        
-        if (order.status !== OrderStatus.PENDING && order.status !== OrderStatus.CONFIRMED) {
+        if (!order || (order.status !== OrderStatus.PENDING && order.status !== OrderStatus.CONFIRMED)) {
             return false;
         }
         
@@ -107,61 +108,39 @@ export class OrderServiceImpl extends OrderService {
         order.status = OrderStatus.CANCELLED;
         this.db?.saveObject(`order:${orderId}`, order);
         
-        // Simulate sending notification
-        // In real implementation, we would call this.notificationService?.sendOrderCancellation()
+        const customer = this.db?.findObject(`customer:${order.customerId}`);
+        if (customer) {
+            this.notificationService?.sendOrderCancellation(customer, order);
+        }
         
         return true;
     }
 
     findOrderById(orderId: string): Order | undefined {
-        return this.db?.findObject(`order:${orderId}`) as Order;
+        return this.db?.findObject(`order:${orderId}`);
     }
 
     findOrdersByCustomer(customerId: string): Order[] {
         const allKeys = this.db?.getAllKeys() || [];
-        const customerOrders: Order[] = [];
-        
-        for (const key of allKeys) {
-            if (key.startsWith('order:')) {
-                const order = this.db?.findObject(key) as Order;
-                if (order && order.customerId === customerId) {
-                    customerOrders.push(order);
-                }
-            }
-        }
-        
-        return customerOrders;
+        return allKeys
+            .filter(key => key.startsWith('order:'))
+            .map(key => this.db?.findObject(key))
+            .filter(order => order && order.customerId === customerId) as Order[];
     }
 
     getOrdersByStatus(status: OrderStatus): Order[] {
         const allKeys = this.db?.getAllKeys() || [];
-        const statusOrders: Order[] = [];
-        
-        for (const key of allKeys) {
-            if (key.startsWith('order:')) {
-                const order = this.db?.findObject(key) as Order;
-                if (order && order.status === status) {
-                    statusOrders.push(order);
-                }
-            }
-        }
-        
-        return statusOrders;
+        return allKeys
+            .filter(key => key.startsWith('order:'))
+            .map(key => this.db?.findObject(key))
+            .filter(order => order && order.status === status) as Order[];
     }
 
     getAllOrders(): Order[] {
         const allKeys = this.db?.getAllKeys() || [];
-        const allOrders: Order[] = [];
-        
-        for (const key of allKeys) {
-            if (key.startsWith('order:')) {
-                const order = this.db?.findObject(key) as Order;
-                if (order) {
-                    allOrders.push(order);
-                }
-            }
-        }
-        
-        return allOrders;
+        return allKeys
+            .filter(key => key.startsWith('order:'))
+            .map(key => this.db?.findObject(key))
+            .filter(order => order !== undefined) as Order[];
     }
 }

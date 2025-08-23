@@ -1,5 +1,5 @@
 import type { GenerateOptions } from '../../types';
-import { generateCode } from '../../core/generator';
+import { container } from '../../generated/container';
 import { printGenerationStatistics } from '../../core/statistics';
 
 /**
@@ -7,7 +7,7 @@ import { printGenerationStatistics } from '../../core/statistics';
  */
 export async function handleGenerate(options: GenerateOptions): Promise<void> {
     try {
-        const result = await generateCode(options);
+        const result = await container.generationService.generate(options);
         
         // Print statistics
         printGenerationStatistics(result, options.verbose);

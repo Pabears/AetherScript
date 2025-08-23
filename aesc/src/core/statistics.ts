@@ -1,4 +1,4 @@
-import type { FileStats, GenerationResult } from './generator';
+import type { FileStats, GenerationResult } from '../types';
 
 /**
  * Print detailed generation statistics
@@ -9,10 +9,10 @@ export function printGenerationStatistics(result: GenerationResult, verbose: boo
     console.log('\n📊 Generation Statistics:');
     console.log('=' .repeat(50));
     
-    const generated = fileStats.filter(f => f.status === 'generated');
-    const skipped = fileStats.filter(f => f.status === 'skipped');
-    const locked = fileStats.filter(f => f.status === 'locked');
-    const errors = fileStats.filter(f => f.status === 'error');
+    const generated = fileStats.filter((f: FileStats) => f.status === 'generated');
+    const skipped = fileStats.filter((f: FileStats) => f.status === 'skipped');
+    const locked = fileStats.filter((f: FileStats) => f.status === 'locked');
+    const errors = fileStats.filter((f: FileStats) => f.status === 'error');
     
     console.log(`✅ Generated: ${generated.length} files`);
     console.log(`⏭️  Skipped: ${skipped.length} files`);
@@ -20,9 +20,9 @@ export function printGenerationStatistics(result: GenerationResult, verbose: boo
     console.log(`❌ Errors: ${errors.length} files`);
     
     if (generated.length > 0) {
-        const avgTime = generated.reduce((sum, f) => sum + (f.duration || 0), 0) / generated.length;
-        const minTime = Math.min(...generated.map(f => f.duration || 0));
-        const maxTime = Math.max(...generated.map(f => f.duration || 0));
+        const avgTime = generated.reduce((sum: number, f: FileStats) => sum + (f.duration || 0), 0) / generated.length;
+        const minTime = Math.min(...generated.map((f: FileStats) => f.duration || 0));
+        const maxTime = Math.max(...generated.map((f: FileStats) => f.duration || 0));
         
         console.log('\n⏱️  Timing Details:');
         console.log(`   Average per file: ${(avgTime / 1000).toFixed(2)}s`);
@@ -31,7 +31,7 @@ export function printGenerationStatistics(result: GenerationResult, verbose: boo
         
         if (verbose) {
             console.log('\n📋 Individual File Times:');
-            generated.forEach(f => {
+            generated.forEach((f: FileStats) => {
                 console.log(`   ${f.interfaceName}: ${((f.duration || 0) / 1000).toFixed(2)}s`);
             });
         }
@@ -39,7 +39,7 @@ export function printGenerationStatistics(result: GenerationResult, verbose: boo
     
     if (errors.length > 0) {
         console.log('\n❌ Error Details:');
-        errors.forEach(f => {
+        errors.forEach((f: FileStats) => {
             console.log(`   ${f.interfaceName}: ${f.error} (${((f.duration || 0) / 1000).toFixed(2)}s)`);
         });
     }
@@ -71,10 +71,10 @@ export function generateSummary(fileStats: FileStats[]): {
     successRate: number;
 } {
     const total = fileStats.length;
-    const generated = fileStats.filter(f => f.status === 'generated').length;
-    const skipped = fileStats.filter(f => f.status === 'skipped').length;
-    const locked = fileStats.filter(f => f.status === 'locked').length;
-    const errors = fileStats.filter(f => f.status === 'error').length;
+    const generated = fileStats.filter((f: FileStats) => f.status === 'generated').length;
+    const skipped = fileStats.filter((f: FileStats) => f.status === 'skipped').length;
+    const locked = fileStats.filter((f: FileStats) => f.status === 'locked').length;
+    const errors = fileStats.filter((f: FileStats) => f.status === 'error').length;
     const successRate = total > 0 ? (generated / total) * 100 : 0;
     
     return {

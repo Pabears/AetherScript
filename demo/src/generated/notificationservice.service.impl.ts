@@ -6,76 +6,100 @@ import { AutoGen } from "aesc";
 
 export class NotificationServiceImpl extends NotificationService {
     public async sendOrderConfirmation(customer: Customer, order: Order): Promise<boolean> {
-        const subject = `Order Confirmation - ${order.id}`;
-        const body = `Dear ${customer.getDisplayName()}, your order ${order.id} has been confirmed. Total amount: $${order.calculateTotal().toFixed(2)}.`;
+        // Create email template with order details
+        const template = `Dear ${customer.getDisplayName()}, 
+        Thank you for your order #${order.id}. 
+        Total amount: $${order.calculateTotal()}. 
+        Order status: ${order.status}`;
         
-        console.log(`Sending email to ${customer.email}: ${subject}`);
+        // Log email sending (simulate email service)
+        console.log(`Sending confirmation email to ${customer.email}: ${template}`);
         
-        const cacheKey = `notification:${customer.id}:confirmation:${order.id}`;
-        await this.cacheService?.cacheData(cacheKey, {
-            subject,
-            body,
-            timestamp: new Date(),
-            orderId: order.id
-        });
+        // Cache notification for tracking
+        if (this.cacheService) {
+            await this.cacheService.cacheData(`notification:${customer.id}:${order.id}`, {
+                type: 'confirmation',
+                orderId: order.id,
+                timestamp: new Date()
+            });
+        }
         
         return true;
     }
 
     public async sendOrderConfirmed(customer: Customer, order: Order): Promise<boolean> {
-        const subject = `Order Confirmed - ${order.id}`;
-        const body = `Dear ${customer.getDisplayName()}, your order ${order.id} has been confirmed. Items: ${order.getItemCount()}. Estimated delivery: 3-5 business days.`;
+        // Create confirmation template
+        const template = `Dear ${customer.getDisplayName()}, 
+        Your order #${order.id} has been confirmed. 
+        Items: ${order.getItemCount()}. 
+        Estimated delivery: 3-5 business days.`;
         
-        console.log(`Sending notification to ${customer.email}: ${subject}`);
+        // Log notification sending
+        console.log(`Sending confirmed notification to ${customer.email}: ${template}`);
         
-        const cacheKey = `notification:${customer.id}:confirmed:${order.id}`;
-        await this.cacheService?.cacheData(cacheKey, {
-            subject,
-            body,
-            timestamp: new Date(),
-            orderId: order.id
-        });
+        // Cache notification
+        if (this.cacheService) {
+            await this.cacheService.cacheData(`notification:${customer.id}:${order.id}`, {
+                type: 'confirmed',
+                orderId: order.id,
+                timestamp: new Date()
+            });
+        }
         
         return true;
     }
 
     public async sendPaymentConfirmation(customer: Customer, order: Order): Promise<boolean> {
-        const subject = `Payment Confirmation - ${order.id}`;
-        const body = `Dear ${customer.getDisplayName()}, your payment of $${order.calculateTotal().toFixed(2)} for order ${order.id} has been processed successfully.`;
+        // Create payment success template
+        const template = `Dear ${customer.getDisplayName()}, 
+        Payment successful for order #${order.id}. 
+        Amount paid: $${order.calculateTotal()}. 
+        Payment status: completed.`;
         
-        console.log(`Sending payment confirmation to ${customer.email}: ${subject}`);
+        // Log notification sending
+        console.log(`Sending payment confirmation to ${customer.email}: ${template}`);
         
-        const cacheKey = `notification:${customer.id}:payment:${order.id}`;
-        await this.cacheService?.cacheData(cacheKey, {
-            subject,
-            body,
-            timestamp: new Date(),
-            orderId: order.id
-        });
+        // Cache notification
+        if (this.cacheService) {
+            await this.cacheService.cacheData(`notification:${customer.id}:${order.id}`, {
+                type: 'payment',
+                orderId: order.id,
+                timestamp: new Date()
+            });
+        }
         
         return true;
     }
 
     public async sendOrderCancellation(customer: Customer, order: Order): Promise<boolean> {
-        const subject = `Order Cancelled - ${order.id}`;
-        const body = `Dear ${customer.getDisplayName()}, your order ${order.id} has been cancelled. A refund of $${order.calculateTotal().toFixed(2)} will be processed to your account.`;
+        // Create cancellation template
+        const template = `Dear ${customer.getDisplayName()}, 
+        Your order #${order.id} has been cancelled. 
+        Reason: Order was cancelled by customer. 
+        Refund will be processed within 5 business days.`;
         
-        console.log(`Sending cancellation notification to ${customer.email}: ${subject}`);
+        // Log notification sending
+        console.log(`Sending cancellation notification to ${customer.email}: ${template}`);
         
-        const cacheKey = `notification:${customer.id}:cancelled:${order.id}`;
-        await this.cacheService?.cacheData(cacheKey, {
-            subject,
-            body,
-            timestamp: new Date(),
-            orderId: order.id
-        });
+        // Cache notification
+        if (this.cacheService) {
+            await this.cacheService.cacheData(`notification:${customer.id}:${order.id}`, {
+                type: 'cancellation',
+                orderId: order.id,
+                timestamp: new Date()
+            });
+        }
         
         return true;
     }
 
     public async getNotificationHistory(customerId: string): Promise<string[]> {
-        const cacheKey = `notification:${customerId}:history`;
-        const cachedData = await this.cacheService?.getCachedData(cacheKey);
-        return cachedData || [];
+        // Retrieve cached notifications by customer ID
+        if (this.cacheService) {
+            const cachedData = await this.cacheService.getCachedData(`notifications:${customerId}`);
+            return cachedData || [];
+        }
+        
+        return [];
     }
 }

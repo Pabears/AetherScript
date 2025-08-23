@@ -9,7 +9,6 @@ import {
     showProviderExamplesCommand, 
     testGenerationCommand 
 } from '../commands/provider-commands';
-import { clearJSDocIndexCommand } from '../commands/index-jsdoc';
 
 /**
  * Main CLI entry point
@@ -45,9 +44,7 @@ export async function main(): Promise<void> {
                 await container.commandService.runJSDocIndex();
                 break;
 
-            case 'clear-jsdoc':
-                await clearJSDocIndexCommand();
-                break;
+            
 
             case 'lock':
                 container.lockManagerService.lock(args.files);

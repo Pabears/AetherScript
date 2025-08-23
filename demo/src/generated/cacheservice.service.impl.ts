@@ -8,8 +8,8 @@ export class CacheServiceImpl extends CacheService {
     }
     
     public async getCachedUser(key: string): Promise<User | null> {
-        const user = this.redisLikeCache.get(key);
-        return user instanceof Object && user !== null ? user as User : null;
+        const user = this.redisLikeCache.get<User>(key);
+        return user !== undefined ? user : null;
     }
     
     public async clearUserCache(key: string): Promise<boolean> {

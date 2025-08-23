@@ -102,3 +102,10 @@ export interface AescConfig {
     defaultProvider?: string;
     timeout?: number;
 }
+
+export interface CodeFixResult {
+    success: boolean;
+    fixedCode?: string;
+    attempts: number;
+    errors?: string[];
+}

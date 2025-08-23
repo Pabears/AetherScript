@@ -12,12 +12,8 @@ import { DependencyAnalysisService } from '../services/dependency-analysis-servi
 import { LoggingService } from '../services/logging-service';
 import { StatisticsService } from '../services/statistics-service';
 import { ModelCallerService } from '../services/model-caller-service';
-import { JSDocIndexer } from '../jsdoc/indexer';
-import { JSDocFormatter } from '../jsdoc/formatter';
+import { PostProcessorService } from '../services/post-processor-service';
 import { generatePrompt } from '../prompts/implementation';
-import { cleanGeneratedCode } from '../generation/code-cleaner';
-import { postProcessGeneratedCode, validateGeneratedCode } from '../generation/post-processor';
-import { fixGeneratedCode } from '../generation/code-fixer';
 
 /**
  * @class GenerationServiceImpl
@@ -36,6 +32,7 @@ export class GenerationServiceImpl extends GenerationService {
     private statisticsService: StatisticsService;
     private modelCallerService: ModelCallerService;
     private dependencyAnalysisService: DependencyAnalysisService;
+    private postProcessorService: PostProcessorService;
 
     constructor(
         configService: ConfigService,
@@ -46,7 +43,8 @@ export class GenerationServiceImpl extends GenerationService {
         loggingService: LoggingService,
         statisticsService: StatisticsService,
         modelCallerService: ModelCallerService,
-        dependencyAnalysisService: DependencyAnalysisService
+        dependencyAnalysisService: DependencyAnalysisService,
+        postProcessorService: PostProcessorService
     ) {
         super();
         this.configService = configService;
@@ -58,6 +56,7 @@ export class GenerationServiceImpl extends GenerationService {
         this.statisticsService = statisticsService;
         this.modelCallerService = modelCallerService;
         this.dependencyAnalysisService = dependencyAnalysisService;
+        this.postProcessorService = postProcessorService;
     }
 
     public async generate(options: GenerateOptions): Promise<GenerationResult> {
@@ -107,16 +106,24 @@ export class GenerationServiceImpl extends GenerationService {
         });
 
         const summary = this.statisticsService.generateSummary(fileStats);
-        this.loggingService.info(`\n📊 Generation Summary: Generated: ${summary.generated}, Skipped: ${summary.skipped}, Locked: ${summary.locked}, Errors: ${summary.errors}`);
+        this.loggingService.info(`
+📊 Generation Summary: Generated: ${summary.generated}, Skipped: ${summary.skipped}, Locked: ${summary.locked}, Errors: ${summary.errors}`);
 
-        this.loggingService.info("\nGenerating DI container...");
-        const allServices = await this.getAllExistingServices(outputDir, project, generatedServices);
+        const containerNeedsUpdate = summary.generated > 0 || (options.force && options.files.length === 0);
+        let allServices: GeneratedService[] = [];
 
-        if (allServices.length > 0) {
-            await this.generateContainer(outputDir, allServices);
-            this.loggingService.info(`DI container generated successfully with ${allServices.length} services.`);
-        } else {
-            this.loggingService.info("No services found to register in container.");
+        if (containerNeedsUpdate) {
+            this.loggingService.info("\nGenerating DI container...");
+            allServices = await this.getAllExistingServices(outputDir, project, generatedServices);
+
+            if (allServices.length > 0) {
+                await this.generateContainer(outputDir, allServices);
+                this.loggingService.info(`DI container generated successfully with ${allServices.length} services.`);
+            } else {
+                this.loggingService.info("No services found to register in container.");
+            }
+        } else if (servicesToGenerate.size > 0) {
+            this.loggingService.info("\nSkipping DI container generation as no new services were generated.");
         }
 
         const totalDuration = Date.now() - totalStartTime;
@@ -148,17 +155,16 @@ export class GenerationServiceImpl extends GenerationService {
             }
 
             this.loggingService.info(`  -> Generating implementation for ${interfaceName}...`);
-            const originalImportPath = path.relative(path.dirname(implFilePath), declaration.getSourceFile().getFilePath()).replace(/\\/g, '/').replace(/\.ts$/, '');
+                        const originalImportPath = path.relative(path.dirname(implFilePath), declaration.getSourceFile().getFilePath()).replace(/\\/g, '/').replace(/\.ts$/, '');
 
             const { dependenciesText, originalCode } = await this.dependencyAnalysisService.getDependencyInfo(declaration, implFilePath);
             const prompt = generatePrompt(declaration, dependenciesText, originalCode, options.provider);
             const rawResponse = await this.modelCallerService.callModel(prompt, interfaceName, options.model, options.verbose, options.provider);
-            const cleanedCode = cleanGeneratedCode(rawResponse, interfaceName, options.verbose);
-            let processedCode = postProcessGeneratedCode(cleanedCode, declaration, implFilePath);
+            let processedCode = this.postProcessorService.postProcessGeneratedCode(rawResponse, declaration, implFilePath);
 
-            let { isValid, errors } = await validateGeneratedCode(processedCode, declaration, implFilePath);
+            let { isValid, errors } = await this.postProcessorService.validateGeneratedCode(processedCode, declaration, implFilePath);
             if (!isValid) {
-                const fixResult = await fixGeneratedCode(processedCode, declaration, implFilePath, originalImportPath, interfaceName, errors, options.model, options.verbose, options.provider);
+                const fixResult = await this.postProcessorService.fixGeneratedCode(processedCode, declaration, implFilePath, originalImportPath, interfaceName, errors, options.model, options.verbose, options.provider);
                 if (fixResult.success && fixResult.fixedCode) {
                     processedCode = fixResult.fixedCode;
                 } else {
@@ -183,28 +189,119 @@ export class GenerationServiceImpl extends GenerationService {
     }
 
     private async generateContainer(outputDir: string, services: GeneratedService[]): Promise<void> {
+        // Extract the actual class name from interface name
+        // Use the original interface/class name as service identifier (e.g., "DB", "ProductService", "CacheService")
+        const normalizeServiceId = (interfaceName: string): string => {
+            // Simply return the interface name as-is since it's already the correct class name
+            // Examples: "DB" -> "DB", "ProductService" -> "ProductService", "CacheService" -> "CacheService"
+            return interfaceName;
+        };
+    
+        // Helper function to extract interface name from type string and normalize it
+        const extractInterfaceName = (typeStr: string): string => {
+            // Handle types like "import(\"/path/to/file\").InterfaceName" or "InterfaceName"
+            if (typeStr.includes('import(')) {
+                // Extract from import("..." ).InterfaceName
+                const match = typeStr.match(/\)\.([A-Za-z_][A-Za-z0-9_]*)$/);
+                const rawName = match?.[1] || typeStr;
+                return normalizeServiceId(rawName);
+            }
+            // Handle simple interface names
+            return normalizeServiceId(typeStr);
+        };
+    
+        // Deduplicate services by normalized interface name to prevent duplicate definitions
         const uniqueServices = services.reduce((acc, service) => {
-            if (!acc.some(s => s.interfaceName === service.interfaceName)) acc.push(service);
+            const normalizedName = normalizeServiceId(service.interfaceName);
+            const existingIndex = acc.findIndex(s => normalizeServiceId(s.interfaceName) === normalizedName);
+            if (existingIndex >= 0) {
+                // Replace with newer service definition (in case of updates)
+                acc[existingIndex] = service;
+            } else {
+                acc.push(service);
+            }
             return acc;
         }, [] as GeneratedService[]);
-
-        const imports = uniqueServices.map(s => `import { ${s.implName} } from '${s.implFilePath.replace(/\\/g, '/').replace(/\.ts$/, '')}';`).join('\n');
-        const typeMappings = uniqueServices.map(s => `    '${s.interfaceName}': ${s.implName};`).join('\n');
+        
+        this.loggingService.info(`[Container] Generating container with ${uniqueServices.length} unique services (deduplicated from ${services.length} total)`);
+        
+        // Generate imports using normalized service names
+        const imports = uniqueServices.map(s => {
+            const normalizedPath = s.implFilePath.replace(/\\/g, '/').replace(/\.ts$/, '');
+            return `import { ${s.implName} } from '${normalizedPath}';`;
+        }).join('\n');
+    
+        // Generate type mappings using normalized service identifiers
+        const typeMappings = uniqueServices.map(s => {
+            const serviceId = normalizeServiceId(s.interfaceName);
+            return `    '${serviceId}': ${s.implName};`;
+        }).join('\n');
+    
         const factoryMappings = uniqueServices.map(s => {
-            const constructorArgs = s.constructorDependencies.map(dep => `this.get('${dep}')`).join(', ');
-            let factoryCode = `        '${s.interfaceName}': () => {\n`;
-            factoryCode += `            const instance = new ${s.implName}(${constructorArgs});\n`;
+            const serviceId = normalizeServiceId(s.interfaceName);
+            this.loggingService.info(`[Container] Processing service: ${serviceId}`);
+            this.loggingService.info(`[Container] Property dependencies: ${JSON.stringify(s.propertyDependencies)}`);
+            
+            let factoryCode = `        '${serviceId}': () => {\n`;
+            factoryCode += `            const instance = new ${s.implName}();\n`;
+            
             s.propertyDependencies.forEach(dep => {
-                const depInterfaceName = dep.type.includes('import(') ? dep.type.match(/\)\.([A-Za-z_][A-Za-z0-9_]*)$/)?.[1] || dep.type : dep.type;
+                const depInterfaceName = extractInterfaceName(dep.type);
+                this.loggingService.info(`[Container] Adding dependency injection: instance.${dep.name} = this.get('${depInterfaceName}')`);
                 factoryCode += `            instance.${dep.name} = this.get('${depInterfaceName}');\n`;
             });
-            factoryCode += `            return instance;\n        }`;
+            
+            factoryCode += `            return instance;\n`;
+            factoryCode += `        }`;
+            
+            this.loggingService.info(`[Container] Generated factory code for ${serviceId}:`);
+            this.loggingService.info(factoryCode);
+            
             return factoryCode;
         }).join(',\n');
-
-        const containerCode = `// Generated by AutoGen at ${new Date().toISOString()}\n${imports}\n\ninterface ServiceMap {\n${typeMappings}\n}\n\nclass Container {\n    private instances: Map<keyof ServiceMap, any> = new Map();\n    private factories: { [K in keyof ServiceMap]: () => ServiceMap[K] };\n\n    constructor() {\n        this.factories = {\n${factoryMappings}\n        };\n    }\n\n    public get<K extends keyof ServiceMap>(identifier: K): ServiceMap[K] {\n        if (!this.instances.has(identifier)) {\n            const factory = this.factories[identifier];\n            if (!factory) throw new Error('Service not found: ' + identifier);\n            this.instances.set(identifier, factory());\n        }\n        return this.instances.get(identifier) as ServiceMap[K];\n    }\n}\n\nexport const container = new Container();\n`;
-
-        fs.writeFileSync(path.join(outputDir, 'container.ts'), containerCode);
+    
+        // Generate container code using template configuration
+        const generateContainerTemplate = () => {
+            const timestamp = new Date().toISOString();
+            const errorMessage = 'Service not found for identifier: ';
+            
+            return {
+                header: `// Generated by AutoGen at ${timestamp}`,
+                imports,
+                serviceMapInterface: {
+                    name: 'ServiceMap',
+                    mappings: typeMappings
+                },
+                containerClass: {
+                    name: 'Container',
+                    instancesField: 'private instances: Map<keyof ServiceMap, any> = new Map();',
+                    factoriesField: 'private factories: { [K in keyof ServiceMap]: () => ServiceMap[K] };',
+                    constructor: {
+                        factoryMappings
+                    },
+                    getMethod: {
+                        name: 'get',
+                        signature: 'public get<K extends keyof ServiceMap>(identifier: K): ServiceMap[K]',
+                        errorMessage
+                    }
+                },
+                exportStatement: 'export const container = new Container();'
+            };
+        };
+    
+        const template = generateContainerTemplate();
+        
+        const containerCode = `${template.header}\n${template.imports}\n\ninterface ${template.serviceMapInterface.name} {\n${template.serviceMapInterface.mappings}\n}\n\nclass ${template.containerClass.name} {\n    ${template.containerClass.instancesField}\n\n    ${template.containerClass.factoriesField}\n\n    constructor() {\n        this.factories = {\n${template.containerClass.constructor.factoryMappings}\n        };\n    }\n\n    ${template.containerClass.getMethod.signature} {\n        if (!this.instances.has(identifier)) {\n            const factory = this.factories[identifier];
+            if (!factory) {
+                throw new Error('${template.containerClass.getMethod.errorMessage}' + identifier);
+            }
+            const instance = factory();
+            this.instances.set(identifier, instance);
+        }
+        return this.instances.get(identifier) as ServiceMap[K];\n    }\n}\n\n${template.exportStatement}\n`;
+    
+        const outputPath = path.join(outputDir, 'container.ts');
+        fs.writeFileSync(outputPath, containerCode);
     }
 
     private async ensureJSDocIndex(verbose: boolean): Promise<void> {
@@ -229,26 +326,50 @@ export class GenerationServiceImpl extends GenerationService {
     }
 
     private async getAllExistingServices(outputDir: string, project: Project, newlyGenerated: GeneratedService[]): Promise<GeneratedService[]> {
-        const allServices = [...newlyGenerated];
-        if (!fs.existsSync(outputDir)) return allServices;
+        const allServices = new Map<string, GeneratedService>();
+
+        // Add newly generated services first, they have priority
+        for (const service of newlyGenerated) {
+            allServices.set(service.interfaceName, service);
+        }
+
+        if (!fs.existsSync(outputDir)) {
+            return Array.from(allServices.values());
+        }
 
         const implFiles = fs.readdirSync(outputDir).filter(f => f.endsWith('.service.impl.ts'));
-        for (const file of implFiles) {
-            const interfaceName = path.basename(file, '.service.impl.ts').split('.').map(p => p.charAt(0).toUpperCase() + p.slice(1)).join('');
-            if (newlyGenerated.some(s => s.interfaceName === interfaceName)) continue;
+        const tempProject = new Project({ tsConfigFilePath: "tsconfig.json" }); // Use a temporary, isolated project
 
+        for (const file of implFiles) {
+            const filePath = path.join(outputDir, file);
             try {
-                const sourceFile = project.addSourceFileAtPath(path.join(outputDir, file));
+                const sourceFile = tempProject.addSourceFileAtPath(filePath);
                 const implClass = sourceFile.getClasses()[0];
                 if (implClass) {
-                    const { constructorDeps, propertyDeps } = this.fileAnalysisService.getDependencies(implClass);
-                    allServices.push({ interfaceName, implName: implClass.getName() || '', implFilePath: `./${file}`, constructorDependencies: constructorDeps, propertyDependencies: propertyDeps });
+                    const implementsClause = implClass.getImplements()[0];
+                    if (implementsClause) {
+                        const interfaceName = implementsClause.getExpression().getText();
+                        // Only add if not already present from the 'newlyGenerated' list
+                        if (!allServices.has(interfaceName)) {
+                            const { constructorDeps, propertyDeps } = this.fileAnalysisService.getDependencies(implClass);
+                            allServices.set(interfaceName, {
+                                interfaceName,
+                                implName: implClass.getName() || '',
+                                implFilePath: `./${file}`,
+                                constructorDependencies: constructorDeps,
+                                propertyDependencies: propertyDeps
+                            });
+                        }
+                    }
                 }
+                // IMPORTANT: remove the file from the temp project to avoid issues
+                tempProject.removeSourceFile(sourceFile);
             } catch (error) {
                 this.loggingService.warn(`Could not analyze existing service ${file}: ${error}`);
             }
         }
-        return allServices;
+
+        return Array.from(allServices.values());
     }
 
 }

@@ -11,6 +11,7 @@ import type { DependencyAnalysisService } from '../services/dependency-analysis-
 import type { ModelCallerService } from '../services/model-caller-service';
 import type { GenerationService } from '../services/generation-service';
 import type { CommandService } from '../services/command-service';
+import type { PostProcessorService } from '../services/post-processor-service';
 
 // Import all service implementations
 import { ConfigServiceImpl } from './config.service.impl';
@@ -25,6 +26,7 @@ import { DependencyAnalysisServiceImpl } from './dependency-analysis.service.imp
 import { ModelCallerServiceImpl } from './model-caller.service.impl';
 import { GenerationServiceImpl } from './generation.service.impl';
 import { CommandServiceImpl } from './command.service.impl';
+import { PostProcessorServiceImpl } from './post-processor.service.impl';
 
 /**
  * @class AppContainer
@@ -47,6 +49,7 @@ export class AppContainer {
     public readonly modelCallerService: ModelCallerService;
     public readonly generationService: GenerationService;
     public readonly commandService: CommandService;
+    public readonly postProcessorService: PostProcessorService;
 
     constructor() {
         // Services with no dependencies are instantiated first.
@@ -62,6 +65,7 @@ export class AppContainer {
         // Services with dependencies
         this.dependencyAnalysisService = new DependencyAnalysisServiceImpl(this.jsdocService);
         this.modelCallerService = new ModelCallerServiceImpl(this.providerFactoryService);
+        this.postProcessorService = new PostProcessorServiceImpl(this.modelCallerService, this.dependencyAnalysisService);
 
         // GenerationService depends on many other services, so it's instantiated next.
         this.generationService = new GenerationServiceImpl(
@@ -73,7 +77,8 @@ export class AppContainer {
             this.loggingService,
             this.statisticsService,
             this.modelCallerService,
-            this.dependencyAnalysisService
+            this.dependencyAnalysisService,
+            this.postProcessorService
         );
 
         // CommandService depends on other services, so it's instantiated last,
