@@ -21,18 +21,118 @@ import { generatePrompt } from '../prompts/implementation';
  * Concrete implementation of the GenerationService.
  * It orchestrates the entire code generation process, from file analysis to DI container creation.
  */
+import type { PipelineContext, PipelineStage } from '../services/pipeline.service';
+
+class InitializePipelineStage implements PipelineStage {
+    constructor(private loggingService: LoggingService, private configService: ConfigService, private fileUtilsService: FileUtilsService, private lockManagerService: LockManagerService, private fileAnalysisService: FileAnalysisService) {}
+
+    async execute(context: PipelineContext): Promise<PipelineContext> {
+        this.loggingService.info(`🚀 Starting code generation at ${new Date().toLocaleTimeString()}`);
+        const config = this.configService.getConfig();
+        const outputDir = path.join(process.cwd(), config.outputDir);
+        const shouldClean = context.options.force && context.options.files.length === 0;
+        this.fileUtilsService.ensureOutputDirectory(outputDir, shouldClean);
+
+        context.outputDir = outputDir;
+        context.lockedFiles = this.lockManagerService.getLockedFiles();
+        context.servicesToGenerate = this.fileAnalysisService.analyzeSourceFiles(context.project, context.options.files);
+        
+        this.loggingService.info("Scanning for @AutoGen decorators...");
+        this.loggingService.info(`📋 Found ${context.servicesToGenerate.size} service(s) to generate`);
+
+        return context;
+    }
+}
+
+class JSDocIndexStage implements PipelineStage {
+    constructor(private loggingService: LoggingService, private jsdocService: JSDocService) {}
+
+    async execute(context: PipelineContext): Promise<PipelineContext> {
+        await this.ensureJSDocIndex(context.options.verbose);
+        return context;
+    }
+
+    private async ensureJSDocIndex(verbose: boolean): Promise<void> {
+        const projectPath = process.cwd();
+        const jsdocDir = path.join(projectPath, '.jsdoc');
+        if (fs.existsSync(jsdocDir) && fs.readdirSync(jsdocDir).length > 0) {
+            if (verbose) this.loggingService.info('[JSDoc Auto] JSDoc index already exists.');
+            return;
+        }
+        this.loggingService.info('📚 JSDoc index not found, auto-generating...');
+        try {
+            await this.jsdocService.indexAllDependencies();
+            const indexed = await this.jsdocService.getIndexedLibraries();
+            if (indexed.length > 0) {
+                this.loggingService.info(`✅ JSDoc auto-generation completed! Indexed ${indexed.length} libraries.`);
+            } else {
+                this.loggingService.info('ℹ️  No third-party libraries found to index.');
+            }
+        } catch (error) {
+            this.loggingService.warn('⚠️  JSDoc auto-generation failed:', error instanceof Error ? error.message : 'Unknown error');
+        }
+    }
+}
+
+class ServiceGenerationStage implements PipelineStage {
+    constructor(
+        private generationService: GenerationServiceImpl
+    ) {}
+
+    async execute(context: PipelineContext): Promise<PipelineContext> {
+        this.generationService.loggingService.info(`🚀 Starting sequential generation of ${context.servicesToGenerate.size} service(s)...`);
+
+        for (const [interfaceName, { declaration }] of context.servicesToGenerate.entries()) {
+            const fileStat = await this.generationService.generateSingleService(interfaceName, declaration, context);
+            context.fileStats.push(fileStat);
+        }
+
+        const summary = this.generationService.statisticsService.generateSummary(context.fileStats);
+        this.generationService.loggingService.info(`
+📊 Generation Summary: Generated: ${summary.generated}, Skipped: ${summary.skipped}, Locked: ${summary.locked}, Errors: ${summary.errors}`);
+
+        return context;
+    }
+}
+
+class DIContainerStage implements PipelineStage {
+    constructor(private generationService: GenerationServiceImpl) {}
+
+    async execute(context: PipelineContext): Promise<PipelineContext> {
+        const summary = this.generationService.statisticsService.generateSummary(context.fileStats);
+        const containerNeedsUpdate = summary.generated > 0 || (context.options.force && context.options.files.length === 0);
+
+        if (containerNeedsUpdate) {
+            this.generationService.loggingService.info("\nGenerating DI container...");
+            const allServices = await this.generationService.getAllExistingServices(context.outputDir, context.project, context.generatedServices);
+
+            if (allServices.length > 0) {
+                await this.generationService.generateContainer(context.outputDir, allServices);
+                this.generationService.loggingService.info(`DI container generated successfully with ${allServices.length} services.`);
+            } else {
+                this.generationService.loggingService.info("No services found to register in container.");
+            }
+        } else if (context.servicesToGenerate.size > 0) {
+            this.generationService.loggingService.info("\nSkipping DI container generation as no new services were generated.");
+        }
+
+        return context;
+    }
+}
+
 export class GenerationServiceImpl extends GenerationService {
     // Injected services
-    private configService: ConfigService;
-    private jsdocService: JSDocService;
-    private fileUtilsService: FileUtilsService;
-    private lockManagerService: LockManagerService;
-    private fileAnalysisService: FileAnalysisService;
-    private loggingService: LoggingService;
-    private statisticsService: StatisticsService;
-    private modelCallerService: ModelCallerService;
-    private dependencyAnalysisService: DependencyAnalysisService;
-    private postProcessorService: PostProcessorService;
+    // Injected services
+    public configService: ConfigService;
+    public jsdocService: JSDocService;
+    public fileUtilsService: FileUtilsService;
+    public lockManagerService: LockManagerService;
+    public fileAnalysisService: FileAnalysisService;
+    public loggingService: LoggingService;
+    public statisticsService: StatisticsService;
+    public modelCallerService: ModelCallerService;
+    public dependencyAnalysisService: DependencyAnalysisService;
+    public postProcessorService: PostProcessorService;
 
     constructor(
         configService: ConfigService,
@@ -60,96 +160,58 @@ export class GenerationServiceImpl extends GenerationService {
     }
 
     public async generate(options: GenerateOptions): Promise<GenerationResult> {
-        const totalStartTime = Date.now();
-        const config = this.configService.getConfig();
+        let context: PipelineContext = {
+            project: new Project({ tsConfigFilePath: "tsconfig.json" }),
+            options,
+            outputDir: '',
+            lockedFiles: [],
+            servicesToGenerate: new Map(),
+            generatedServices: [],
+            fileStats: [],
+            totalStartTime: Date.now(),
+        };
 
-        this.loggingService.info(`🚀 Starting code generation at ${new Date().toLocaleTimeString()}`);
+        const pipeline: PipelineStage[] = [
+            new InitializePipelineStage(this.loggingService, this.configService, this.fileUtilsService, this.lockManagerService, this.fileAnalysisService),
+            new JSDocIndexStage(this.loggingService, this.jsdocService),
+            new ServiceGenerationStage(this),
+            new DIContainerStage(this),
+        ];
 
-        await this.ensureJSDocIndex(options.verbose);
-
-        const project = new Project({ tsConfigFilePath: "tsconfig.json" });
-        const outputDir = path.join(process.cwd(), config.outputDir);
-
-        const shouldClean = options.force && options.files.length === 0;
-        this.fileUtilsService.ensureOutputDirectory(outputDir, shouldClean);
-
-        const lockedFiles = this.lockManagerService.getLockedFiles();
-        const generatedServices: GeneratedService[] = [];
-
-        this.loggingService.info("Scanning for @AutoGen decorators...");
-        const servicesToGenerate = this.fileAnalysisService.analyzeSourceFiles(project, options.files);
-        this.loggingService.info(`📋 Found ${servicesToGenerate.size} service(s) to generate`);
-
-        const fileStats: FileStats[] = [];
-        this.loggingService.info(`🚀 Starting concurrent generation of ${servicesToGenerate.size} service(s)...`);
-
-        const generationTasks = Array.from(servicesToGenerate.entries()).map(([interfaceName, { declaration }]) =>
-            this.generateSingleService(interfaceName, declaration, outputDir, lockedFiles, options, generatedServices)
-        );
-
-        const results = await Promise.allSettled(generationTasks);
-
-        results.forEach((result, index) => {
-            const interfaceName = Array.from(servicesToGenerate.keys())[index];
-            if (!interfaceName) {
-                this.loggingService.error(`-> ❌ Failed to generate service at index ${index}: Unknown interface name`);
-                return;
-            }
-
-            if (result.status === 'fulfilled') {
-                fileStats.push(result.value);
-            } else {
-                const error = result.reason instanceof Error ? result.reason.message : String(result.reason);
-                this.loggingService.error(`-> ❌ Failed to generate ${interfaceName}: ${error}`);
-                fileStats.push({ interfaceName, status: 'error', duration: 0, error });
-            }
-        });
-
-        const summary = this.statisticsService.generateSummary(fileStats);
-        this.loggingService.info(`
-📊 Generation Summary: Generated: ${summary.generated}, Skipped: ${summary.skipped}, Locked: ${summary.locked}, Errors: ${summary.errors}`);
-
-        const containerNeedsUpdate = summary.generated > 0 || (options.force && options.files.length === 0);
-        let allServices: GeneratedService[] = [];
-
-        if (containerNeedsUpdate) {
-            this.loggingService.info("\nGenerating DI container...");
-            allServices = await this.getAllExistingServices(outputDir, project, generatedServices);
-
-            if (allServices.length > 0) {
-                await this.generateContainer(outputDir, allServices);
-                this.loggingService.info(`DI container generated successfully with ${allServices.length} services.`);
-            } else {
-                this.loggingService.info("No services found to register in container.");
-            }
-        } else if (servicesToGenerate.size > 0) {
-            this.loggingService.info("\nSkipping DI container generation as no new services were generated.");
+        for (const stage of pipeline) {
+            context = await stage.execute(context);
         }
 
-        const totalDuration = Date.now() - totalStartTime;
-        return { success: summary.errors === 0, fileStats, totalDuration, generatedServices: allServices };
+        const totalDuration = Date.now() - context.totalStartTime;
+        const summary = this.statisticsService.generateSummary(context.fileStats);
+        
+        return { 
+            success: summary.errors === 0, 
+            fileStats: context.fileStats, 
+            totalDuration, 
+            generatedServices: context.generatedServices 
+        };
     }
 
-    private async generateSingleService(
-        interfaceName: string, declaration: InterfaceDeclaration | ClassDeclaration, outputDir: string,
-        lockedFiles: string[], options: GenerateOptions, generatedServices: GeneratedService[]
+    public async generateSingleService(
+        interfaceName: string, declaration: InterfaceDeclaration | ClassDeclaration, context: PipelineContext
     ): Promise<FileStats> {
         const fileStartTime = Date.now();
         const implFileName = `${interfaceName.toLowerCase()}.service.impl.ts`;
-        const implFilePath = path.join(outputDir, implFileName);
+        const implFilePath = path.join(context.outputDir, implFileName);
 
         try {
-            if (lockedFiles.includes(path.resolve(implFilePath))) {
+            if (context.lockedFiles.includes(path.resolve(implFilePath))) {
                 this.loggingService.info(`  -> SKIPPED (locked): ${implFilePath}`);
                 return { interfaceName, status: 'locked', duration: Date.now() - fileStartTime };
             }
 
-            if (options.force && options.files.length > 0 && fs.existsSync(implFilePath)) {
+            if (context.options.force && context.options.files.length > 0 && fs.existsSync(implFilePath)) {
                 this.loggingService.info(`  -> FORCE: Deleting existing file: ${implFilePath}`);
                 fs.unlinkSync(implFilePath);
             }
 
-            if (fs.existsSync(implFilePath) && !options.force) {
+            if (fs.existsSync(implFilePath) && !context.options.force) {
                 this.loggingService.info(`  -> SKIPPED: ${implFilePath} already exists. Use --force to overwrite.`);
                 return { interfaceName, status: 'skipped', duration: Date.now() - fileStartTime };
             }
@@ -158,13 +220,13 @@ export class GenerationServiceImpl extends GenerationService {
                         const originalImportPath = path.relative(path.dirname(implFilePath), declaration.getSourceFile().getFilePath()).replace(/\\/g, '/').replace(/\.ts$/, '');
 
             const { dependenciesText, originalCode } = await this.dependencyAnalysisService.getDependencyInfo(declaration, implFilePath);
-            const prompt = generatePrompt(declaration, dependenciesText, originalCode, options.provider);
-            const rawResponse = await this.modelCallerService.callModel(prompt, interfaceName, options.model, options.verbose, options.provider);
+            const prompt = generatePrompt(declaration, dependenciesText, originalCode, context.options.provider);
+            const rawResponse = await this.modelCallerService.callModel(prompt, interfaceName, context.options.model, context.options.verbose, context.options.provider);
             let processedCode = this.postProcessorService.postProcessGeneratedCode(rawResponse, declaration, implFilePath);
 
             let { isValid, errors } = await this.postProcessorService.validateGeneratedCode(processedCode, declaration, implFilePath);
             if (!isValid) {
-                const fixResult = await this.postProcessorService.fixGeneratedCode(processedCode, declaration, implFilePath, originalImportPath, interfaceName, errors, options.model, options.verbose, options.provider);
+                const fixResult = await this.postProcessorService.fixGeneratedCode(processedCode, declaration, implFilePath, originalImportPath, interfaceName, errors, context.options.model, context.options.verbose, context.options.provider);
                 if (fixResult.success && fixResult.fixedCode) {
                     processedCode = fixResult.fixedCode;
                 } else {
@@ -175,7 +237,7 @@ export class GenerationServiceImpl extends GenerationService {
             this.fileUtilsService.saveGeneratedFile(implFilePath, processedCode);
 
             const { constructorDeps, propertyDeps } = Node.isClassDeclaration(declaration) ? this.fileAnalysisService.getDependencies(declaration as any) : { constructorDeps: [], propertyDeps: [] };
-            generatedServices.push({ interfaceName, implName: `${interfaceName}Impl`, implFilePath: `./${implFileName}`, constructorDependencies: constructorDeps, propertyDependencies: propertyDeps });
+            context.generatedServices.push({ interfaceName, implName: `${interfaceName}Impl`, implFilePath: `./${implFileName}`, constructorDependencies: constructorDeps, propertyDependencies: propertyDeps });
 
             const duration = Date.now() - fileStartTime;
             this.loggingService.info(`  -> ✅ ${interfaceName} completed in ${(duration / 1000).toFixed(2)}s`);
@@ -188,7 +250,7 @@ export class GenerationServiceImpl extends GenerationService {
         }
     }
 
-    private async generateContainer(outputDir: string, services: GeneratedService[]): Promise<void> {
+    public async generateContainer(outputDir: string, services: GeneratedService[]): Promise<void> {
         // Extract the actual class name from interface name
         // Use the original interface/class name as service identifier (e.g., "DB", "ProductService", "CacheService")
         const normalizeServiceId = (interfaceName: string): string => {
@@ -304,7 +366,7 @@ export class GenerationServiceImpl extends GenerationService {
         fs.writeFileSync(outputPath, containerCode);
     }
 
-    private async ensureJSDocIndex(verbose: boolean): Promise<void> {
+    public async ensureJSDocIndex(verbose: boolean): Promise<void> {
         const projectPath = process.cwd();
         const jsdocDir = path.join(projectPath, '.jsdoc');
         if (fs.existsSync(jsdocDir) && fs.readdirSync(jsdocDir).length > 0) {
@@ -325,7 +387,7 @@ export class GenerationServiceImpl extends GenerationService {
         }
     }
 
-    private async getAllExistingServices(outputDir: string, project: Project, newlyGenerated: GeneratedService[]): Promise<GeneratedService[]> {
+    public async getAllExistingServices(outputDir: string, project: Project, newlyGenerated: GeneratedService[]): Promise<GeneratedService[]> {
         const allServices = new Map<string, GeneratedService>();
 
         // Add newly generated services first, they have priority

@@ -6,21 +6,26 @@ import { AutoGen } from "aesc";
 
 export class NotificationServiceImpl extends NotificationService {
     public async sendOrderConfirmation(customer: Customer, order: Order): Promise<boolean> {
-        // Create email template with order details
-        const template = `Dear ${customer.getDisplayName()}, 
-        Thank you for your order #${order.id}. 
-        Total amount: $${order.calculateTotal()}. 
-        Order status: ${order.status}`;
+        const subject = `Order Confirmation for ${customer.getDisplayName()}`;
+        const body = `Dear ${customer.getDisplayName()},
+    
+Thank you for your order #${order.id}. 
+Your order total is $${order.calculateTotal().toFixed(2)}.
+    
+Estimated delivery date: TBD
+    
+Best regards,
+The Store Team`;
+
+        console.log(`Sending email to ${customer.email}`);
+        console.log(`Subject: ${subject}`);
+        console.log(`Body: ${body}`);
         
-        // Log email sending (simulate email service)
-        console.log(`Sending confirmation email to ${customer.email}: ${template}`);
-        
-        // Cache notification for tracking
         if (this.cacheService) {
-            await this.cacheService.cacheData(`notification:${customer.id}:${order.id}`, {
-                type: 'confirmation',
+            await this.cacheService.cacheData(`notification:${customer.id}:order_confirmation`, {
                 orderId: order.id,
-                timestamp: new Date()
+                timestamp: new Date(),
+                status: 'sent'
             });
         }
         
@@ -28,21 +33,28 @@ export class NotificationServiceImpl extends NotificationService {
     }
 
     public async sendOrderConfirmed(customer: Customer, order: Order): Promise<boolean> {
-        // Create confirmation template
-        const template = `Dear ${customer.getDisplayName()}, 
-        Your order #${order.id} has been confirmed. 
-        Items: ${order.getItemCount()}. 
-        Estimated delivery: 3-5 business days.`;
+        const subject = `Order #${order.id} Confirmed`;
+        const body = `Dear ${customer.getDisplayName()},
+    
+Your order #${order.id} has been confirmed.
+    
+Order details:
+- Items: ${order.getItemCount()}
+- Total: $${order.calculateTotal().toFixed(2)}
+- Estimated delivery: TBD
+    
+Best regards,
+The Store Team`;
+
+        console.log(`Sending email to ${customer.email}`);
+        console.log(`Subject: ${subject}`);
+        console.log(`Body: ${body}`);
         
-        // Log notification sending
-        console.log(`Sending confirmed notification to ${customer.email}: ${template}`);
-        
-        // Cache notification
         if (this.cacheService) {
-            await this.cacheService.cacheData(`notification:${customer.id}:${order.id}`, {
-                type: 'confirmed',
+            await this.cacheService.cacheData(`notification:${customer.id}:order_confirmed`, {
                 orderId: order.id,
-                timestamp: new Date()
+                timestamp: new Date(),
+                status: 'sent'
             });
         }
         
@@ -50,21 +62,27 @@ export class NotificationServiceImpl extends NotificationService {
     }
 
     public async sendPaymentConfirmation(customer: Customer, order: Order): Promise<boolean> {
-        // Create payment success template
-        const template = `Dear ${customer.getDisplayName()}, 
-        Payment successful for order #${order.id}. 
-        Amount paid: $${order.calculateTotal()}. 
-        Payment status: completed.`;
+        const subject = `Payment Confirmation for Order #${order.id}`;
+        const body = `Dear ${customer.getDisplayName()},
+    
+Your payment of $${order.calculateTotal().toFixed(2)} for order #${order.id} has been processed successfully.
+    
+Order details:
+- Items: ${order.getItemCount()}
+- Total: $${order.calculateTotal().toFixed(2)}
+    
+Best regards,
+The Store Team`;
+
+        console.log(`Sending email to ${customer.email}`);
+        console.log(`Subject: ${subject}`);
+        console.log(`Body: ${body}`);
         
-        // Log notification sending
-        console.log(`Sending payment confirmation to ${customer.email}: ${template}`);
-        
-        // Cache notification
         if (this.cacheService) {
-            await this.cacheService.cacheData(`notification:${customer.id}:${order.id}`, {
-                type: 'payment',
+            await this.cacheService.cacheData(`notification:${customer.id}:payment_confirmation`, {
                 orderId: order.id,
-                timestamp: new Date()
+                timestamp: new Date(),
+                status: 'sent'
             });
         }
         
@@ -72,21 +90,26 @@ export class NotificationServiceImpl extends NotificationService {
     }
 
     public async sendOrderCancellation(customer: Customer, order: Order): Promise<boolean> {
-        // Create cancellation template
-        const template = `Dear ${customer.getDisplayName()}, 
-        Your order #${order.id} has been cancelled. 
-        Reason: Order was cancelled by customer. 
-        Refund will be processed within 5 business days.`;
+        const subject = `Order #${order.id} Has Been Cancelled`;
+        const body = `Dear ${customer.getDisplayName()},
+    
+We regret to inform you that your order #${order.id} has been cancelled.
+    
+Refund amount: $${order.calculateTotal().toFixed(2)}
+Refund will be processed within 5-7 business days.
+    
+Best regards,
+The Store Team`;
+
+        console.log(`Sending email to ${customer.email}`);
+        console.log(`Subject: ${subject}`);
+        console.log(`Body: ${body}`);
         
-        // Log notification sending
-        console.log(`Sending cancellation notification to ${customer.email}: ${template}`);
-        
-        // Cache notification
         if (this.cacheService) {
-            await this.cacheService.cacheData(`notification:${customer.id}:${order.id}`, {
-                type: 'cancellation',
+            await this.cacheService.cacheData(`notification:${customer.id}:order_cancellation`, {
                 orderId: order.id,
-                timestamp: new Date()
+                timestamp: new Date(),
+                status: 'sent'
             });
         }
         
@@ -94,12 +117,11 @@ export class NotificationServiceImpl extends NotificationService {
     }
 
     public async getNotificationHistory(customerId: string): Promise<string[]> {
-        // Retrieve cached notifications by customer ID
-        if (this.cacheService) {
-            const cachedData = await this.cacheService.getCachedData(`notifications:${customerId}`);
-            return cachedData || [];
+        if (!this.cacheService) {
+            return [];
         }
         
-        return [];
+        const cachedData = await this.cacheService.getCachedData(`notifications:${customerId}`);
+        return cachedData || [];
     }
 }

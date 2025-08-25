@@ -13,12 +13,12 @@ export class CustomerServiceImpl extends CustomerService {
         if (!emailRegex.test(email)) {
             throw new Error("Invalid email format");
         }
-
+        
         const existingCustomer = this.findCustomerByEmail(email);
         if (existingCustomer) {
             throw new Error("Customer with this email already exists");
         }
-
+        
         const id = crypto.randomUUID();
         const customer = new Customer(id, name, email, phone, address);
         
@@ -48,22 +48,22 @@ export class CustomerServiceImpl extends CustomerService {
         if (!customer) {
             return false;
         }
-
+        
         if (updates.name !== undefined) {
             if (!updates.name || updates.name.length === 0) {
                 throw new Error("Name cannot be empty");
             }
             customer.name = updates.name;
         }
-
+        
         if (updates.phone !== undefined) {
             customer.phone = updates.phone;
         }
-
+        
         if (updates.address !== undefined) {
             customer.address = updates.address;
         }
-
+        
         this.db?.saveObject(`customer:${customerId}`, customer);
         return true;
     }

@@ -19,7 +19,7 @@ export class OrderServiceImpl extends OrderService {
             }
             
             if (!product.canFulfill(item.quantity)) {
-                throw new Error(`Not enough stock for product ${item.productId}`);
+                throw new Error(`Insufficient stock for product ${item.productId}`);
             }
             
             orderItems.push({
@@ -44,7 +44,7 @@ export class OrderServiceImpl extends OrderService {
         
         this.db?.saveObject(`order:${orderId}`, order);
         
-        // Send confirmation notification
+        // Send order confirmation notification
         const customer = this.db?.findObject(`customer:${customerId}`);
         if (customer) {
             this.notificationService?.sendOrderConfirmation(customer, order);

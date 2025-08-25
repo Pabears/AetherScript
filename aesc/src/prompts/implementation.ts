@@ -1,5 +1,27 @@
 import { InterfaceDeclaration, ClassDeclaration, Node } from "ts-morph";
 
+function _generateCommonRules(
+    interfaceName: string,
+    config: { action: string; target: string; methodType: string; propertyRule: string },
+    additionalRules: string[] = []
+): string {
+    const rules = [
+        `The implementation class name must be '${interfaceName}Impl'.`,
+        `The implementation class MUST '${config.action}' the original ${config.target} '${interfaceName}'.`,
+        `You MUST implement all ${config.methodType} directly. Do NOT create private helper methods for the core logic.`,
+        `${config.propertyRule}`,
+        `IMPORTANT: Do NOT create unnecessary temporary objects for validation or processing. Validate data directly using appropriate methods (e.g., regex for email validation, direct string/number checks).`
+    ];
+
+    rules.push(...additionalRules);
+
+    rules.push(`Your response MUST be only the raw TypeScript code. No explanations, no markdown.`);
+    
+    const rulesText = rules.map((rule, index) => `${index + 1}. ${rule}`).join('\n');
+
+    return `You must follow these rules strictly:\n${rulesText}`;
+}
+
 export function generatePrompt(
     declaration: InterfaceDeclaration | ClassDeclaration,
     dependenciesText: string,
@@ -39,15 +61,10 @@ export function generatePrompt(
     };
     
     // Construct unified prompt with type-specific parts
+    const commonRules = _generateCommonRules(interfaceName, config);
     const prompt = `You are a TypeScript code generation engine.
 Your task is to ${config.task}.
-You must follow these rules strictly:
-1. The implementation class name must be '${interfaceName}Impl'.
-2. The implementation class MUST '${config.action}' the original ${config.target} '${interfaceName}'.
-3. You MUST implement all ${config.methodType} directly. Do NOT create private helper methods for the core logic.
-4. ${config.propertyRule}
-5. IMPORTANT: Do NOT create unnecessary temporary objects for validation or processing. Validate data directly using appropriate methods (e.g., regex for email validation, direct string/number checks).
-6. Your response MUST be only the raw TypeScript code. No explanations, no markdown.
+${commonRules}
 
 Here are the dependent type definitions:
 \`\`\`typescript
@@ -110,18 +127,19 @@ export function generateFixPrompt(
                        currentCode.split('{').length !== currentCode.split('}').length;
     
     // Construct unified fix prompt with type-specific parts
+    const additionalRules = [
+        'Fix all validation errors listed below.',
+        isTruncated 
+            ? 'COMPLETE the truncated/incomplete code - ensure ALL methods are fully implemented with proper closing braces.' 
+            : 'Ensure the code is complete and syntactically correct.'
+    ];
+
+    const commonRules = _generateCommonRules(interfaceName, config, additionalRules);
+
     const fixPrompt = `You are a TypeScript code generation engine.
 Your task is to fix the following ${config.target} implementation that has validation errors.
 
-You must follow these rules strictly:
-1. The implementation class name must be '${interfaceName}Impl'.
-2. The implementation class MUST '${config.action}' the original ${config.target} '${interfaceName}'.
-3. You MUST implement all ${config.methodType} directly. Do NOT create private helper methods for the core logic.
-4. ${config.propertyRule}
-5. IMPORTANT: Do NOT create unnecessary temporary objects for validation or processing. Validate data directly using appropriate methods (e.g., regex for email validation, direct string/number checks).
-6. Fix all validation errors listed below.
-7. ${isTruncated ? 'COMPLETE the truncated/incomplete code - ensure ALL methods are fully implemented with proper closing braces.' : 'Ensure the code is complete and syntactically correct.'}
-8. Your response MUST be only the raw TypeScript code. No explanations, no markdown.
+${commonRules}
 
 ${dependenciesText ? `Here are the dependent type definitions:
 \`\`\`typescript
