@@ -23,14 +23,14 @@ describe('ModelCallerService', () => {
     test('callModel should return a response from a running Ollama instance', async () => {
         try {
             const prompt = 'Respond with only the number 2.';
-            const result = await service.callModel(prompt, 'test-context', 'codellama', false);
+            const result = await service.callModel(prompt, 'test-context', 'qwen3-coder', false);
 
             expect(typeof result).toBe('string');
             expect(result.trim()).not.toBe('');
             expect(result).toContain('2');
 
         } catch (error) {
-            console.warn(`WARN: Test 'callModel' failed. This test requires a local Ollama instance with the 'codellama' model to be running. Error: ${error.message}`);
+            console.warn(`WARN: Test 'callModel' failed. This test requires a local Ollama instance with the 'qwen3-coder' model to be running. Error: ${error.message}`);
             expect().pass('Test skipped due to missing local Ollama instance.');
         }
     }, 20000);

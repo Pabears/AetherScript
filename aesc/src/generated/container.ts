@@ -64,7 +64,7 @@ export class AppContainer {
 
         // Services with dependencies
         this.dependencyAnalysisService = new DependencyAnalysisServiceImpl(this.jsdocService);
-        this.modelCallerService = new ModelCallerServiceImpl(this.providerFactoryService);
+                this.modelCallerService = new ModelCallerServiceImpl();
         this.postProcessorService = new PostProcessorServiceImpl(this.modelCallerService, this.dependencyAnalysisService);
 
         // GenerationService depends on many other services, so it's instantiated next.

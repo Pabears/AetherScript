@@ -1,13 +1,13 @@
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
 import type { GenerateOptions } from '../types';
-import { getConfig } from '../config';
+import { container } from '../generated/container';
 
 /**
  * Parse command line arguments and return structured options
  */
 export function parseArgs(): any {
-    const config = getConfig();
+    const config = container.configService.getConfig();
     
     return yargs(hideBin(process.argv))
         .command('gen', 'Generate service implementations', (yargs) => {

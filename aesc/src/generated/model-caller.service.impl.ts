@@ -1,6 +1,5 @@
 import { ModelCallerService } from '../services/model-caller-service';
-import type { ProviderFactoryService } from '../services/provider-factory-service';
-import type { ProviderOptions } from '../types';
+import { ProviderManager, type ProviderOptions } from '../providers';
 
 /**
  * @class ModelCallerServiceImpl
@@ -10,21 +9,25 @@ import type { ProviderOptions } from '../types';
  * for making calls to language models.
  */
 export class ModelCallerServiceImpl extends ModelCallerService {
-    constructor(private readonly providerFactoryService: ProviderFactoryService) {
+    private readonly providerManager: ProviderManager;
+
+    constructor() {
         super();
+        this.providerManager = new ProviderManager();
+        this.providerManager.loadFromEnvironment();
     }
 
-    public async callModel(
+    public async callOllamaModel(
         prompt: string,
-        loggingContext: string, // interfaceName in original code
+        interfaceName: string,
         model: string,
         verbose: boolean,
         providerName?: string,
         providerOptions?: ProviderOptions
     ): Promise<string> {
         try {
-            const { provider, config } = this.providerFactoryService.createProvider(providerName);
-            
+            const { provider, config } = this.providerManager.createProvider(providerName);
+
             const options: ProviderOptions = {
                 verbose,
                 endpoint: config.settings.endpoint,
@@ -33,15 +36,30 @@ export class ModelCallerServiceImpl extends ModelCallerService {
                 ...providerOptions,
             };
 
-            const modelToUse = model || config.defaultModel || 'codellama';
+            const modelToUse = model || config.defaultModel || 'qwen3-coder';
 
             console.log(`  -> Using provider: ${provider.name} with model: ${modelToUse}`);
-            
+
             return await provider.generate(prompt, modelToUse, options);
         } catch (error) {
             console.error(`Failed to generate code using provider: ${error instanceof Error ? error.message : 'Unknown error'}`);
             throw error;
         }
+    }
+
+    public callModel(
+        prompt: string,
+        interfaceName: string,
+        model: string,
+        verbose: boolean,
+        providerName?: string,
+        providerOptions?: ProviderOptions
+    ): Promise<string> {
+        return this.callOllamaModel(prompt, interfaceName, model, verbose, providerName, providerOptions);
+    }
+
+    public getProviderManager(): ProviderManager {
+        return this.providerManager;
     }
 
     public configureProvider(
@@ -50,7 +68,7 @@ export class ModelCallerServiceImpl extends ModelCallerService {
         settings: Record<string, any>,
         defaultModel?: string
     ): void {
-        this.providerFactoryService.setProviderConfig(name, {
+        this.providerManager.setProviderConfig(name, {
             type,
             defaultModel,
             settings
@@ -58,13 +76,14 @@ export class ModelCallerServiceImpl extends ModelCallerService {
     }
 
     public setDefaultProvider(providerName: string): void {
-        this.providerFactoryService.setDefaultProvider(providerName);
+        this.providerManager.setDefaultProvider(providerName);
     }
 
     public listProviders(): { available: string[]; configured: string[] } {
+        const { ProviderFactory } = require('../providers');
         return {
-            available: this.providerFactoryService.getAvailableProviders(),
-            configured: this.providerFactoryService.getConfiguredProviders()
+            available: ProviderFactory.getAvailableProviders(),
+            configured: this.providerManager.getConfiguredProviders()
         };
     }
 }

@@ -35,4 +35,34 @@ export abstract class CommandService {
      * @returns {Promise<void>}
      */
     abstract runListProviders(): Promise<void>;
+
+    /**
+     * @abstract
+     * @method runTestProvider
+     * @description
+     * Tests the connection to a specific provider.
+     * @param {string} [providerName] - The name of the provider to test.
+     * @returns {Promise<void>}
+     */
+    abstract runTestProvider(providerName?: string): Promise<void>;
+
+    /**
+     * @abstract
+     * @method runShowProviderExamples
+     * @description
+     * Shows examples of how to configure and use providers.
+     * @returns {Promise<void>}
+     */
+    abstract runShowProviderExamples(): Promise<void>;
+
+    /**
+     * @abstract
+     * @method runTestGeneration
+     * @description
+     * Runs a test generation with a specific provider and model.
+     * @param {string} [providerName] - The name of the provider to use.
+     * @param {string} [model] - The name of the model to use.
+     * @returns {Promise<void>}
+     */
+    abstract runTestGeneration(providerName?: string, model?: string): Promise<void>;
 }

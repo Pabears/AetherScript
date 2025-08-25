@@ -36,7 +36,7 @@ describe('GenerationService (E2E)', () => {
             force: true, // Use force to ensure regeneration
             files: [],
             verbose: false,
-            model: 'codellama', // A default model
+            model: 'qwen3-coder', // A default model
         };
 
         const result = await service.generate(options);

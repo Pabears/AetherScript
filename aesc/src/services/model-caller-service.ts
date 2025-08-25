@@ -1,4 +1,8 @@
-import type { ProviderOptions } from '../types';
+import { ProviderManager, type ProviderOptions } from '../providers';
+
+export interface OllamaResponse {
+    response: string;
+}
 
 /**
  * @abstract
@@ -10,26 +14,47 @@ import type { ProviderOptions } from '../types';
 export abstract class ModelCallerService {
     /**
      * @abstract
-     * @method callModel
+     * @method callOllamaModel
      * @description
      * Calls the appropriate AI model with a given prompt to generate code.
      * It selects the provider and model based on configuration and options.
      * @param {string} prompt - The prompt to send to the model.
-     * @param {string} loggingContext - A string (like an interface name) for logging purposes.
+     * @param {string} interfaceName - A string (like an interface name) for logging purposes.
      * @param {string} model - The specific model name to use.
      * @param {boolean} verbose - Flag to enable verbose logging.
      * @param {string} [providerName] - Optional name of the provider to use.
      * @param {ProviderOptions} [providerOptions] - Optional provider-specific settings.
      * @returns {Promise<string>} The raw text response from the language model.
      */
-    abstract callModel(
+    abstract callOllamaModel(
         prompt: string,
-        loggingContext: string,
+        interfaceName: string,
         model: string,
         verbose: boolean,
         providerName?: string,
         providerOptions?: ProviderOptions
     ): Promise<string>;
+
+    /**
+     * @deprecated Use callOllamaModel instead
+     */
+    abstract callModel(
+        prompt: string,
+        interfaceName: string,
+        model: string,
+        verbose: boolean,
+        providerName?: string,
+        providerOptions?: ProviderOptions
+    ): Promise<string>;
+
+    /**
+     * @abstract
+     * @method getProviderManager
+     * @description
+     * Get the global provider manager instance
+     * Useful for configuration and provider management
+     */
+    abstract getProviderManager(): ProviderManager;
 
     /**
      * @abstract

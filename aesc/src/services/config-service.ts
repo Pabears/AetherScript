@@ -15,7 +15,7 @@ export abstract class ConfigService {
      */
     static readonly DEFAULT_CONFIG: AescConfig = {
         outputDir: 'src/generated',
-        defaultModel: 'codellama',
+        defaultModel: 'qwen3-coder',
         timeout: 600000, // 10 minutes
     };
 

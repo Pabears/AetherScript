@@ -12,7 +12,7 @@ describe('ConfigService', () => {
     test('getConfig should return default configuration', () => {
         const config = configService.getConfig();
         expect(config.outputDir).toBe('src/generated');
-        expect(config.defaultModel).toBe('codellama');
+        expect(config.defaultModel).toBe('qwen3-coder');
         expect(config.timeout).toBe(600000);
     });
 

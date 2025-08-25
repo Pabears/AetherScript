@@ -3,12 +3,6 @@
 import { parseArgs, argsToGenerateOptions } from './args-parser';
 import { container } from '../generated/container';
 
-// Import command handlers for commands not yet migrated to the service container
-import { 
-    testProviderCommand, 
-    showProviderExamplesCommand, 
-    testGenerationCommand 
-} from '../commands/provider-commands';
 
 /**
  * Main CLI entry point
@@ -25,7 +19,7 @@ export async function main(): Promise<void> {
                 break;
 
             case 'test-generation':
-                await testGenerationCommand(args.provider, args.model);
+                await container.commandService.runTestGeneration(args.provider, args.model);
                 break;
 
             case 'list-providers':
@@ -33,11 +27,11 @@ export async function main(): Promise<void> {
                 break;
 
             case 'test-provider':
-                await testProviderCommand(args.provider);
+                await container.commandService.runTestProvider(args.provider);
                 break;
 
             case 'show-provider-examples':
-                await showProviderExamplesCommand();
+                await container.commandService.runShowProviderExamples();
                 break;
 
             case 'index-jsdoc':
