@@ -1,5 +1,6 @@
 import { describe, test, expect, beforeEach } from 'bun:test';
 import { ConfigServiceImpl } from '../../src/generated/config.service.impl';
+import { ConfigService } from '../../src/services/config-service';
 import type { AescConfig } from '../../src/types';
 
 describe('ConfigService', () => {
@@ -11,9 +12,11 @@ describe('ConfigService', () => {
 
     test('getConfig should return default configuration', () => {
         const config = configService.getConfig();
-        expect(config.outputDir).toBe('src/generated');
-        expect(config.defaultModel).toBe('qwen3-coder');
-        expect(config.timeout).toBe(600000);
+        const defaultConfig = ConfigService.DEFAULT_CONFIG;
+
+        expect(config.outputDir).toBe(defaultConfig.outputDir);
+        expect(config.defaultModel).toBe(defaultConfig.defaultModel);
+        expect(config.timeout).toBe(defaultConfig.timeout);
     });
 
     test('validateConfig should not throw for a valid config', () => {

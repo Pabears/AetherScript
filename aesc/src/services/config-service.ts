@@ -1,4 +1,5 @@
 import type { AescConfig } from '../types';
+import { DEFAULT_CONFIG } from '../constants/config';
 
 /**
  * @abstract
@@ -13,11 +14,7 @@ export abstract class ConfigService {
      * @description
      * The default configuration for the application.
      */
-    static readonly DEFAULT_CONFIG: AescConfig = {
-        outputDir: 'src/generated',
-        defaultModel: 'qwen3-coder',
-        timeout: 600000, // 10 minutes
-    };
+    static readonly DEFAULT_CONFIG: AescConfig = DEFAULT_CONFIG;
 
     /**
      * @abstract
