@@ -1,0 +1,2 @@
+description = "Generate tests for @autogen implementations"
+prompt = "Run: bun ${extensionPath}/scripts/test.ts"

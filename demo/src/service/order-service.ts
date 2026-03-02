@@ -1,23 +1,24 @@
-import { AutoGen } from "aesc";
+
 import { Order, OrderStatus, type OrderItem } from "../entity/order";
 import { DB } from "./db-service";
 import { ProductService } from "./product-service";
 import { NotificationService } from "./notification-service";
 import { uuid } from "uuidv4";
 
+// @autogen
 export abstract class OrderService {
-    @AutoGen
+    // @AutoGen
     public db?: DB;
-    
-    @AutoGen
+
+    // @AutoGen
     public productService?: ProductService;
-    
-    @AutoGen
+
+    // @AutoGen
     public notificationService?: NotificationService;
 
     // Create a new order with validation and stock checking
     // 1. Generate unique order ID using uuid()
-    // 2. Validate each item: check if product exists and has enough stock
+    // 2. Validate each item: check if product exists and has enough stock (use productService.findProductById)
     // 3. Calculate total amount
     // 4. Create order with PENDING status
     // 5. Save order to database
@@ -27,7 +28,7 @@ export abstract class OrderService {
     // Confirm order and reduce stock
     // 1. Find order by ID
     // 2. Check if order is in PENDING status
-    // 3. Reduce stock for each item using productService
+    // 3. Reduce stock for each item using productService.reduceStock
     // 4. Update order status to CONFIRMED
     // 5. Save updated order
     // 6. Send order confirmed notification
@@ -44,7 +45,7 @@ export abstract class OrderService {
     // Cancel order and restore stock
     // 1. Find order by ID
     // 2. Check if order can be cancelled (PENDING or CONFIRMED status)
-    // 3. If order was CONFIRMED, restore stock for each item
+    // 3. If order was CONFIRMED, use productService.findProductById and updateStock to restore stock for each item
     // 4. Update status to CANCELLED
     // 5. Save updated order
     // 6. Send cancellation notification

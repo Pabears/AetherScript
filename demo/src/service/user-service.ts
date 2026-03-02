@@ -1,11 +1,12 @@
-import { AutoGen } from "aesc";
+
 import { User } from "../entity/user";
 import { DB } from "./db-service";
 
 
 
+// @autogen
 export abstract class UserService {
-    @AutoGen
+    // @AutoGen
     public db?: DB;
     // 1. check: 3 < name.length < 15 and 0 <= age <= 120
     // 2. db.save(user)

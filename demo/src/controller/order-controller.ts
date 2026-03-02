@@ -1,9 +1,9 @@
-import { AutoGen } from "aesc";
+
 import { Order, OrderStatus, type OrderItem } from "../entity/order";
 import { OrderService } from "../service/order-service";
 
 export class OrderController {
-    @AutoGen
+    // @AutoGen
     public orderService?: OrderService;
 
     createOrder(customerId: string, items: Omit<OrderItem, 'unitPrice'>[]): Order {

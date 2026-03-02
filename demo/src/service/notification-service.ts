@@ -1,4 +1,4 @@
-import { AutoGen } from "aesc";
+
 import { Order } from "../entity/order";
 import { Customer } from "../entity/customer";
 import { CacheService } from "./cache-service";
@@ -8,8 +8,9 @@ export interface NotificationTemplate {
     body: string;
 }
 
+// @autogen
 export abstract class NotificationService {
-    @AutoGen
+    // @AutoGen
     public cacheService?: CacheService;
 
     // Send order confirmation email
@@ -75,4 +76,10 @@ export abstract class NotificationService {
      * Implementation hint: Use this.cacheService?.getCachedData() to get cached data
      */
     public abstract getNotificationHistory(customerId: string): Promise<string[]>;
+
+    // Send a generic notification message
+    public abstract sendNotification(customerId: string, message: string): void;
+
+    // Check if an email is valid by seeing if it includes an '@' and a '.'
+    public abstract isValidEmail(email: string): boolean;
 }

@@ -1,9 +1,9 @@
-import { AutoGen } from "aesc";
+
 import { Product } from "../entity/product";
 import { ProductService } from "../service/product-service";
 
 export class ProductController {
-    @AutoGen
+    // @AutoGen
     public productService?: ProductService;
 
     createProduct(name: string, price: number, stock: number, category: string, description?: string): Product {

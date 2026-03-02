@@ -1,14 +1,13 @@
-import { AutoGen } from "aesc";
 import { User } from "./user";
 import { DB } from "./db-service";
 
-
-
+// @autogen
 export abstract class UserService {
-    @AutoGen
+    // @AutoGen
     public db?: DB;
     // 1. check: 3 < name.length < 15 and 0 <= age <= 120
-    // 2. db.save(user)
+    // 2. check: if user already exists (by name), throw an error "User already exists"
+    // 3. db.save(user)
     public abstract create(user: User): void;
 
     // find user by name from db

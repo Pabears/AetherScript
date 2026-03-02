@@ -1,9 +1,8 @@
-import { AutoGen } from "aesc";
 import { User } from "./user";
 import { UserService } from "./user-service";
 
 export class UserController {
-    @AutoGen
+    // @AutoGen
     public userService?: UserService;
 
     create(user: User): void {

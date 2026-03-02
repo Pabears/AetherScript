@@ -1,9 +1,9 @@
-import { AutoGen } from "aesc";
+
 import { Customer } from "../entity/customer";
 import { CustomerService } from "../service/customer-service";
 
 export class CustomerController {
-    @AutoGen
+    // @AutoGen
     public customerService?: CustomerService;
 
     createCustomer(name: string, email: string, phone?: string, address?: string): Customer {

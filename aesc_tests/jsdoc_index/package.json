@@ -1,7 +1,0 @@
-{
-  "name": "jsdoc_index_test",
-  "version": "1.0.0",
-  "dependencies": {
-    "ts-morph": "^26.0.0"
-  }
-}

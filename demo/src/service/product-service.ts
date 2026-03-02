@@ -1,9 +1,10 @@
-import { AutoGen } from "aesc";
+
 import { Product } from "../entity/product";
 import { DB } from "./db-service";
 
+// @autogen
 export abstract class ProductService {
-    @AutoGen
+    // @AutoGen
     public db?: DB;
 
     // Create a new product with validation

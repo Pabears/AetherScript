@@ -61,7 +61,23 @@ async function main() {
     }
     console.log('--------------------------');
 
-    // 5. Final result
+    // 5. Test Duplicate User Handling
+    console.log('\n--- Testing Duplicate User Handling ---');
+    try {
+        const duplicateUser = new User('Alice', 25); // 'Alice' already exists from the happy path
+        userController.create(duplicateUser); // Should throw
+        assert.fail(`'Duplicate User' should have thrown an error but it did not.`);
+    } catch (e: any) {
+        if (e.message && e.message.includes("exists")) {
+            console.log(`[SUCCESS] Test case 'Duplicate User' passed. Errored as expected: ${e.message}`);
+        } else {
+            console.error(`[FAIL] Test case 'Duplicate User' failed with wrong error:`, e);
+            failedTests++;
+        }
+    }
+    console.log('--------------------------');
+
+    // 6. Final result
     console.log('\n--- Test Run Summary ---');
     if (failedTests > 0) {
         console.error(`[FAIL] ${failedTests} test(s) failed.`);

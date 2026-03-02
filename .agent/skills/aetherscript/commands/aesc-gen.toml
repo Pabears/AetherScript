@@ -1,0 +1,2 @@
+description = "Generate implementations for @autogen classes"
+prompt = "Run: bun ${extensionPath}/scripts/gen.ts"
