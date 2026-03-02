@@ -591,14 +591,14 @@ The `aesc` CLI will provide a set of POSIX-compliant and semantically clear comm
 | **Command** | **Arguments/Options** | **Description** |
 | --- | --- | --- |
 | `aesc init` |  | Initializes AetherScript in the current project. Creates an `aether.config.json` file and suggests adding relevant entries to `.gitignore`. |
-| `aesc generate [path]` | `--method <name>`<br>`--model <id>`<br>`--force` | Triggers AI code generation for the `.as` file at the specified path (or for a specific method). `[path]` is optional; if omitted, all configured files are processed. `--method` specifies generating only a single method. `--model` allows overriding the default LLM. `--force` will force regeneration of existing code. |
+| `/aesc-generate [path]` | `--method <name>`<br>`--model <id>`<br>`--force` | Triggers AI code generation for the `.as` file at the specified path (or for a specific method). `[path]` is optional; if omitted, all configured files are processed. `--method` specifies generating only a single method. `--model` allows overriding the default LLM. `--force` will force regeneration of existing code. |
 | `aesc merge [path]` | `--all`<br>`--yes` | Merges reviewed code from the `.asc` file into the corresponding `.as` file. The `--all` option processes all files in the project. `--yes` skips the interactive confirmation prompt. This command is a key part of the CI/CD process. |
 | `aesc validate [path]` | `--ci` | Validates the syntactic contract (existence and type compatibility) between `.as` and `.asc` files. This is another critical CI/CD command for static checking before merging. In `--ci` mode, it will report errors with a non-zero exit code. |
 | `aesc watch` |  | Starts a daemon process that watches for changes in `.as` and `.asc` files. Based on configuration, file changes can automatically trigger `generate` or `validate` commands, providing real-time development feedback. |
 | `aesc status` |  | Displays the status of all AetherScript files in the current project, such as which placeholders have not yet had implementations generated and which implementations have been generated but not yet merged. |
 | `aesc discard [path]` | `--method <name>` | Discards one or more pending implementations in the `.asc` file, removing them from the file. |
 
-The design of these commands aims to provide a powerful toolset that is suitable for both interactive use (e.g., a developer running `aesc generate` locally) and automated scripting (e.g., running `aesc validate` in a Git pre-commit hook).
+The design of these commands aims to provide a powerful toolset that is suitable for both interactive use (e.g., a developer running `/aesc-generate` locally) and automated scripting (e.g., running `aesc validate` in a Git pre-commit hook).
 
 ### **5.3 Integration with Version Control Systems**
 

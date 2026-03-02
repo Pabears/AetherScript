@@ -14,7 +14,7 @@ As the architect, you define a component's "contract" using an abstract class in
 // The developer defines the capabilities of UserService without implementing it.
 export abstract class UserService {
     // It depends on a DB contract.
-    @AutoGen
+    // @autogen
     public db?: DB;
 
     // It defines two methods that must be implemented.
@@ -30,12 +30,12 @@ export abstract class DB {
 }
 
 Step 2: Declare the Dependency
-In higher-level components that need this functionality (like a UserController), you declare the dependency on the contract using the @AutoGen decorator. This tells the AetherScript engine, "I need a concrete implementation of UserService."
+In higher-level components that need this functionality (like a UserController), you declare the dependency on the contract using the // @autogen decorator. This tells the AetherScript engine, "I need a concrete implementation of UserService."
 
 // File: src/user.ts
 export class UserController {
     // Declare the need for a UserService implementation.
-    @AutoGen
+    // @autogen
     public userService?: UserService;
 
     create(user: User): void {
@@ -48,7 +48,7 @@ export class UserController {
 }
 
 Step 3: AI Generates the Implementation
-The AetherScript engine (aesc.ts script) scans for all @AutoGen decorators. For each one, it:
+The AetherScript engine (aesc.ts script) scans for all // @autogen decorators. For each one, it:
 
 Parses its type (e.g., the UserService abstract class).
 
@@ -111,9 +111,9 @@ ollama pull codellama
 Ensure Ollama is running.
 
 Step 3: Generate AI Implementations & Container
-Run the AetherScript core script. It will scan for @AutoGen decorators, call the LLM, and create all necessary implementation files and the container.ts file in the src/generated directory.
+Run the AetherScript core script. It will scan for // @autogen decorators, call the LLM, and create all necessary implementation files and the container.ts file in the src/generated directory.
 
-bun aesc.ts
+/aesc-gen
 
 Step 4: Run the Application
 Execute the main application logic to see the DI container compose and serve the AI-generated code at runtime.
