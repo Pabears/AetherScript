@@ -12,8 +12,12 @@ The developer focuses on WHAT (interface design), AI handles HOW (implementation
 
 When a user asks you to implement a feature using AetherScript:
 
-### Step 1: Define Abstract Classes
-Create abstract classes with `// @autogen` marker:
+### Step 0: Requirement Gathering & Scaffolding
+Use the `/aesc-pre [your idea]` command to start an interactive PM session:
+The AI will ask architectural questions, generate a requirements document (PRD), and automatically scaffold the `// @autogen` interfaces with strict JSDoc constraints.
+
+### Step 1: Define Abstract Classes (Manual Alternative)
+If you already know the structure, manually create abstract classes with `// @autogen` marker:
 
 ```typescript
 // @autogen
@@ -53,6 +57,7 @@ This generates:
 
 | Command | Description |
 |---------|-------------|
+| `/aesc-pre` | Interact with the user to gather requirements, write a PRD and generate strict abstract class scaffolding |
 | `/aesc-gen` | Generate implementations for @autogen classes |
 | `/aesc-test` | Generate tests for implementations |
 
