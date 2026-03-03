@@ -1,0 +1,61 @@
+{
+  "/Users/shiheng/myproject/AetherScript/demo_task_manager/src/service/db-service.ts": {
+    "hash": "7198c6fb217422beb11bd99170f752399d83ddae3c7763c42bf2c59944039445",
+    "serviceMeta": {
+      "name": "DBService",
+      "implPath": "./dbservice.impl",
+      "className": "DBServiceImpl",
+      "dependencies": []
+    }
+  },
+  "/Users/shiheng/myproject/AetherScript/demo_task_manager/src/service/user-service.ts": {
+    "hash": "39a4af5c96c42cc191c19f985719788ca1d3381b185dca7f2db493d2876edefb",
+    "serviceMeta": {
+      "name": "UserService",
+      "implPath": "./userservice.impl",
+      "className": "UserServiceImpl",
+      "dependencies": [
+        {
+          "field": "dbService",
+          "type": "DBService"
+        }
+      ]
+    }
+  },
+  "/Users/shiheng/myproject/AetherScript/demo_task_manager/src/service/project-service.ts": {
+    "hash": "a9bdcb0ce230b43ba121e99fe80be53e5bfe86b22c6ee8dcf42335b871a39e9d",
+    "serviceMeta": {
+      "name": "ProjectService",
+      "implPath": "./projectservice.impl",
+      "className": "ProjectServiceImpl",
+      "dependencies": [
+        {
+          "field": "dbService",
+          "type": "DBService"
+        }
+      ]
+    }
+  },
+  "/Users/shiheng/myproject/AetherScript/demo_task_manager/src/service/task-service.ts": {
+    "hash": "2bb678a89507b6718b7dc3e0aad6f70690ba360b7d0403ef5b00328e339ce454",
+    "serviceMeta": {
+      "name": "TaskService",
+      "implPath": "./taskservice.impl",
+      "className": "TaskServiceImpl",
+      "dependencies": [
+        {
+          "field": "dbService",
+          "type": "DBService"
+        },
+        {
+          "field": "userService",
+          "type": "UserService"
+        },
+        {
+          "field": "projectService",
+          "type": "ProjectService"
+        }
+      ]
+    }
+  }
+}

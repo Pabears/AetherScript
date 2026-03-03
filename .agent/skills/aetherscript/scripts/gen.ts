@@ -306,7 +306,7 @@ Rules:
             return null;
         }
 
-        const code = await extractCodeWithLLM(output);
+        const code = extractCodeLocal(output);
         finalCode = `// Generated from ${file}\n${code}`;
 
         // Write to file for ts-morph to analyze
@@ -430,44 +430,49 @@ async function callGemini(prompt: string): Promise<string | null> {
             stdout: "pipe",
             stderr: "pipe",
         });
+
+        await proc.exited;
+
+        if (proc.exitCode !== 0) {
+            const errorOutput = await new Response(proc.stderr).text();
+            console.error(`Gemini CLI Error (Exit Code: ${proc.exitCode}):`, errorOutput);
+            return null;
+        }
+
         const output = await new Response(proc.stdout).text();
         return output;
     } catch (e) {
-        console.error("Gemini Error:", e);
+        console.error("Gemini Spawn Exception:", e);
         return null;
     }
 }
 
-async function extractCodeWithLLM(rawOutput: string): Promise<string> {
-    const prompt = `
-    You are a strict code extractor. 
-    Input: Text that may contain TypeScript code wrapped in markdown or mixed with conversation.
-    Task: Extract ONLY the TypeScript code.
-    
-    Rules:
-    1. Output MUST be valid TypeScript.
-    2. Do NOT output any markdown fences (no \`\`\`).
-    3. Do NOT output any conversational text (e.g. "Here is the code", "I will update").
-    4. If multiple blocks exist, merge them or pick the main implementation.
-    5. If the input IS code, return it as is (without markdown).
-    
-    Input Text:
-    ${rawOutput}
-    `;
+function extractCodeLocal(rawOutput: string): string {
+    let text = rawOutput.trim();
 
-    const extracted = await callGemini(prompt);
-    if (!extracted) return rawOutput;
+    // 1. Try to find `<CODE_BLOCK>` tags if the LLM followed instructions perfectly
+    const codeBlockMatch = text.match(/<CODE_BLOCK>([\s\S]*?)<\/CODE_BLOCK>/);
+    if (codeBlockMatch && codeBlockMatch[1]) {
+        text = codeBlockMatch[1].trim();
+    }
 
-    let clean = extracted.trim();
-    if (clean.startsWith("\`\`\`")) {
-        const parts = clean.split("\n");
+    // 2. Try to find standard markdown TypeScript fences
+    const mdBlockMatch = text.match(/```(?:typescript|ts)?\s([\s\S]*?)```/);
+    if (mdBlockMatch && mdBlockMatch[1]) {
+        text = mdBlockMatch[1].trim();
+    }
+
+    // 3. Fallback: just strip raw backticks if they are at the very edges
+    if (text.startsWith("```")) {
+        const parts = text.split("\n");
         if (parts.length > 1) {
             if (parts[0].startsWith("\`\`\`")) parts.shift();
             if (parts[parts.length - 1].startsWith("\`\`\`")) parts.pop();
-            clean = parts.join("\n").trim();
+            text = parts.join("\n").trim();
         }
     }
-    return clean;
+
+    return text;
 }
 
 main().catch(console.error);

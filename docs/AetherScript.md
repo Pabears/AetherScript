@@ -1,5 +1,7 @@
 # AetherScript: Technical Design Specification for AI-Enhanced Development
 
+> **NOTE:** This document describes an early, experimental architecture of AetherScript (using `.as` and `.asc` files). The framework has since evolved to a much simpler, decorator-driven approach (`// @autogen`) tightly integrated with the `gemini-cli` (`/aesc-gen` and `/aesc-test`). Please refer to the root `README.md` for current instructions.
+
 # **Part 1: Vision & System Architecture**
 
 ### **1.1 The AetherScript Philosophy: Harmonizing Human Intent with AI Code Generation**

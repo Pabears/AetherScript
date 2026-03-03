@@ -1,4 +1,7 @@
 AetherScript: A Framework for Trustworthy AI-Assisted Development
+
+> **NOTE:** This document describes version 0.2 of AetherScript, which experimented with local models via Ollama. The current production framework utilizes `gemini-cli` with high-performance regex parsing and local test proxy mocking.
+
 Core Philosophy: Separate Intent from Implementation, Embrace Contracts and Composition
 In a world filled with AI coding tools, AetherScript takes a unique approach. It doesn't inject code directly into your source files, nor does it stop at simple code completion. AetherScript's core philosophy is to cleanly separate the developer's "design intent" from the AI's "implementation details," connecting them with strongly-typed "contracts" and composing them at runtime.
 

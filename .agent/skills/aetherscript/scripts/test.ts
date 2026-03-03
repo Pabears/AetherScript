@@ -1,8 +1,10 @@
+import { Project, ClassDeclaration } from "ts-morph";
 import { Glob } from "bun";
-import { join, relative } from "path";
+import { join } from "path";
 
 // Configuration
-const SOURCE_DIR = ".";
+const SOURCE_DIR = "src";
+const SERVICE_DIR = "src/service";
 const GENERATED_DIR = "src/generated";
 const TEST_DIR = "test";
 
@@ -10,34 +12,49 @@ interface ServiceInfo {
     name: string;
     implPath: string;
     sourceFile: string;
+    abstractClassDef: string;
 }
 
 async function main() {
-    console.log("🧪 Starting AetherScript Test Generator...");
+    console.log("🧪 Starting AetherScript Test-Driven Generator...");
 
-    // Find all generated impl files
-    const glob = new Glob(`${GENERATED_DIR}/*.impl.ts`);
+    const project = new Project();
+    project.addSourceFilesAtPaths(`${SOURCE_DIR}/**/*.ts`);
+
+    const glob = new Glob(`${SERVICE_DIR}/*.ts`);
     const services: ServiceInfo[] = [];
 
-    for await (const file of glob.scan(SOURCE_DIR)) {
+    for await (const file of glob.scan(".")) {
         if (file.includes("node_modules")) continue;
 
         const content = await Bun.file(file).text();
 
-        // Extract class name
-        const classMatch = content.match(/export class (\w+Impl)/);
-        if (classMatch) {
-            const implName = classMatch[1];
-            const baseName = implName.replace("Impl", "");
-            services.push({
-                name: baseName,
-                implPath: file.replace(/\.ts$/, ""),
-                sourceFile: file
-            });
+        // Only process files with // @autogen
+        if (!content.includes("// @autogen")) {
+            continue;
         }
+
+        const sourceFile = project.getSourceFile(file);
+        if (!sourceFile) continue;
+
+        const classNode = sourceFile.getClasses().find(c => c.isAbstract());
+        if (!classNode) continue;
+
+        const baseName = classNode.getName();
+        if (!baseName) continue;
+
+        // Extract the code block of the abstract class including comments
+        const abstractClassDef = classNode.getFullText();
+
+        services.push({
+            name: baseName,
+            implPath: join(GENERATED_DIR, `${baseName.toLowerCase()}.impl.ts`),
+            sourceFile: file,
+            abstractClassDef
+        });
     }
 
-    console.log(`📂 Found ${services.length} implementations to test.`);
+    console.log(`📂 Found ${services.length} abstract interfaces for Test-Driven Generation.`);
 
     // Ensure test directory exists
     await Bun.write(join(TEST_DIR, ".gitkeep"), "");
@@ -63,7 +80,7 @@ async function main() {
 
     await runParallel(tasks, CONCURRENCY_LIMIT);
 
-    console.log("\n✅ Test generation complete!");
+    console.log("\n✅ Test-Driven generation complete!");
 }
 
 async function generateTest(service: ServiceInfo) {
@@ -76,39 +93,60 @@ async function generateTest(service: ServiceInfo) {
         return;
     }
 
-    console.log(`🔄 Generating test for ${service.name}...`);
-
-    // Read the implementation
-    const implContent = await Bun.file(service.sourceFile).text();
+    console.log(`🔄 Generating test for ${service.name} interface...`);
 
     const prompt = `
-You are a TypeScript test generator.
-Generate a comprehensive test file for the following implementation.
+You are a rigorous TypeScript Test-Driven Development (TDD) engineer.
+Your task is to generate a comprehensive unit test file for a concrete implementation that MUST adhere to the following Abstract Class Contract.
 
-Implementation:
+Abstract Interface Contract:
 \`\`\`typescript
-${implContent}
+${service.abstractClassDef}
 \`\`\`
 
 Requirements:
-1. Use Bun's built-in test runner (\`import { describe, it, expect, beforeEach } from "bun:test"\`)
-2. Mock dependencies (use simple object mocks, no external libraries)
-3. Test all public methods
-4. Include happy path and edge cases
-5. Import the implementation class
+1. Use Bun's built-in test runner (\`import { describe, it, expect, beforeEach, mock } from "bun:test"\`)
+2. Mock ALL dependencies listed with \`@AutoGen\`. 
+   CRITICAL: Do NOT use simple object literals for mocks because the implementation might call unexpected abstract methods (like findObjectsByField). 
+   Instead, use a dynamic Proxy to mock dependencies safely. Example pattern:
+   \`\`\`typescript
+   function createMockDependency() {
+       const mocks: Record<string, any> = {};
+       return new Proxy({}, {
+           get(target, prop: string) {
+               if (prop === 'then') return undefined; // Promise bypass
+               if (!mocks[prop]) {
+                   // Default to mock returning undefined unless the name implies array
+                   const isArray = prop.includes('findObjects') || prop.includes('getAll');
+                   mocks[prop] = mock(() => Promise.resolve(isArray ? [] : undefined));
+               }
+               return mocks[prop];
+           },
+           set(target, prop: string, value: any) {
+               mocks[prop] = value;
+               return true;
+           }
+       });
+   }
+   \`\`\`
+   CRITICAL MOCKING RULES:
+   - For ANY method that retrieves an object (e.g. \`findObjectById\`, \`getObjectById\`, \`getProject\`), you MUST manually mock it in the test using \`mockResolvedValue({...})\` to return a valid object structure (like \`{ status: 'TODO' }\`). 
+   - If you do not manually mock these, the Proxy will return \`undefined\`, which will crash business logic like \`if (task.status === ...)\`!
+   - You MUST import the concrete implementation class from \`../src/generated/${service.name.toLowerCase()}.impl.ts\` which is named \`${service.name}Impl\`.
+   - Test all public abstract methods perfectly according to the JSDoc contractual rules.
 
-Output ONLY the test file code, no markdown fences.
+Output ONLY the test file code, no markdown fences or explanations.
 `;
 
     const output = await callGemini(prompt);
     if (output) {
-        const clean = cleanOutput(output);
+        const clean = extractCodeLocal(output);
         await Bun.write(testFilePath, clean);
         console.log(`  ✓ Generated ${testFilePath}`);
     }
 }
 
-function cleanOutput(output: string): string {
+function extractCodeLocal(output: string): string {
     let clean = output.trim();
     // Strip markdown fences if present
     if (clean.startsWith("```")) {
@@ -126,10 +164,19 @@ async function callGemini(prompt: string): Promise<string | null> {
             stdout: "pipe",
             stderr: "pipe",
         });
+
+        await proc.exited;
+
+        if (proc.exitCode !== 0) {
+            const errorOutput = await new Response(proc.stderr).text();
+            console.error(`Gemini CLI Error (Exit Code: ${proc.exitCode}):`, errorOutput);
+            return null;
+        }
+
         const output = await new Response(proc.stdout).text();
         return output;
     } catch (e) {
-        console.error("Gemini Error:", e);
+        console.error("Gemini Spawn Exception:", e);
         return null;
     }
 }

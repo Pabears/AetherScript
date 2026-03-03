@@ -1,5 +1,7 @@
 # AetherScript: A Contract-Driven Paradigm for Reliable Human-AI Code Collaboration
 
+> **NOTE:** This whitepaper describes the architectural theory of AetherScript using early local backends (Ollama/Qwen). The current implementation relies on the official `gemini-cli` for maximum generation stability, along with automated, proxy-driven, abstract-first TDD testing pipelines (`/aesc-test`).
+
 **Abstract**
 
 As Large Language Models (LLMs) become increasingly integrated into software development, AI programming tools are evolving from code completion to automated code generation. However, prevailing methods often lack predictability and control, making it difficult for developers to fully trust AI-generated code. This paper introduces AetherScript, a novel AI programming paradigm centered on the core principle of "Design by Contract," which explicitly separates human developer intent from AI implementation. We detail AetherScript's workflow and technical architecture, explaining how it leverages static code analysis, context-rich prompt engineering, automated dependency injection, and an innovative "file lock" mechanism to foster trustworthy human-AI collaboration. The paper concludes by summarizing AetherScript's contributions to the field of AI-assisted programming and outlines future directions for its development.
