@@ -115,9 +115,9 @@ interface IPromptSanitizer {
 
 ### 3. AbstractLLMClient
 
-Wraps LLM provider calls. The primary mock boundary for testing.
+**Runtime environment abstraction.** The interface decouples the pipeline from any specific LLM provider or runtime. Different environments implement this differently — no API keys, HTTP clients, or provider SDKs leak into the interface.
 
-**Cannot be autogen.**
+**Cannot be autogen.** Also the primary mock boundary for testing.
 
 ```typescript
 interface ILLMClient {
@@ -125,6 +125,20 @@ interface ILLMClient {
   getModel(): string;
 }
 ```
+
+**Implementation examples by environment:**
+
+| Environment | Implementation | Notes |
+|---|---|---|
+| OpenClaw | `openclaw-llm-client.impl.ts` | Uses OpenClaw's built-in model runtime directly; no API key, no HTTP |
+| Standalone Node.js | `anthropic-llm-client.impl.ts` | Uses Anthropic SDK + `ANTHROPIC_API_KEY` |
+| OpenAI-compatible | `openai-llm-client.impl.ts` | Uses OpenAI SDK or any compatible endpoint |
+| Testing | `mock-llm-client.impl.ts` | Returns fixture responses; no network calls |
+
+**Interface constraints** (must not leak implementation details):
+- No `apiKey`, `baseUrl`, `model` parameters in `generate()` — those belong in the constructor/config
+- No HTTP-specific error types in the return signature
+- `getModel()` returns a human-readable string for logging only; callers must not branch on it
 
 ---
 
