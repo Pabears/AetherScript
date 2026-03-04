@@ -1,20 +1,3 @@
-# AetherScript Fleet
-
-> 用多角色 AI 舰队协作生成高质量代码的工程方法论。
-
----
-
-这个仓库只有一个文件值得读：[`FLEET_ARCHITECTURE.md`](FLEET_ARCHITECTURE.md)
-
-它是通过一整天的真实实战（用舰队重写自己）迭代出来的 playbook——不是理论，是踩过坑之后留下来的东西。
-
-**核心内容：**
-- 五大角色（PM / 架构暴君 / QA黑客 / 安全死心眼 / 预算狂魔）及模型分配
-- 完整三阶段流程：需求→设计→实现→测试
-- 为什么 output 要切细、抽象要拆小、测试要先于实现
-- 踩过的坑和改了什么
-
-**语言无关。** 名字里有 Script，但这套方法可以用在任何语言上。
 # AetherScript Fleet Architecture
 
 > 一套用多角色 AI 舰队协作生成高质量 TypeScript 代码的工程方法论。
