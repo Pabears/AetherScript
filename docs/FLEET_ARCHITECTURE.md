@@ -352,5 +352,15 @@ QA黑客 + 安全死心眼 并行评审（各输出 review.md）
 | 大文件生成 | sub-agent 生成+写入 → 截断 | 主 session 分段写入，生成写入分离 |
 | 文档设计 | 三巨头同时生成一份大文档 → 截断 | 每人负责子文件，最后 merge |
 | Token 分配 | input/output 对等 | input 大方投，output 切细切小 |
+| 复杂类实现 | 抽象设计功能太集中 → output 暴涨截断 | 重新拆分抽象，每个类只做一件事 |
 
-**核心洞察（时恒提出）：** 充分利用 input 和 output 的长度不对称。input 便宜，output 珍贵——把所有背景塞进 input，把 output 切成最小有效单元。
+**核心洞察1（时恒提出）：** 充分利用 input 和 output 的长度不对称。input 便宜，output 珍贵——把所有背景塞进 input，把 output 切成最小有效单元。
+
+**核心洞察2（2026-03-04 aesc-gen 实战）：** output 超限不只是 prompt 工程问题，更可能是**抽象设计问题**。一个类功能太集中，实现时 output 必然暴涨。正确的解法不是限制行数，而是在 aesc-pre 架构设计阶段就拆好：
+
+- 功能集中的大类 → 拆成多个职责单一的小类
+- 例：`AbstractValidator`（verifyContract + scanDangerousApis + checkCompilation）→ 三个独立类
+- 例：`SanitizationRule` 如果也是抽象类，每条规则独立实现、独立测试
+- 例：`AbstractLLMClient` 的 Strategy → `AbstractAnthropicClient` / `AbstractOpenAIClient` 各自独立
+
+**判断标准：** 如果一个抽象类的实现 output 超过 200 行，说明这个类承担了太多职责，应该在 aesc-pre 阶段拆分，而不是在 aesc-gen 阶段用行数限制强行压缩。
