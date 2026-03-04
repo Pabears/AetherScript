@@ -44,8 +44,9 @@
 | 节点 | 人类审核内容 |
 |------|-------------|
 | Phase 1 完成后 | PRD、Technical Design、接口/抽象定义 |
-| Phase 2 完成后 | 三巨头裁决报告、最终实现代码 |
-| Phase 3 完成后 | 测试报告、测试通过结果 |
+| Phase 2 完成后 | Test Design 文档（测什么、测哪些边界） |
+| Phase 3 完成后 | 三巨头裁决报告、最终实现代码 |
+| Phase 4 完成后 | 测试通过结果 |
 
 这一机制解决了"AI 审 AI"的根本问题——人类确认是整条链路唯一不可伪造的信任锚点，绝大多数安全、质量、架构风险都会在这里被人类视角识别。
 
@@ -84,11 +85,36 @@ sessions_spawn(
 
 ---
 
-### Phase 2: aesc-gen（并行实现与裁决）
+### Phase 2: aesc-test（测试设计，先于实现）
 
-**每个类独立处理，类与类之间并行。**
+**测试设计必须在实现之前完成。人类审 Test Design，不是测试代码。**
 
-#### Step 4 — 三组并行实现
+#### Step 4 — Test Design（每个模块一个 sub-agent）
+
+```
+sessions_spawn(
+  task="你是QA黑客。只看以下接口签名和文档注释，输出 Test Design 文档：要测什么、测哪些边界、预期行为是什么。不要写代码。",
+  label="aesc-test-design-[模块名]",
+  model="claudeopus"
+)
+```
+
+- Input：只有接口签名 + 文档注释，**禁止传入实现代码**
+- Output：Test Design 文档（自然语言描述测试意图，不是代码）
+
+**→ 人类审核 Test Design：覆盖了正确的边界吗？有没有遗漏的场景？**
+
+#### Step 5 — 测试代码生成
+
+基于人类确认的 Test Design，生成对应语言的测试代码。
+
+---
+
+### Phase 3: aesc-gen（并行实现与裁决）
+
+**每个模块独立处理，模块与模块之间并行。**
+
+#### Step 6 — 三组并行实现
 
 | 团队 | 风格 | 模型 | 优先级 |
 |------|------|------|--------|
@@ -100,7 +126,7 @@ sessions_spawn(
 
 **Prompt 必须将 Step 3 产出的接口/抽象定义完整传入，LLM 只填实现，不允许修改接口结构。**
 
-#### Step 5 — 三巨头裁决（每类一个 sub-agent）
+#### Step 7 — 三巨头裁决（每个模块一个 sub-agent）
 
 ```
 sessions_spawn(
@@ -115,24 +141,13 @@ sessions_spawn(
 
 ---
 
-### Phase 3: aesc-test（TDD 测试）
+### Phase 4: aesc-test-run（测试执行）
 
-**测试必须先于实现生成，且禁止看到实现代码。**
+#### Step 8 — 测试代码执行
 
-#### Step 6 — 测试生成（每类一个 sub-agent）
+将 Phase 2 生成的测试代码对 Phase 3 的实现运行：
 
-```
-sessions_spawn(
-  task="你是QA黑客。只看以下接口签名和文档注释，生成黑盒测试。禁止猜测实现细节，只测接口契约。",
-  label="aesc-test-[模块名]",
-  model="claudeopus"
-)
-```
-
-- Input：只有接口签名 + 文档注释，**禁止传入实现代码**（AI 看到实现后会把 bug 当 feature 测）
-- Output：对应语言的测试框架格式
-
-#### Step 7 — 强制运行（唯一外部锚点）
+#### Step 9 — 强制运行（唯一外部锚点）
 
 ```bash
 # 对应语言的测试命令，例如：
