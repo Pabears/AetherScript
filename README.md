@@ -1,25 +1,17 @@
 # AetherScript Fleet
 
-> 一套用多角色 AI 舰队协作生成高质量代码的工程方法论。
+> 用多角色 AI 舰队协作生成高质量代码的工程方法论。
 
-## 这是什么
+---
 
-AetherScript Fleet 是在 OpenClaw 多 agent 框架下，通过真实项目实战（自我重写）迭代出来的 **AI 协作代码生成方法论**。
+这个仓库只有一个文件值得读：[`FLEET_ARCHITECTURE.md`](FLEET_ARCHITECTURE.md)
 
-核心价值不是某个具体的代码实现，而是**如何组织多个 AI 角色协作、互相制衡、输出高质量结果**的完整 playbook。
+它是通过一整天的真实实战（用舰队重写自己）迭代出来的 playbook——不是理论，是踩过坑之后留下来的东西。
 
-## 读这个
+**核心内容：**
+- 五大角色（PM / 架构暴君 / QA黑客 / 安全死心眼 / 预算狂魔）及模型分配
+- 完整三阶段流程：需求→设计→实现→测试
+- 为什么 output 要切细、抽象要拆小、测试要先于实现
+- 踩过的坑和改了什么
 
-👉 [`docs/FLEET_ARCHITECTURE.md`](docs/FLEET_ARCHITECTURE.md)
-
-包含：
-- 三个核心原则
-- 五大角色定义与模型分配
-- 完整7步流程（aesc-pre / aesc-gen / aesc-test）
-- Sub-agent 运行规范（Output 预算、并行策略、生成与写入分离）
-- 版本演进记录（为什么这么设计，踩过什么坑）
-
-## 语言无关
-
-虽然命名来自 TypeScript 实验背景，但方法论本身适用于任何语言：Python、Java、Rust、Go……
-约束 LLM output、抽象粒度门禁、TDD、外部锚点——这些原则跟语言无关。
+**语言无关。** 名字里有 Script，但这套方法可以用在任何语言上。
