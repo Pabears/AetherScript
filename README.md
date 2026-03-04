@@ -1,9 +1,9 @@
-# AetherScript 🚀 舰队版
+# AetherScript 🚀
 
 > **"Define interfaces, not implementations."**  
 > 五大专家角色协作，从需求到代码，全程 AI 舰队护航。
 
-AetherScript 是一个 **AI 驱动的代码生成框架**，作为 Gemini CLI（或其他 AI 编码工具）的扩展运行。舰队版引入了五大专家角色多轮协作机制，将单 agent 的代码生成升级为专业团队的协同作战。
+AetherScript 是一个 **AI 驱动的 TypeScript 代码生成框架**。舰队版引入了五大专家角色多轮协作机制，将单 agent 的代码生成升级为专业团队的协同作战，通过 OpenClaw 的 `sessions_spawn` 驱动多 agent 并行运行。
 
 ---
 
@@ -30,156 +30,92 @@ AetherScript 舰队版的解法：**五个性格迥异的专家角色**，从各
 
 ---
 
-## ⚡ 工作流
+## ⚡ 三阶段工作流
 
-### Step 0: `/aesc-pre` — 五巨头协作需求收集
-
-```bash
-/aesc-pre 我想构建一个用户认证系统
-```
-
-**三阶段流程：**
+### aesc-pre — 五巨头协作需求与架构设计
 
 ```
 阶段1：五巨头轮番拷问（每人3-5个刁钻问题）
        ↓ 用户回答
-阶段2：五巨头10轮PK（互相点评 + 投票收敛）
-       ↓ 产出 docs/PRD.md
-阶段3：三巨头架构PK（10轮 → Abstract Class 设计）
-       ↓ 产出 src/entity/ 和 src/service/（含 @autogen）
+阶段2：五巨头10轮PK → 产出 docs/PRD.md
+阶段3：三巨头架构PK → 产出 Abstract Class 设计
+       (每人独立设计 → 互相评审 → 逐文件修订)
 ```
 
-### Step 1: `/aesc-gen` — 三团队并行实现
+### aesc-gen — 三团队并行实现 + 三巨头裁决
 
-```bash
-/aesc-gen
+```
+三支开发团队并行实现：
+  🛡️ 稳健派   — 可靠性第一，严格校验，完整错误处理
+  ⚡ 性能派   — 极致性能，并发优化，缓存
+  🎨 优雅派   — 设计模式，纯函数，可扩展性
+
+三巨头裁决（每个类单独一个 sub-agent，output 严格限字数）：
+  → 选出最佳方案基底 + 融合建议 → docs/VERDICT.md
+  → 生成最终实现 → v2/src/final/
 ```
 
-**三大开发团队同时上阵：**
+### aesc-test — 三测试团队全面攻击
 
-| 团队 | 风格 | 擅长 |
-|------|------|------|
-| 🛡️ 稳健派 | 防御性编程 | 可靠性第一，严格校验 |
-| ⚡ 激进性能派 | 并发优化 | 性能极致，Promise.all |
-| 🎨 优雅代码派 | 函数式 | 可读性，链式调用 |
-
-三巨头审判后，选出最佳实现 → `src/generated/`
-
-### Step 2: `/aesc-test` — 三测试团队全面攻击
-
-```bash
-/aesc-test
 ```
+🔍 QA黑客     → 功能正确性、边界值测试
+🔒 安全死心眼  → 注入攻击、权限绕过测试
+👑 架构暴君   → 并发、契约验证、性能测试
 
-**三测试团队分工：**
-- 🔍 QA黑客 → 功能正确性、边界值测试
-- 🔒 安全死心眼 → 注入攻击、权限绕过测试
-- 👑 架构暴君 → 并发、契约验证测试
-
-**放行条件：** 五巨头 ≥ 4/5 票支持 → `test/`
+放行条件：五巨头 ≥ 4/5 票 → test/
+```
 
 ---
 
 ## 📁 项目结构
 
 ```
-your-project/
-├── src/
-│   ├── entity/          ← 实体定义（Step 0 生成）
-│   ├── service/         ← Abstract Class（Step 0 生成）
-│   │   └── *-service.ts   （含 // @autogen + 极详细 JSDoc）
-│   └── generated/       ← AI 实现（Step 1 生成，禁止手动编辑）
-│       ├── container.ts
-│       └── *.impl.ts
-├── test/                ← 测试套件（Step 2 生成）
+AetherScript/
+├── v2/
+│   └── src/
+│       ├── abstracts/    ← 8个抽象类（核心契约，手写，禁止 autogen）
+│       └── final/        ← 最终融合实现（三巨头裁决后生成）
+├── fleet/                ← 舰队任务状态管理
 ├── docs/
-│   ├── PRD.md           ← 需求文档（Step 0 生成）
-│   └── FLEET_ARCHITECTURE.md ← 舰队架构说明
-└── .agent/skills/aetherscript/
-    └── commands/
-        ├── aesc-pre.toml
-        ├── aesc-gen.toml
-        └── aesc-test.toml
+│   ├── PRD-2.0.md            ← 五巨头产出的需求文档
+│   ├── TECHNICAL-DESIGN.md   ← 接口定义（方法签名+类型）
+│   ├── VERDICT.md            ← 三巨头裁决结果
+│   └── FLEET_ARCHITECTURE.md ← 舰队架构 + 实战经验
+└── AGENT.md
 ```
 
 ---
 
-## 🔖 @autogen 标记说明
+## 🔖 @autogen 标记
 
-只需在 Abstract Class 上加 `// @autogen`，AetherScript 舰队会自动扫描并生成实现：
+只有标记了 `// @autogen` 的 Abstract Class 会被舰队生成实现。安全相关类（PromptSanitizer、Validator 等）**永远不标记**，手动实现。
 
 ```typescript
 // @autogen
-export abstract class OrderService {
-    // @AutoGen — 数据库依赖（自动注入）
-    public db?: Database;
-
-    /**
-     * 创建订单
-     * 
-     * @description
-     * 实现步骤：
-     * 1. 验证 customerId 存在
-     * 2. 检查所有商品库存
-     * 3. 计算总价（含优惠）
-     * 4. 开启事务，写入订单 + 扣库存
-     * 5. 发送确认通知
-     * 
-     * @security 必须验证用户有权下单（JWT + 权限检查）
-     * @edge-cases 库存并发扣减需乐观锁
-     * @performance 商品查询批量处理，避免 N+1
-     */
-    public abstract createOrder(
-        customerId: string,
-        items: OrderItem[]
-    ): Promise<Order>;
+export abstract class CodeGenerator {
+  /**
+   * 根据扫描结果生成 TypeScript 实现代码
+   * @param payload 已经过 PromptSanitizer 消毒的安全载荷
+   */
+  abstract generateImplementation(payload: SanitizedPayload): Promise<UntrustedGenerationResult>;
+  abstract buildPrompt(payload: SanitizedPayload): string;
 }
 ```
 
 ---
 
-## 🧠 为什么舰队版更好？
+## 🧠 关键设计决策
 
-| 对比项 | 单 Agent | 舰队版 |
-|--------|---------|--------|
-| 需求挖掘 | 通用问题 | 五角色多维度刁钻问题 |
-| 设计决策 | 单视角 | 多轮 PK 后的收敛决策 |
-| 代码实现 | 一份方案 | 三份方案 + 三巨头审判 |
-| 测试覆盖 | 基础测试 | 质量 + 安全 + 性能三维度 |
-| 放行机制 | 无 | 五巨头 4/5 票投票 |
-
----
-
-## 📚 安装与使用
-
-### 前提条件
-- [Gemini CLI](https://github.com/google-gemini/gemini-cli) 已安装
-- [Bun](https://bun.sh) 已安装（用于运行生成脚本）
-
-### 安装 AetherScript 扩展
-
-将 `.agent/skills/aetherscript/` 目录复制到你的项目，或配置 Gemini CLI 的扩展路径。
-
-### 第一次使用
-
-```bash
-# 在你的项目目录中
-gemini
-/aesc-pre 描述你想要构建的功能
-```
-
----
-
-## 📖 示例项目
-
-- `demo/` — 电商系统完整示例（用户、订单、商品、缓存等服务）
-- `demo_simple/` — 简单用户服务示例
+- **只有 `AbstractCodeGenerator` 可以 autogen**，其余7个类手写，保证安全边界
+- **品牌类型链**：`ScanResult → SanitizedPayload → UntrustedGenerationResult → ValidatedResult`，不可跳过阶段
+- **三巨头裁决用"每类一个 sub-agent"模式**，充分利用 input/output 长度不对称（input 大方投，output 切细切小）
+- 详见 [docs/FLEET_ARCHITECTURE.md](docs/FLEET_ARCHITECTURE.md) 中的实战经验记录
 
 ---
 
 ## 🏛️ 架构文档
 
-详细的角色人格、PK 规则、放行条件，请查阅：
+详细的角色人格、PK 规则、实战经验与改进记录：
 
 👉 **[docs/FLEET_ARCHITECTURE.md](docs/FLEET_ARCHITECTURE.md)**
 
