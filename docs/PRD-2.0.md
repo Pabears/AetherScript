@@ -174,10 +174,27 @@ aesc-pre 产出抽象类后，**自动运行复杂度检查**，不通过不进 
 
 ---
 
+## 流程总览（v3.0）
+
+```
+aesc-pre
+  ├─ Step 1: 五巨头 → PRD
+  ├─ Step 2: 三巨头 → Technical Design（接口/依赖/模块边界）
+  └─ Step 3: 按 Technical Design → Abstract Classes（含复杂度门禁）
+
+aesc-gen（每个类并行）
+  ├─ Step 4: 两组并行实现（稳健+优雅，prompt 内嵌 class skeleton）
+  └─ Step 5: 三巨头裁决 → 写入 src/generated/
+
+aesc-test（每个类并行）
+  ├─ Step 6: 只看签名 → 生成测试（禁止看 impl）
+  └─ Step 7: bun test --bail（必须真正运行，通过才算完成）
+```
+
 ## 里程碑
 
 | 里程碑 | 包含项 | 预计工期 |
 |---|---|---|
 | **M1: 安全封堵** | AST 危险 API 扫描（替换正则）、接口契约校验、container.ts 原子写入、安全 Gate 阻断、SANITIZED_SYMBOL 私有化、Scanner deny-list | 3 天 |
 | **M2: 调用合并** | 5→2 LLM 调用合并、JSON Schema 结构化输出、重试机制 | 5 天 |
-| **M3: 工作流重设计（v3.0 新增）** | aesc-pre 复杂度门禁、gen prompt class skeleton、两组并行替换三组、aesc-test TDD 模式（先写测试再生成实现）、bun test 强制运行 | 5 天 |
+| **M3: 工作流重设计（v3.0 新增）** | aesc-pre 加 Technical Design 节点（三巨头）、复杂度门禁、gen prompt class skeleton、两组并行替换三组、aesc-test TDD 模式、bun test 强制运行 | 5 天 |
