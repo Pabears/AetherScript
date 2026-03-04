@@ -112,8 +112,8 @@ sessions_spawn(
 
 ```
 sessions_spawn(
-  task="你是QA黑客。只看以下抽象类签名和JSDoc，生成黑盒测试。禁止猜测实现细节，只测接口契约。输出≤150行。",
-  label="aesc-test-[类名]",
+  task="你是QA黑客。只看以下接口签名和文档注释，生成黑盒测试。禁止猜测实现细节，只测接口契约。",
+  label="aesc-test-[模块名]",
   model="claudeopus"
 )
 ```
