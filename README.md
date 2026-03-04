@@ -92,13 +92,12 @@ sessions_spawn(
 
 ```
 sessions_spawn(
-  task="你是三巨头合体（arch+qa+sec）。评审以下两个实现，选出最优或指定融合点。输出严格限600字。",
-  label="aesc-gen-verdict-[类名]",
+  task="你是三巨头合体（arch+qa+sec）。评审以下三个实现，选出最优或指定融合点。格式：评分表 + 选型理由 + 融合点 + 安全问题。",
+  label="aesc-gen-verdict-[模块名]",
   model="claudeopus"
 )
 ```
 
-- Output 严格限 600 字，格式固定（评分表 + 选型 + 融合点 + 安全问题）
 - 最高分 < 60 → 融合或重新实现
 - 结果写入目标目录
 
