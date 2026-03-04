@@ -1,0 +1,14 @@
+{
+  "name": "aetherscript-v2",
+  "version": "2.0.0",
+  "description": "AetherScript 2.0 - AI-driven TypeScript code generation framework",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "test": "bun test"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "bun-types": "latest"
+  }
+}

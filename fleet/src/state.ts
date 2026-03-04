@@ -13,6 +13,7 @@ import type {
   VerdictAction,
   PhaseResult,
 } from './types.ts'
+import { writeStatusMd } from './status-md.ts'
 
 // Data directory: fleet/.data/tasks/
 const DATA_DIR = join(import.meta.dir, '..', '.data', 'tasks')
@@ -40,6 +41,8 @@ function readTask(id: string): FleetTask | null {
 function writeTask(task: FleetTask) {
   ensureDataDir()
   writeFileSync(taskPath(task.id), JSON.stringify(task, null, 2), 'utf-8')
+  // 每次状态变更同步刷新 markdown 看板
+  try { writeStatusMd() } catch { /* 非致命，忽略 */ }
 }
 
 function generateId(): string {
