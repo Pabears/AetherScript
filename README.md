@@ -90,16 +90,7 @@ sessions_spawn(
 
 两组均使用 Opus。
 
-**Prompt 必须包含 class skeleton（不允许 LLM 修改）：**
-
-```typescript
-// 框架提供，LLM 只填方法体
-class XxxImpl extends AbstractXxx implements Xxx {
-  // 在这里填写实现
-}
-```
-
-这是防止"不继承抽象类"这类低级错误的唯一可靠方式。
+**Prompt 必须包含框架提供的代码骨架，LLM 只填方法体，不允许修改骨架结构。** 这是防止"不继承接口/抽象"这类低级错误的唯一可靠方式。
 
 #### Step 5 — 三巨头裁决（每类一个 sub-agent）
 
