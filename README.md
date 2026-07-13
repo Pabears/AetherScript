@@ -4,6 +4,8 @@
 >
 > 把人类意图（Abstract Class 契约）和 AI 实现（生成的 impl）彻底分离，用确定性工具链取代幻觉。
 
+📖 **开发工作流**：[什么时候用 scan / gen / lock / test？](docs/workflow.md)
+
 ---
 
 ## 核心思想
