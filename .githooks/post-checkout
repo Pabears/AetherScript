@@ -1,0 +1,29 @@
+#!/bin/bash
+# aesc post-checkout hook（git checkout / git switch 后触发）
+# 切换分支后，如果 impl 文件发生变化，提醒检查 lock 状态
+
+set -euo pipefail
+
+PREV_HEAD="$1"
+NEW_HEAD="$2"
+BRANCH_SWITCH="$3"  # 1 = 切分支，0 = 只是 checkout 文件
+
+# 只在切分支时检查
+if [ "$BRANCH_SWITCH" != "1" ]; then
+    exit 0
+fi
+
+CHANGED_IMPLS=$(git diff "$PREV_HEAD" "$NEW_HEAD" --name-only 2>/dev/null | \
+    grep -E 'src/generated/.*\.impl\.ts$' || true)
+
+if [ -z "$CHANGED_IMPLS" ]; then
+    exit 0
+fi
+
+echo ""
+echo "🔀 aesc: 切换分支后，以下 impl 文件已变化："
+echo "$CHANGED_IMPLS" | while read -r f; do echo "   - $f"; done
+echo ""
+echo "   运行以下命令确认 lock 状态："
+echo "   bun src/lock-manager.ts list"
+echo ""

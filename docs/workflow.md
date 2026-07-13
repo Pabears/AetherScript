@@ -216,3 +216,81 @@ bun test
 | 修改 JSDoc 后不重新 aesc-test | JSDoc 变了 = 契约变了 = 测试必须更新 |
 | 删除 impl 后不重跑 container-gen | 删除/新增 impl 后必须重跑 container-gen |
 | unlock 后忘记 aesc-gen | unlock 后应立即 aesc-gen，否则 impl 与契约不符 |
+
+---
+
+## Git + Lock 联防机制
+
+### 为什么 `aesc.lock` 要提交到 git？
+
+`aesc.lock` **不在 `.gitignore` 中**，必须随代码一起提交。
+
+| 如果不提交 aesc.lock | 如果提交 aesc.lock |
+|---------------------|------------------|
+| A 锁了 impl，B pull 后不知道 | B pull 后自动获得正确的 lock 状态 |
+| B 跑 aesc-gen，A 的手改被覆盖 | aesc-gen 自动跳过已 lock 的文件 |
+| 团队协作时无法共享保护状态 | lock 状态随代码版本化管理 |
+
+### Git Hooks（自动安装）
+
+```bash
+bash scripts/setup-hooks.sh   # 新克隆仓库后运行一次
+```
+
+三个 hooks 覆盖三种破坏场景：
+
+| Hook | 触发时机 | 保护内容 |
+|------|---------|---------|
+| `pre-commit` | `git commit` | impl 已改但未 lock → **阻断提交**，要求先 lock |
+| `post-merge` | `git pull / merge` | impl 文件随 pull 变化 → **提醒**检查 lock 状态 |
+| `post-checkout` | `git switch` | 切分支导致 impl 变化 → **提醒**检查 lock 状态 |
+
+### 两条提交路径
+
+```
+路径 A：手动修改 impl（需要保护）
+  手动改 impl
+    → bun src/lock-manager.ts lock <file>   # 先 lock
+    → git add <impl> aesc.lock              # 一起提交
+    → git commit -m "fix: ..."             # hook 检查通过 ✅
+
+路径 B：aesc-gen 新生成（不需要 lock）
+  aesc-gen 完成
+    → git add <impl> container.ts          # 只提交 impl
+    → git commit --no-verify -m "gen: ..." # 跳过 hook ✅
+```
+
+> **规则**：手改 → 必须 lock + 一起提交；新生成 → `--no-verify` 提交。两种情况都不要把 lock 状态和 impl 变更分开提交。
+
+### 典型操作序列（含 git 命令）
+
+```bash
+# === 手动修复 impl bug 的完整序列 ===
+
+# 1. 修复 impl
+vim demo/src/generated/db.impl.ts
+
+# 2. 运行测试确认
+cd demo && bun test && cd ..
+
+# 3. 锁定（防止 aesc-gen 覆盖）
+bun src/lock-manager.ts lock demo/src/generated/db.impl.ts
+
+# 4. 一起提交 impl + lock 状态
+git add demo/src/generated/db.impl.ts aesc.lock
+git commit -m "fix(db): 修复 findObject 未命中时的返回值"
+# ✅ pre-commit hook 检查通过（impl 在 lock 里）
+
+
+# === aesc-gen 新生成的完整序列 ===
+
+# 1. 生成
+bun src/scanner.ts --project demo
+# ... agent 生成 impl ...
+bun src/post-processor.ts --project demo
+bun src/container-gen.ts --project demo
+
+# 2. 提交（跳过 hook，因为是新生成的，不是手改的）
+git add demo/src/generated/
+git commit --no-verify -m "gen: 新增 PaymentService impl"
+```

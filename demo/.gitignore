@@ -1,6 +1,6 @@
 node_modules/
 .aesc-scan.json
-aesc.lock
 bun.lock
 bun.lockb
 *.log
+# aesc.lock 故意不在此列表 — 必须提交以共享 lock 状态

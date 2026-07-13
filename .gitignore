@@ -3,7 +3,8 @@
 node_modules/
 dist/
 .aesc-scan.json
-aesc.lock
 bun.lockb
 bun.lock
 *.log
+# aesc.lock 故意不在此列表 — 它必须提交到 git，以便团队共享 lock 状态
+# 详见 docs/workflow.md

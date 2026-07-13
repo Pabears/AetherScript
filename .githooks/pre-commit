@@ -1,0 +1,68 @@
+#!/bin/bash
+# aesc pre-commit hook
+# 防止手动修改的 impl 文件在未 lock 的情况下被提交
+# 一旦提交后没有 lock，下次 aesc-gen 会直接覆盖，丢失修改
+
+set -euo pipefail
+
+LOCK_FILE="aesc.lock"
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+LOCK_PATH="$REPO_ROOT/$LOCK_FILE"
+
+# 找出本次 commit 中所有被修改的 impl 文件
+STAGED_IMPLS=$(git diff --cached --name-only | grep -E 'src/generated/.*\.impl\.ts$' || true)
+
+if [ -z "$STAGED_IMPLS" ]; then
+    exit 0  # 没有 impl 文件变更，直接放行
+fi
+
+# 如果 aesc.lock 不存在，说明从没 lock 过，所有修改都是未保护的
+if [ ! -f "$LOCK_PATH" ]; then
+    echo ""
+    echo "⚠️  aesc: 检测到 impl 文件变更，但 aesc.lock 不存在"
+    echo ""
+    echo "   正在提交的 impl 文件："
+    echo "$STAGED_IMPLS" | while read -r f; do echo "   - $f"; done
+    echo ""
+    echo "   如果这些文件是手动修改的，请先 lock："
+    echo "   bun src/lock-manager.ts lock <文件路径>"
+    echo ""
+    echo "   如果这些文件是 aesc-gen 刚生成的（未手改），可以跳过检查："
+    echo "   git commit --no-verify"
+    echo ""
+    exit 1
+fi
+
+# 读取 lock 文件中的绝对路径列表
+LOCKED_FILES=$(cat "$LOCK_PATH" 2>/dev/null | \
+    python3 -c "import sys,json; [print(f) for f in json.load(sys.stdin)]" 2>/dev/null || \
+    grep -o '"[^"]*"' "$LOCK_PATH" | tr -d '"' 2>/dev/null || true)
+
+UNLOCKED_IMPLS=()
+while IFS= read -r rel_file; do
+    [ -z "$rel_file" ] && continue
+    ABS_FILE="$REPO_ROOT/$rel_file"
+    if ! echo "$LOCKED_FILES" | grep -qF "$ABS_FILE"; then
+        UNLOCKED_IMPLS+=("$rel_file")
+    fi
+done <<< "$STAGED_IMPLS"
+
+if [ ${#UNLOCKED_IMPLS[@]} -gt 0 ]; then
+    echo ""
+    echo "⚠️  aesc: 以下 impl 文件已修改并准备提交，但未在 aesc.lock 中"
+    echo ""
+    for f in "${UNLOCKED_IMPLS[@]}"; do
+        echo "   - $f"
+    done
+    echo ""
+    echo "   【情况A】文件是手动修改的 → 必须先 lock，防止 aesc-gen 覆盖："
+    echo "   bun src/lock-manager.ts lock ${UNLOCKED_IMPLS[*]}"
+    echo ""
+    echo "   【情况B】文件是 aesc-gen 新生成的（未手改）→ 跳过检查："
+    echo "   git commit --no-verify"
+    echo ""
+    exit 1
+fi
+
+echo "✅ aesc: impl lock 状态检查通过"
+exit 0
