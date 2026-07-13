@@ -1,190 +1,186 @@
-# AetherScript Fleet Architecture
+# AetherScript (aesc)
 
-> 一套用多角色 AI 舰队协作生成高质量代码的工程方法论。
+> **AI-Assisted Development You Can Trust.**
 >
-> 不依附于任何具体语言或项目，可直接复用到任何代码生成场景。
-
-单个 LLM 调用是概率云——可能幻觉、可能截断、可能做出意想不到的选择。把足够多的 LLM 组织成舰队，通过角色分工、互相制衡、人类在关键节点观测，概率云收缩成可以交付的产品。这和薛定谔的洞见一脉相承：单个粒子永远是叠加态，但组织起来的粒子涌现出确定性的生命。**人类不是流程的阻塞点，人类是让波函数坍缩的观测者。**
+> 把人类意图（Abstract Class 契约）和 AI 实现（生成的 impl）彻底分离，用确定性工具链取代幻觉。
 
 ---
 
 ## 核心思想
 
-**用 sub-agent 角色战队替代单一 AI**，通过真实的观点碰撞、并行实现 PK、外部锚点校验，系统性提升生成代码的质量。
+单个 LLM 调用是概率云——可能幻觉、可能截断、可能做出意想不到的选择。aesc 的解法是：
 
-三个关键原则：
+**把 AI 能做好的事和 AI 做不好的事拆开。**
 
-1. **Input 大方投，Output 切细切小。** Input token 便宜，Output token 珍贵且有硬上限。把所有背景塞进 input，把 output 切成最小有效单元（每个 sub-agent 只输出一件事）。
+| 确定性工具（TS 脚本）| AI（Agent）|
+|---|---|
+| 扫描 AST、提取契约 | 读懂 JSDoc，生成实现 |
+| 验证编译、修复语法错误 | 理解业务逻辑，填充方法体 |
+| 生成 DI 容器 | 推导测试用例 |
+| 锁定手动改过的文件 | — |
 
-2. **抽象粒度是质量的前置门禁。** 一个模块的实现无法在单次 LLM 调用内完整输出，说明它承担了太多职责——这是设计问题，不是 prompt 问题。在设计阶段强制拆分，而不是在生成阶段打补丁。
-
-3. **质量闭环需要外部锚点。** AI 审 AI 不是质量保证。唯一可信的校验点是确定性的、不可被幻觉欺骗的：编译通过 + 测试运行通过。
-
----
-
-## 五大核心角色
-
-| 角色 | 代号 | 模型 | 职责 |
-|------|------|------|------|
-| 🤪 超级狂野PM | `pm` | Gemini 3.1 Pro (temp 1.4) | 挖需求、脑洞、用户真实意图 |
-| 👑 架构暴君 | `arch` | Claude Opus 4.6 (temp 0.3) | 技术可行性、模块边界、扩展性 |
-| 🔍 QA黑客 | `qa` | Claude Opus 4.6 (temp 0.5) | 边界条件、异常场景、可测试性 |
-| 🔒 安全死心眼 | `sec` | Claude Opus 4.6 (temp 0.2) | 安全漏洞、注入攻击、权限边界 |
-| 💰 预算狂魔 | `budget` | Claude Opus 4.6 (temp 0.4) | 成本、复杂度、ROI、MVP 边界 |
-
-**三巨头** = arch + qa + sec（技术审判核心组合）
-**五巨头** = 全部五个角色（需求拷问、最终放行）
+AI 负责智能，脚本负责确定性。两者各司其职，幻觉被限制在有限的输出范围内。
 
 ---
 
-## 人类在环（Human in the Loop）
+## 工具链
 
-**每个 Phase 完成后，必须经过人类确认才能进入下一步。**
+```
+src/
+  scanner.ts        # 扫描 // @autogen / // @AutoGen → .aesc-scan.json
+  post-processor.ts # 验证 + 修复生成的 impl（implements→extends、重复 property 删除）
+  container-gen.ts  # 生成类型安全的 DI container.ts
+  lock-manager.ts   # 保护手动修改的 impl 不被覆盖
+```
 
-人类不需要审每一行代码，只需要在高密度产出上做判断：
+```bash
+# 常用命令
+bun src/scanner.ts [--project <目标项目路径>]
+bun src/post-processor.ts [--project <路径>]
+bun src/container-gen.ts [--project <路径>]
+bun src/lock-manager.ts lock|unlock|list|check <文件>
 
-| 节点 | 人类审核内容 |
-|------|-------------|
-| Phase 1 完成后 | PRD、Technical Design、接口/抽象定义 |
-| Phase 2 完成后 | Test Design 文档（测什么、测哪些边界） |
-| Phase 3 完成后 | 三巨头裁决报告、最终实现代码 |
-| Phase 4 完成后 | 测试通过结果 |
-
-这一机制解决了"AI 审 AI"的根本问题——人类确认是整条链路唯一不可伪造的信任锚点，绝大多数安全、质量、架构风险都会在这里被人类视角识别。
+# 测试
+bun test           # aesc 工具自身的回归测试（31 cases）
+bun run test:demo  # demo 电商示例的黑盒业务测试（96 cases）
+bun run test:all   # 全跑
+```
 
 ---
 
 ## 完整流程
 
-### Phase 1: aesc-pre（需求与架构）
+### Phase 1：aesc-pre（需求 → Abstract Class）
 
-#### Step 1 — PRD 拷问（五巨头并行）
+触发 `/aesc-pre` skill。五巨头扮演不同视角（PM、架构、QA、安全、预算），通过多轮 PK 收敛出 PRD，最终产出：
 
-五个角色同时 spawn，各自从自己的视角提出 3-5 个最刁钻的问题：
+- `docs/PRD.md` — 需求文档
+- `src/entity/*.ts` — 数据实体
+- `src/service/*-service.ts` — **Abstract Class 脚手架**（带完整 JSDoc 契约）
 
+**Abstract Class 是整个系统的唯一真相来源。** JSDoc 中的每个步骤、`@throws`、`@edge-cases` 都将直接驱动后续的代码生成和测试。
+
+#### 标注语法
+
+```typescript
+// @autogen             ← 标记整个 abstract class 需要生成 impl
+export abstract class UserService {
+    // @AutoGen          ← 标记该属性需要 DI 容器自动注入
+    public db?: DB;
+
+    /**
+     * 创建用户
+     * @description
+     * 1. 验证 name 长度 [3, 15]
+     * 2. 验证 age 范围 [0, 120]
+     * 3. 验证失败 → 抛出 Error，不执行后续步骤
+     * 4. 调用 this.db!.save(user)
+     * @throws Error 如果 name 长度不在 [3, 15]
+     * @throws Error 如果 age 不在 [0, 120]
+     * @edge-cases age = 0 → 合法；age = 120 → 合法
+     */
+    public abstract create(user: User): void;
+}
 ```
-sessions_spawn(
-  task="你是[角色]。原始需求：[需求]。提出3-5个最刁钻的问题，给出你认为最大的风险点。",
-  label="aesc-pre-[角色代号]",
-  model="[角色对应模型]"
-)
-```
 
-收集五份输出 → 用户回答 → 5轮 PK 收敛（连续2轮无新观点则提前结束）→ 输出 PRD
-
-#### Step 2 — Technical Design（三巨头 PK）
-
-基于 PRD，三巨头各自提出接口设计方案，5轮 PK 收敛：
-
-- **输出内容**：模块边界、接口签名、依赖关系、需要人工审计的安全组件清单
-- **不包含**：实现代码
-
-#### Step 3 — 接口/抽象定义（含复杂度门禁）
-
-按 Technical Design 逐个定义接口/抽象，每个一个 sub-agent。
-
-**复杂度判断由人类在 Phase 1 出口审核时决定。** 一个模块是否太大、是否需要拆分，是设计判断，不是数字规则——任何硬编码的阈值都是对 AI 能力的人为限制。
+> 注意：`// @autogen` 和 `// @AutoGen` 是**纯注释**，不需要 import 任何依赖。
 
 ---
 
-### Phase 2: aesc-test（测试设计，先于实现）
+### Phase 2：aesc-gen（Abstract Class → impl + DI 容器）
 
-**测试设计必须在实现之前完成。人类审 Test Design，不是测试代码。**
-
-#### Step 4 — Test Design（每个模块一个 sub-agent）
+触发 `/aesc-gen` skill。
 
 ```
-sessions_spawn(
-  task="你是QA黑客。只看以下接口签名和文档注释，输出 Test Design 文档：要测什么、测哪些边界、预期行为是什么。不要写代码。",
-  label="aesc-test-design-[模块名]",
-  model="claudeopus"
-)
+Scanner (TS) → Agent 逐类生成 → PostProcessor (TS) → ContainerGen (TS)
 ```
 
-- Input：只有接口签名 + 文档注释，**禁止传入实现代码**
-- Output：Test Design 文档（自然语言描述测试意图，不是代码）
+1. **Scanner**：扫描 `// @autogen` 标记的 abstract class，输出 `.aesc-scan.json`
+2. **Agent**：读取每个 class 的 JSDoc，**只写方法体，不修改接口结构**
+3. **PostProcessor**：编译检查，自动修复 `implements→extends`、删除重复 property
+4. **ContainerGen**：根据 `// @AutoGen` 属性生成类型安全的 DI 容器
 
-**→ 人类审核 Test Design：覆盖了正确的边界吗？有没有遗漏的场景？**
-
-#### Step 5 — 测试代码生成
-
-基于人类确认的 Test Design，生成对应语言的测试代码。
+生成的文件一律放在 `src/generated/`，由工具链管理，**人类不直接编辑**（如需手改，先 `lock`）。
 
 ---
 
-### Phase 3: aesc-gen（并行实现与裁决）
+### Phase 3：aesc-test（Abstract Class → 黑盒测试）
 
-**每个模块独立处理，模块与模块之间并行。**
+触发 `/aesc-test` skill。
 
-#### Step 6 — 三组并行实现
+**铁律：只读 abstract class 的 JSDoc，严禁读任何 impl 文件。**
 
-| 团队 | 风格 | 模型 | 优先级 |
-|------|------|------|--------|
-| 🏗️ 稳健派 | 防御性编程 | Opus (temp 0.3) | 完整错误处理、边界检查、可维护性 |
-| 🎨 优雅派 | 设计模式 | Opus (temp 0.5) | 可读性、可扩展性、最小复杂度 |
-| ⚡ 性能派 | 极致发散 | Gemini (temp 1.4) | 不寻常的实现路径、突变思路、极致优化 |
+测试用例来源：
 
-性能派的价值不是代码质量，是**突变**——高温度带来人意想不到的选择，哪怕大多数被否，偶尔一个创意就值了。
+| JSDoc Tag | 对应测试类型 |
+|-----------|------------|
+| `@description` 步骤 | Happy path |
+| `@throws [条件]` | 每个 throws → 一个负向测试 |
+| `@edge-cases` | 每个边界值 → 一个测试 |
+| `@returns` | 返回值验证 |
 
-**Prompt 必须将 Step 3 产出的接口/抽象定义完整传入，LLM 只填实现，不允许修改接口结构。**
-
-#### Step 7 — 三巨头裁决（每个模块一个 sub-agent）
-
-```
-sessions_spawn(
-  task="你是三巨头合体（arch+qa+sec）。评审以下三个实现，选出最优或指定融合点。格式：评分表 + 选型理由 + 融合点 + 安全问题。",
-  label="aesc-gen-verdict-[模块名]",
-  model="claudeopus"
-)
-```
-
-- 最高分 < 60 → 融合或重新实现
-- 结果写入目标目录
+每个测试带 `// 来源: [JSDoc tag]` 注释，测试失败时能精确回溯到哪个契约被违反。
 
 ---
 
-### Phase 4: aesc-test-run（测试执行）
+## 关键设计决策
 
-#### Step 8 — 强制运行（唯一外部锚点）
+### 为什么不用装饰器？
 
-将 Phase 2 生成的测试代码对 Phase 3 的实现运行：
+早期使用 `@AutoGen` 装饰器，需要 `import { AutoGen } from 'aesc'`，导致用户项目必须依赖 aesc 包。
+
+现在改为 `// @AutoGen` 注释，ts-morph 通过 `prop.getLeadingCommentRanges()` 识别，**零运行时依赖**。
+
+### 为什么不完全依赖 AI 自动生成？
+
+「之前对于 AI 的能力的估计过于乐观了，预期中的 AI 自主生成没有出现，目前幻觉还是太严重了。」
+
+所以：Scanner / PostProcessor / ContainerGen 全部是确定性 TS 脚本，AI 只负责「理解 JSDoc 并填写方法体」这一件事，幻觉的破坏范围被限制在单个方法的实现内。
+
+### lock 机制
 
 ```bash
-# 对应语言的测试命令，例如：
-# bun test --bail / pytest -x / cargo test / go test ./...
+bun src/lock-manager.ts lock src/generated/db.impl.ts   # 手动改过的文件，保护不被覆盖
+bun src/lock-manager.ts list                            # 查看当前锁定列表
+bun src/lock-manager.ts unlock src/generated/db.impl.ts # 解锁，允许重新生成
 ```
 
-- ✅ 通过 → 完成
-- ❌ 失败 → 阻断，报告失败用例，回 Phase 3 修复实现或回 Phase 2 修复 Test Design
+---
 
-**不运行 = 不存在。** 这是整个流程唯一不可被 AI 幻觉欺骗的质量校验点。
+## Demo
+
+`demo/` 目录包含一个 7 服务电商系统示例（UserService、DB、CacheService、ProductService、NotificationService、CustomerService、OrderService），验证跨服务 DI 依赖注入和复杂业务流程（订单状态机）。
+
+```bash
+cd demo && bun src/ecommerce-demo.ts   # 运行集成演示（40 test cases）
+cd demo && bun test                   # 黑盒契约测试（96 cases）
+```
 
 ---
 
-## 方法论不只是代码——叙事设计同样适用
+## 项目结构
 
-AetherScript 舰队在游戏项目中被用于**游戏叙事设计**，验证了方法论的语言无关性。
-
-### 实战经验（2026-03-05）
-
-**关键洞察：字数限制会扼杀创意。** 拷问阶段不要限制 output 长度——让五巨头真正"打起来"，观点碰撞的密度比结论的长度更重要。字数限制适合实现阶段（防截断），不适合创意拷问阶段。
-
-**人类的灵感是最好的 PM 输入。** 人类给出最好的答案，然后舰队去实现。这是人类在环的最高价值。
-
----
-
-## Sub-agent 运行规范
-
-### 并行 vs 串行
-
-- **并行**：同一步骤内的多个 agent（如五巨头同时拷问、每个类同时裁决）
-- **串行**：步骤之间必须串行（Step 1 → Step 2 → Step 3 → ...）
-
-### 生成与写入分离
-
-**sub-agent 只负责生成内容，不负责写文件。** 主 session 收集输出后，自己调用 write 工具写入。
-
-理由：sub-agent 在 output token 即将耗尽时执行 write 调用，content 参数会被截断，文件无法落地。
-
----
-
+```
+AetherScript/
+  src/                    # aesc 工具链（确定性 TS 脚本）
+    scanner.ts
+    post-processor.ts
+    container-gen.ts
+    lock-manager.ts
+    decorators.ts         # 历史遗留，已不使用
+  test/                   # 工具链自身的回归测试
+    scanner.test.ts       # 10 capability checkpoints
+    post-processor.test.ts
+    container-gen.test.ts
+    lock-manager.test.ts
+  demo/                   # 电商示例项目
+    src/
+      entity/             # 数据实体（Customer, Order, Product, User）
+      service/            # Abstract Class 契约
+      generated/          # AI 生成的 impl + DI 容器（工具链管理）
+    test/                 # 黑盒业务测试
+  .agents/skills/
+    aesc-pre/             # 需求收集 + Abstract Class 脚手架
+    aesc-gen/             # impl 生成流程
+    aesc-test/            # 黑盒测试生成流程
+```

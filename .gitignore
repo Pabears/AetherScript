@@ -1,2 +1,9 @@
 .DS_Store
 .idea
+node_modules/
+dist/
+.aesc-scan.json
+aesc.lock
+bun.lockb
+bun.lock
+*.log
