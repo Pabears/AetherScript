@@ -1,0 +1,14 @@
+import { User } from '../entity/user';
+import { UserService } from '../service/user-service';
+
+export class UserController {
+    public userService?: UserService;
+
+    create(user: User): void {
+        this.userService!.create(user);
+    }
+
+    find(name: string): User | undefined {
+        return this.userService!.findByName(name);
+    }
+}

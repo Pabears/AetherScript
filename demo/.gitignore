@@ -1,0 +1,6 @@
+node_modules/
+.aesc-scan.json
+aesc.lock
+bun.lock
+bun.lockb
+*.log

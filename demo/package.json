@@ -1,0 +1,21 @@
+{
+  "name": "aesc-demo",
+  "version": "1.0.0",
+  "module": "src/index.ts",
+  "type": "module",
+  "scripts": {
+    "start": "bun src/index.ts",
+    "gen": "bun ../src/scanner.ts --project . && bun ../src/container-gen.ts --project .",
+    "test": "bun test"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "bun-types": "^1.2.18"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "node-cache": "^5.1.2"
+  }
+}
