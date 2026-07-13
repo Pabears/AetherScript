@@ -28,25 +28,94 @@ AI 负责智能，脚本负责确定性。两者各司其职，幻觉被限制�
 ## 工具链
 
 ```
-src/
-  scanner.ts        # 扫描 // @autogen / // @AutoGen → .aesc-scan.json
-  post-processor.ts # 验证 + 修复生成的 impl（implements→extends、重复 property 删除）
-  container-gen.ts  # 生成类型安全的 DI container.ts
-  lock-manager.ts   # 保护手动修改的 impl 不被覆盖
+AetherScript/
+  src/
+    scanner.ts        # 扫描 // @autogen / // @AutoGen → <目标项目>/.aesc-scan.json
+    post-processor.ts # 验证 + 修复生成的 impl（implements→extends、重复 property 删除）
+    container-gen.ts  # 生成类型安全的 DI container.ts
+    lock-manager.ts   # 保护手动修改的 impl 不被覆盖
 ```
+
+> ⚠️ **所有工具命令均在 AetherScript 根目录下执行**，通过 `--project` 指向目标项目。
 
 ```bash
-# 常用命令
-bun src/scanner.ts [--project <目标项目路径>]
-bun src/post-processor.ts [--project <路径>]
-bun src/container-gen.ts [--project <路径>]
-bun src/lock-manager.ts lock|unlock|list|check <文件>
+# 在 AetherScript 根目录运行，--project 指向你的目标项目
+AESC_ROOT=/path/to/AetherScript
+MY_PROJECT=/path/to/my-project
 
-# 测试
-bun test           # aesc 工具自身的回归测试（31 cases）
-bun run test:demo  # demo 电商示例的黑盒业务测试（96 cases）
+bun $AESC_ROOT/src/scanner.ts --project $MY_PROJECT
+bun $AESC_ROOT/src/post-processor.ts --project $MY_PROJECT
+bun $AESC_ROOT/src/container-gen.ts --project $MY_PROJECT
+bun $AESC_ROOT/src/lock-manager.ts lock|unlock|list|check <文件>
+
+# aesc 自身的测试（在 AetherScript 根目录）
+bun test           # 工具链回归测试（127 cases）
+bun run test:demo  # 电商 demo 黑盒测试（96 cases）
 bun run test:all   # 全跑
 ```
+
+---
+
+## 在外部项目中使用
+
+### Step 1：克隆 AetherScript（一次性）
+
+```bash
+# 建议放在一个固定位置，供多个项目共享
+git clone https://github.com/Pabears/AetherScript.git ~/tools/aesc
+cd ~/tools/aesc && bun install
+```
+
+### Step 2：安装 git hooks（每个项目一次）
+
+```bash
+# 在你的目标项目根目录
+bash ~/tools/aesc/scripts/setup-hooks.sh
+```
+
+> 这会配置 `core.hooksPath`，让 git 使用 aesc 的 pre-commit / post-merge / post-checkout hooks。
+
+### Step 3：目标项目最低要求
+
+目标项目只需要：
+- `tsconfig.json`（告知 ts-morph 如何解析 TS 文件）
+- `src/service/` 目录（放 abstract class）
+- `src/generated/` 目录（工具链输出 impl 和 container）
+
+```bash
+mkdir -p src/service src/generated
+```
+
+> 目标项目**不需要**安装 aesc 作为依赖。标注语法是纯注释（`// @autogen`、`// @AutoGen`），零运行时依赖。
+
+### Step 4：标注你的 Abstract Class，然后生成
+
+```bash
+AESC=~/tools/aesc
+MY_PROJECT=$(pwd)   # 你的目标项目根目录
+
+# 扫描
+bun $AESC/src/scanner.ts --project $MY_PROJECT
+
+# （Agent 生成 impl，见 aesc-gen skill）
+
+# 验证 + 修复
+bun $AESC/src/post-processor.ts --project $MY_PROJECT
+
+# 生成 DI 容器
+bun $AESC/src/container-gen.ts --project $MY_PROJECT
+```
+
+### 输出文件位置
+
+| 文件 | 位置 | 说明 |
+|------|------|------|
+| `.aesc-scan.json` | `<目标项目根目录>/` | 扫描快照，自动被 `.gitignore` 排除 |
+| `*.impl.ts` | `<目标项目>/src/generated/` | AI 生成的实现，提交到 git |
+| `container.ts` | `<目标项目>/src/generated/` | DI 容器，提交到 git |
+| `aesc.lock` | `<目标项目根目录>/` | lock 状态，**必须提交到 git** |
+
+> `aesc.lock` 必须提交，确保团队共享 lock 状态。详见 [开发工作流](docs/workflow.md)。
 
 ---
 

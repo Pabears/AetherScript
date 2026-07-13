@@ -11,12 +11,37 @@ TS 脚本负责确定性部分（扫描、验证、容器生成），你负责�
 
 ---
 
+## ℹ️ 执行前必读：确定 AESC_ROOT 和 TARGET_PROJECT
+
+**所有 `bun src/*.ts` 命令均在 AetherScript 根目录下执行。**
+
+在开始任何操作前，先确认两个路径：
+
+```bash
+# AESC_ROOT：AetherScript 仓库根目录（工具所在）
+AESC_ROOT="/path/to/AetherScript"   # 修改为实际路径
+
+# TARGET_PROJECT：目标项目根目录（包含 abstract class 的项目）
+TARGET_PROJECT="/path/to/your-project"   # 修改为实际路径
+
+# 如果在 AetherScript 自带的 demo 中作业：
+# AESC_ROOT="/path/to/AetherScript"
+# TARGET_PROJECT="/path/to/AetherScript/demo"
+```
+
+如果不确定路径，可以运行：
+```bash
+find ~ -name "scanner.ts" -path "*/aesc/src/*" 2>/dev/null | head -3
+```
+
+---
+
 ## 🔄 标准流程（严格按顺序，不得跳过）
 
 ### Step 1：运行扫描器
 
 ```bash
-bun src/scanner.ts [--project <demo或目标项目的路径>]
+bun $AESC_ROOT/src/scanner.ts --project $TARGET_PROJECT
 ```
 
 读取输出的 `.aesc-scan.json`，确认：
@@ -52,7 +77,7 @@ bun src/scanner.ts [--project <demo或目标项目的路径>]
 ### Step 3：运行后处理器
 
 ```bash
-bun src/post-processor.ts [--project <目标项目路径>]
+bun $AESC_ROOT/src/post-processor.ts --project $TARGET_PROJECT
 ```
 
 - 若报告有编译错误 → 分析错误，修正对应的 impl 文件，重新运行
@@ -63,7 +88,7 @@ bun src/post-processor.ts [--project <目标项目路径>]
 ### Step 4：生成 DI 容器
 
 ```bash
-bun src/container-gen.ts [--project <目标项目路径>]
+bun $AESC_ROOT/src/container-gen.ts --project $TARGET_PROJECT
 ```
 
 ---
@@ -72,7 +97,7 @@ bun src/container-gen.ts [--project <目标项目路径>]
 
 ```bash
 # 如果目标项目有入口文件，运行一下
-bun <目标项目>/src/index.ts
+bun $TARGET_PROJECT/src/index.ts
 ```
 
 ---

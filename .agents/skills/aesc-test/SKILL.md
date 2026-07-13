@@ -17,13 +17,27 @@ description: 基于 abstract class 契约生成有效黑盒测试 → 严禁看 
 
 ---
 
+## ℹ️ 执行前必读：确定 AESC_ROOT 和 TARGET_PROJECT
+
+**所有 `bun src/*.ts` 命令均在 AetherScript 根目录下执行。**
+
+```bash
+AESC_ROOT="/path/to/AetherScript"      # 修改为实际路径
+TARGET_PROJECT="/path/to/your-project" # 修改为实际路径
+
+# 测试文件输出到：$TARGET_PROJECT/test/<classname>.test.ts
+# 运行测试：cd $TARGET_PROJECT && bun test
+```
+
+---
+
 ## 🔄 标准流程（严格按顺序）
 
 ### Step 1：读取扫描结果
 
 ```bash
 # 如果 .aesc-scan.json 不存在，先运行
-bun src/scanner.ts [--project <目标项目路径>]
+bun $AESC_ROOT/src/scanner.ts --project $TARGET_PROJECT
 ```
 
 读取 `.aesc-scan.json`，提取：
