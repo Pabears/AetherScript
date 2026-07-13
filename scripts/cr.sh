@@ -93,16 +93,37 @@ else
     exit 1
 fi
 
-info "运行 container-gen（验证 DI 容器可正常生成）..."
-CG_OUT=$(bun src/container-gen.ts --project "$DEMO_DIR" 2>&1)
+info "运行 container-gen（diff 模式，不修改文件）..."
+TMPDIR_CG=$(mktemp -d)
+# 把 demo/src/generated/ 内容复制到临时目录，在临时目录运行 container-gen
+cp -r "$DEMO_DIR/src/generated/"* "$TMPDIR_CG/" 2>/dev/null || true
+# 生成到临时目录（通过覆盖 outputPath 方式：直接在 DEMO 上生成，然后 diff，最后 restore）
+CG_OUT=$(bun src/container-gen.ts --project "$DEMO_DIR" 2>&1) || true
 if echo "$CG_OUT" | grep -q "Generated container.ts"; then
     SVC_COUNT=$(echo "$CG_OUT" | grep -oE "[0-9]+ service" | grep -oE "[0-9]+" || echo "?")
-    ok "DI 容器生成成功（$SVC_COUNT 个服务）"
+    # 检查生成后是否有 diff（应该没有）
+    CONTAINER_DIFF=$(git diff -- "$DEMO_DIR/src/generated/container.ts" 2>/dev/null || true)
+    if [ -z "$CONTAINER_DIFF" ]; then
+        ok "DI 容器生成幂等（$SVC_COUNT 个服务，与已提交版本完全一致）"
+    else
+        fail "container-gen 生成的内容与已提交版本不一致！"
+        echo ""
+        echo "  差异（预期：无差异）："
+        echo "$CONTAINER_DIFF" | head -30 | sed 's/^/  /'
+        echo ""
+        echo "  说明：container.ts 应该是确定性生成的。"
+        echo "  请检查 src/container-gen.ts 是否引入了非确定性因素（如时间戳、随机数）。"
+        echo "  或者 impl 文件发生了变化但 container.ts 未同步更新。"
+        echo ""
+        echo "  修复方式：git add demo/src/generated/container.ts && git commit -m 'gen: ...'"
+        exit 1
+    fi
 else
     fail "container-gen 失败："
     echo "$CG_OUT"
     exit 1
 fi
+rm -rf "$TMPDIR_CG"
 
 # ── Step 4: 语义一致性检测 ────────────────────────────────────
 section "Step 4: 语义一致性检测"
