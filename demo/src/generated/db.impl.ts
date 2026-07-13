@@ -28,5 +28,3 @@ export class DBImpl extends DB {
         return this.store.delete(key);
     }
 }
-// modified
-// modified
