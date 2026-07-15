@@ -80,7 +80,7 @@ ${JSON.stringify(remainingClasses.map(c => ({
             const tmpPromptFile = join(require('os').tmpdir(), `prompt-test-${Date.now()}-${Math.random().toString(36).substring(7)}.txt`);
             require('fs').writeFileSync(tmpPromptFile, prompt);
 
-            execSync(`agy --dangerously-skip-permissions --model "Gemini 3.5 Flash (High)" -p "$(cat ${tmpPromptFile})"`, {
+            execSync(`~/.local/bin/agy --dangerously-skip-permissions --model "Gemini 3.5 Flash (High)" -p "$(cat ${tmpPromptFile})"`, {
                 cwd: projectPath,
                 stdio: 'inherit',
                 shell: '/bin/bash'

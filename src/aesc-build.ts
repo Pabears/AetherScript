@@ -89,6 +89,21 @@ async function main() {
         console.log(`✅ Merged implementations to ${targetGenDir}`);
     }
 
+    // Also merge individual outputPaths (for frontend plugins etc)
+    const scanData = JSON.parse(readFileSync(scanFile, 'utf-8'));
+    if (scanData.classes) {
+        for (const cls of scanData.classes) {
+            if (cls.outputPath) {
+                const sourceFile = join(shadowGen, cls.outputPath);
+                const targetFile = join(projectPath, cls.outputPath);
+                if (existsSync(sourceFile)) {
+                    cpSync(sourceFile, targetFile);
+                    console.log(`✅ Merged ${cls.outputPath}`);
+                }
+            }
+        }
+    }
+
     // Copy generated tests back to main project
     const testSourceDir = join(shadowTest, 'test');
     const targetTestDir = join(projectPath, 'test');
@@ -100,8 +115,6 @@ async function main() {
     console.log(`\n--- [PHASE 4: Integration Test] ---`);
     
     // We need to figure out if we should run `bun test` or `bun run test:e2e`.
-    // Let's read the scan file from the main project.
-    const scanData = JSON.parse(readFileSync(scanFile, 'utf-8'));
     let hasE2e = false;
     let hasUnit = false;
     
@@ -118,6 +131,14 @@ async function main() {
             execSync('bun test', { cwd: projectPath, stdio: 'pipe' });
         }
         if (hasE2e) {
+            console.log(`⏳ Running: bun run build:frontend (for E2E tests)`);
+            try {
+                execSync('npm run build:frontend', { cwd: projectPath, stdio: 'pipe' });
+            } catch (e) {
+                try {
+                    execSync('bun run build:frontend', { cwd: projectPath, stdio: 'pipe' });
+                } catch (err) {}
+            }
             console.log(`⏳ Running: bun run test:e2e`);
             execSync('bun run test:e2e', { cwd: projectPath, stdio: 'pipe' });
         }
@@ -151,14 +172,15 @@ ${errorOutput}
             const tmpPromptFile = join(require('os').tmpdir(), `prompt-judge-${Date.now()}-${Math.random().toString(36).substring(7)}.txt`);
             require('fs').writeFileSync(tmpPromptFile, prompt);
 
-            execSync(`agy --model "Gemini 3.5 Pro" -p "$(cat ${tmpPromptFile})"`, {
+            execSync(`~/.local/bin/agy --model "Gemini 3.1 Pro (High)" -p "$(cat ${tmpPromptFile})"`, {
                 cwd: projectPath,
                 stdio: 'inherit',
-                shell: '/bin/bash'
+                shell: '/bin/bash',
+                env: process.env
             });
             require('fs').unlinkSync(tmpPromptFile);
         } catch (judgeErr: any) {
-            console.error(`\n❌ Judge Agent crashed.`);
+            console.error(`\n❌ Judge Agent crashed: ${judgeErr.message}`);
         }
         
         process.exit(1);
