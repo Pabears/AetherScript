@@ -4,7 +4,7 @@
 >
 > 把人类意图（Abstract Class 契约）和 AI 实现（生成的 impl）彻底分离，用确定性工具链取代幻觉。
 
-📖 **开发工作流**：[什么时候用 scan / gen / lock / test？](docs/workflow.md)
+📖 **开发工作流**：[什么时候用 scan / ad / build / lock？](docs/workflow.md)
 
 ---
 
@@ -12,16 +12,17 @@
 
 单个 LLM 调用是概率云——可能幻觉、可能截断、可能做出意想不到的选择。aesc 的解法是：
 
-**把 AI 能做好的事和 AI 做不好的事拆开。**
+**“巨型批处理 (Mega-Batch Prompting)” + “影子宇宙盲写 (Shadow Workspaces & Blind Generation)” + “外层闭环自愈 (Outer Validation Loop)”。**
 
 | 确定性工具（TS 脚本）| AI（Agent）|
 |---|---|
-| 扫描 AST、提取契约 | 读懂 JSDoc，生成实现 |
-| 验证编译、修复语法错误 | 理解业务逻辑，填充方法体 |
-| 生成 DI 容器 | 推导测试用例 |
+| 扫描 AST、提取契约 | **aesc-pre**: 五巨头视角挖掘需求生成 PRD |
+| **aesc-build**: 影子宇宙并发拉起管线 | **aesc-ad**: PRD 到 Abstract Class 的桥梁推演 |
+| AST刚性验证、修复语法错误 | **Mega-Batch**: 并发盲写业务逻辑 (Impl) 与测试用例 |
+| 黑盒业务测试执行闭环 | **Blind Judge (盲审法官)**: 契约冲突时的溯源与纠错 |
 | 锁定手动改过的文件 | — |
 
-AI 负责智能，脚本负责确定性。两者各司其职，幻觉被限制在有限的输出范围内。
+人类负责协议与边界，AI 负责智能填空，脚本负责刚性验收。
 
 ---
 
@@ -31,6 +32,7 @@ AI 负责智能，脚本负责确定性。两者各司其职，幻觉被限制�
 AetherScript/
   src/
     scanner.ts        # 扫描 // @autogen / // @AutoGen → <目标项目>/.aesc-scan.json
+    aesc-build.ts     # 启动并行流水线 (Shadow Workspaces + Blind Judge)
     post-processor.ts # 验证 + 修复生成的 impl（implements→extends、重复 property 删除）
     container-gen.ts  # 生成类型安全的 DI container.ts
     lock-manager.ts   # 保护手动修改的 impl 不被覆盖
@@ -44,13 +46,12 @@ AESC_ROOT=/path/to/AetherScript
 MY_PROJECT=/path/to/my-project
 
 bun $AESC_ROOT/src/scanner.ts --project $MY_PROJECT
-bun $AESC_ROOT/src/post-processor.ts --project $MY_PROJECT
-bun $AESC_ROOT/src/container-gen.ts --project $MY_PROJECT
+bun $AESC_ROOT/src/aesc-build.ts --project $MY_PROJECT
 bun $AESC_ROOT/src/lock-manager.ts lock|unlock|list|check <文件>
 
 # aesc 自身的测试（在 AetherScript 根目录）
-bun test           # 工具链回归测试（127 cases）
-bun run test:demo  # 电商 demo 黑盒测试（96 cases）
+bun test           # 工具链回归测试
+bun run test:demo  # 电商 demo 黑盒测试
 bun run test:all   # 全跑
 ```
 
@@ -73,7 +74,7 @@ cd ~/tools/aesc && bun install
 bash ~/tools/aesc/scripts/setup-hooks.sh
 ```
 
-> 这会配置 `core.hooksPath`，让 git 使用 aesc 的 pre-commit / post-merge / post-checkout hooks。
+> 这会配置 `core.hooksPath`，让 git 使用 aesc 的 pre-commit / post-merge / post-checkout hooks 保护 lock 状态。
 
 ### Step 3：目标项目最低要求
 
@@ -88,22 +89,17 @@ mkdir -p src/service src/generated
 
 > 目标项目**不需要**安装 aesc 作为依赖。标注语法是纯注释（`// @autogen`、`// @AutoGen`），零运行时依赖。
 
-### Step 4：标注你的 Abstract Class，然后生成
+### Step 4：构建与闭环
 
 ```bash
 AESC=~/tools/aesc
 MY_PROJECT=$(pwd)   # 你的目标项目根目录
 
-# 扫描
+# 扫描提取契约
 bun $AESC/src/scanner.ts --project $MY_PROJECT
 
-# （Agent 生成 impl，见 aesc-gen skill）
-
-# 验证 + 修复
-bun $AESC/src/post-processor.ts --project $MY_PROJECT
-
-# 生成 DI 容器
-bun $AESC/src/container-gen.ts --project $MY_PROJECT
+# 执行全自动并行盲写与验收流水线
+bun $AESC/src/aesc-build.ts --project $MY_PROJECT
 ```
 
 ### 输出文件位置
@@ -115,98 +111,64 @@ bun $AESC/src/container-gen.ts --project $MY_PROJECT
 | `container.ts` | `<目标项目>/src/generated/` | DI 容器，提交到 git |
 | `aesc.lock` | `<目标项目根目录>/` | lock 状态，**必须提交到 git** |
 
-> `aesc.lock` 必须提交，确保团队共享 lock 状态。详见 [开发工作流](docs/workflow.md)。
-
 ---
 
-## 完整流程
+## 完整工作流 (End-to-End Workflow)
 
-### Phase 1：aesc-pre（需求 → Abstract Class）
+### Phase 1：aesc-pre（需求挖掘 → PRD）
 
-触发 `/aesc-pre` skill。五巨头扮演不同视角（PM、架构、QA、安全、预算），通过多轮 PK 收敛出 PRD，最终产出：
+触发 `/aesc-pre` skill。五巨头扮演不同视角（PM、架构、QA、安全、预算），通过多轮 PK 深度挖掘需求边界，产出：
+- `docs/prd/XXX-feature.md` — Append-only 需求文档。
 
-- `docs/PRD.md` — 需求文档
+### Phase 1.5：aesc-ad（架构桥梁：PRD → Abstract Class）
+
+触发 `/aesc-ad` skill。AI 首席架构师登场，读取 PRD，通过 CoT 思维链推演出高内聚低耦合的架构，将非结构化的需求精准转化为：
 - `src/entity/*.ts` — 数据实体
 - `src/service/*-service.ts` — **Abstract Class 脚手架**（带完整 JSDoc 契约）
 
-**Abstract Class 是整个系统的唯一真相来源。** JSDoc 中的每个步骤、`@throws`、`@edge-cases` 都将直接驱动后续的代码生成和测试。
+**人类最终门控 (Human Review Gate)**：
+在进入下一步前，人类必须 `tsc --noEmit` 检查生成的契约，确认符合系统设计理念。
 
 #### 标注语法
 
 ```typescript
-// @autogen             ← 标记整个 abstract class 需要生成 impl
+// @autogen             ← 标记整个 abstract class 需要参与流水线
 export abstract class UserService {
     // @AutoGen          ← 标记该属性需要 DI 容器自动注入
     public db?: DB;
 
     /**
-     * 创建用户
      * @description
      * 1. 验证 name 长度 [3, 15]
-     * 2. 验证 age 范围 [0, 120]
-     * 3. 验证失败 → 抛出 Error，不执行后续步骤
-     * 4. 调用 this.db!.save(user)
+     * 2. 调用 this.db!.save(user)
      * @throws Error 如果 name 长度不在 [3, 15]
-     * @throws Error 如果 age 不在 [0, 120]
-     * @edge-cases age = 0 → 合法；age = 120 → 合法
+     * @edge-cases name 为特殊字符时...
      */
     public abstract create(user: User): void;
 }
 ```
 
-> 注意：`// @autogen` 和 `// @AutoGen` 是**纯注释**，不需要 import 任何依赖。
-
 ---
 
-### Phase 2：aesc-gen（Abstract Class → impl + DI 容器）
+### Phase 2：aesc-build（Mega-Batch 盲写与盲审闭环）
 
-触发 `/aesc-gen` skill。
+执行 `bun src/aesc-build.ts` 自动化管道。
+这是彻底剥离人工操作的“机械化引擎”：
 
-```
-Scanner (TS) → Agent 逐类生成 → PostProcessor (TS) → ContainerGen (TS)
-```
-
-1. **Scanner**：扫描 `// @autogen` 标记的 abstract class，输出 `.aesc-scan.json`
-2. **Agent**：读取每个 class 的 JSDoc，**只写方法体，不修改接口结构**
-3. **PostProcessor**：编译检查，自动修复 `implements→extends`、删除重复 property
-4. **ContainerGen**：根据 `// @AutoGen` 属性生成类型安全的 DI 容器
-
-生成的文件一律放在 `src/generated/`，由工具链管理，**人类不直接编辑**（如需手改，先 `lock`）。
-
----
-
-### Phase 3：aesc-test（Abstract Class → 黑盒测试）
-
-触发 `/aesc-test` skill。
-
-**铁律：只读 abstract class 的 JSDoc，严禁读任何 impl 文件。**
-
-测试用例来源：
-
-| JSDoc Tag | 对应测试类型 |
-|-----------|------------|
-| `@description` 步骤 | Happy path |
-| `@throws [条件]` | 每个 throws → 一个负向测试 |
-| `@edge-cases` | 每个边界值 → 一个测试 |
-| `@returns` | 返回值验证 |
-
-每个测试带 `// 来源: [JSDoc tag]` 注释，测试失败时能精确回溯到哪个契约被违反。
+1. **Shadow Workspaces (影子宇宙)**：克隆目标项目，分别在 `.aesc/shadow-gen/` 和 `.aesc/shadow-test/` 独立启动环境。
+2. **Blind Generation (盲写)**：Mega-Batch 高级大模型并发产出 `impl` 和 `test`。两个 Agent 互不可见，只能基于 Abstract Class 进行黑盒博弈。
+3. **AST 刚性验证**：外层脚本调用 `post-processor.ts` 和 `container-gen.ts`，确保没有漏写方法或破坏契约。
+4. **Merge & Clash (合并碰撞)**：将生成的代码拉回主干宇宙，执行 `bun test`。
+5. **Blind Arbitration (盲审法官)**：如果测试失败，唤醒 Judge Agent。法官根据 JSDoc 契约、`impl` 和报错日志，客观判定是谁违背了契约并打回重造（Max Retries = 3）。
 
 ---
 
 ## 关键设计决策
 
-### 为什么不用装饰器？
+### 为什么采用影子宇宙 (Shadow Workspaces) 和盲写？
 
-早期使用 `@AutoGen` 装饰器，需要 `import { AutoGen } from 'aesc'`，导致用户项目必须依赖 aesc 包。
-
-现在改为 `// @AutoGen` 注释，ts-morph 通过 `prop.getLeadingCommentRanges()` 识别，**零运行时依赖**。
-
-### 为什么不完全依赖 AI 自动生成？
-
-「之前对于 AI 的能力的估计过于乐观了，预期中的 AI 自主生成没有出现，目前幻觉还是太严重了。」
-
-所以：Scanner / PostProcessor / ContainerGen 全部是确定性 TS 脚本，AI 只负责「理解 JSDoc 并填写方法体」这一件事，幻觉的破坏范围被限制在单个方法的实现内。
+如果让同一个 Agent 同时写实现和测试，它会产生“护短”的幻觉——写了一个有 bug 的实现，然后顺手写了一个刚好能让这个 bug 跑通的测试。
+**盲写 (Blind Generation)** 保证了实现和测试是完全正交的，两者唯一的交汇点就是 Abstract Class 契约。一旦碰撞失败，问题立刻暴露。
 
 ### lock 机制
 
@@ -216,16 +178,7 @@ bun src/lock-manager.ts list                            # 查看当前锁定列�
 bun src/lock-manager.ts unlock src/generated/db.impl.ts # 解锁，允许重新生成
 ```
 
----
-
-## Demo
-
-`demo/` 目录包含一个 7 服务电商系统示例（UserService、DB、CacheService、ProductService、NotificationService、CustomerService、OrderService），验证跨服务 DI 依赖注入和复杂业务流程（订单状态机）。
-
-```bash
-cd demo && bun src/ecommerce-demo.ts   # 运行集成演示（40 test cases）
-cd demo && bun test                   # 黑盒契约测试（96 cases）
-```
+对于那些确实需要人类介入的边界情况，手动修改后锁定，流水线将自动跳过。
 
 ---
 
@@ -235,23 +188,14 @@ cd demo && bun test                   # 黑盒契约测试（96 cases）
 AetherScript/
   src/                    # aesc 工具链（确定性 TS 脚本）
     scanner.ts
+    aesc-build.ts         # Mega-Batch 流水线主控
     post-processor.ts
     container-gen.ts
     lock-manager.ts
-    decorators.ts         # 历史遗留，已不使用
   test/                   # 工具链自身的回归测试
-    scanner.test.ts       # 10 capability checkpoints
-    post-processor.test.ts
-    container-gen.test.ts
-    lock-manager.test.ts
   demo/                   # 电商示例项目
-    src/
-      entity/             # 数据实体（Customer, Order, Product, User）
-      service/            # Abstract Class 契约
-      generated/          # AI 生成的 impl + DI 容器（工具链管理）
-    test/                 # 黑盒业务测试
-  .agents/skills/
-    aesc-pre/             # 需求收集 + Abstract Class 脚手架
-    aesc-gen/             # impl 生成流程
-    aesc-test/            # 黑盒测试生成流程
+  .agents/skills/         # Antigravity Skills
+    aesc-pre/             # 需求收集
+    aesc-ad/              # 架构推演
+    aesc-build/           # 并发流水线与盲审
 ```
