@@ -1,7 +1,7 @@
 {
   "name": "aesc",
   "description": "AetherScript: AI-Assisted Development You Can Trust, separating human intent from AI implementation.",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "author": "Pabears",
   "license": "MIT",
   "type": "module",
@@ -10,8 +10,10 @@
   },
   "scripts": {
     "scan": "bun src/scanner.ts",
+    "aesc-gen": "bun src/aesc-gen.ts",
     "post-process": "bun src/post-processor.ts",
     "gen-container": "bun src/container-gen.ts",
+    "aesc-test": "bun src/aesc-test.ts",
     "test": "bun test test/",
     "test:demo": "cd demo && bun test",
     "test:all": "bun test test/ && cd demo && bun test"

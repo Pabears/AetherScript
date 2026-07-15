@@ -36,6 +36,12 @@ export interface AescModuleConfig {
     testType: 'unit' | 'e2e';
 
     /**
+     * 测试执行命令。由 AetherScript Agent 在生成测试后自动执行。
+     * 例如："bun test" 或 "bun run test:e2e"
+     */
+    testCommand?: string;
+
+    /**
      * aesc-gen 完成所有文件生成后，逐行打印到 stdout 的提示信息。
      * 用于提醒开发者需要手动执行的后续步骤（如 build、注册）。
      * 仅用于 console 打印，不作为 shell 命令执行。

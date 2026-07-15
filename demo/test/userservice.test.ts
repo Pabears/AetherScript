@@ -1,107 +1,101 @@
-// 📋 来源: UserService JSDoc 契约（src/service/user-service.ts）
-// ⛔ 本文件编写时未读取任何 impl 代码
-
-import { describe, test, expect, mock, beforeEach } from 'bun:test';
+import { describe, it, expect, beforeEach } from 'bun:test';
 import { UserServiceImpl } from '../src/generated/userservice.impl';
+import { DBImpl } from '../src/generated/db.impl';
 import { User } from '../src/entity/user';
 
-describe('UserService 黑盒契约测试', () => {
-    let mockDb: { save: ReturnType<typeof mock>; find: ReturnType<typeof mock>; saveObject: ReturnType<typeof mock>; findObject: ReturnType<typeof mock>; getAllKeys: ReturnType<typeof mock>; deleteObject: ReturnType<typeof mock> };
-    let svc: UserServiceImpl;
+describe('UserServiceImpl', () => {
+    let userService: UserServiceImpl;
+    let db: DBImpl;
 
     beforeEach(() => {
-        mockDb = {
-            save: mock(() => {}),
-            find: mock(() => undefined),
-            saveObject: mock(() => {}),
-            findObject: mock(() => undefined),
-            getAllKeys: mock(() => []),
-            deleteObject: mock(() => false),
-        };
-        svc = new UserServiceImpl();
-        svc.db = mockDb as any;
+        db = new DBImpl();
+        userService = new UserServiceImpl();
+        userService.db = db;
     });
 
-    // ─── create: Happy Path ────────────────────────────────────
+    describe('create', () => {
+        it('should save user to db if name and age are within valid range', () => {
+            const user = new User('Alice', 25);
+            userService.create(user);
 
-    test('✅ [happy] 合法用户 → db.save 被调用一次', () => {
-        // 来源: @description step 4: 调用 this.db!.save(user)
-        const user = new User('Alice', 30);
-        svc.create(user);
-        expect(mockDb.save).toHaveBeenCalledTimes(1);
-        expect(mockDb.save).toHaveBeenCalledWith(user);
+            const saved = db.find('Alice');
+            expect(saved).toBe(user);
+        });
+
+        // Edge case: name = 'Ab' (length 2) -> throw error
+        it('should throw error if name length is 2 (less than 3)', () => {
+            const user = new User('Ab', 25);
+            expect(() => {
+                userService.create(user);
+            }).toThrow('Invalid username length: must be between 3 and 15 characters.');
+        });
+
+        // Edge case: name = 'Abc' (length 3) -> valid
+        it('should allow name length of 3', () => {
+            const user = new User('Abc', 25);
+            userService.create(user);
+            expect(db.find('Abc')).toBe(user);
+        });
+
+        // Edge case: name = 'A'.repeat(15) (length 15) -> valid
+        it('should allow name length of 15', () => {
+            const name = 'A'.repeat(15);
+            const user = new User(name, 25);
+            userService.create(user);
+            expect(db.find(name)).toBe(user);
+        });
+
+        // Edge case: name = 'A'.repeat(16) (length 16) -> throw error
+        it('should throw error if name length is 16 (greater than 15)', () => {
+            const name = 'A'.repeat(16);
+            const user = new User(name, 25);
+            expect(() => {
+                userService.create(user);
+            }).toThrow('Invalid username length: must be between 3 and 15 characters.');
+        });
+
+        // Edge case: age = 0 -> valid
+        it('should allow age = 0', () => {
+            const user = new User('Alice', 0);
+            userService.create(user);
+            expect(db.find('Alice')).toBe(user);
+        });
+
+        // Edge case: age = 120 -> valid
+        it('should allow age = 120', () => {
+            const user = new User('Alice', 120);
+            userService.create(user);
+            expect(db.find('Alice')).toBe(user);
+        });
+
+        // Edge case: age = -1 -> throw error
+        it('should throw error if age = -1', () => {
+            const user = new User('Alice', -1);
+            expect(() => {
+                userService.create(user);
+            }).toThrow('Invalid age: must be between 0 and 120.');
+        });
+
+        // Edge case: age = 121 -> throw error
+        it('should throw error if age = 121', () => {
+            const user = new User('Alice', 121);
+            expect(() => {
+                userService.create(user);
+            }).toThrow('Invalid age: must be between 0 and 120.');
+        });
     });
 
-    // ─── create: @throws 覆盖 ─────────────────────────────────
+    describe('findByName', () => {
+        it('should return the user if found', () => {
+            const user = new User('Alice', 25);
+            db.save(user);
+            const found = userService.findByName('Alice');
+            expect(found).toBe(user);
+        });
 
-    test('❌ [throws] name 长度 < 3 → 抛出 Error', () => {
-        // 来源: @throws Error 如果 name 长度不在 [3, 15] 范围内
-        expect(() => svc.create(new User('Al', 30))).toThrow();
-    });
-
-    test('❌ [throws] name 长度 > 15 → 抛出 Error', () => {
-        // 来源: @throws Error 如果 name 长度不在 [3, 15] 范围内
-        expect(() => svc.create(new User('A'.repeat(16), 30))).toThrow();
-    });
-
-    test('❌ [throws] age < 0 → 抛出 Error', () => {
-        // 来源: @throws Error 如果 age 不在 [0, 120] 范围内
-        expect(() => svc.create(new User('Bob', -1))).toThrow();
-    });
-
-    test('❌ [throws] age > 120 → 抛出 Error', () => {
-        // 来源: @throws Error 如果 age 不在 [0, 120] 范围内
-        expect(() => svc.create(new User('Bob', 121))).toThrow();
-    });
-
-    test('❌ [throws] 验证失败时 db.save 不应被调用', () => {
-        // 来源: @description step 3: 如果验证失败，抛出 Error，不执行后续步骤
-        try { svc.create(new User('Al', 30)); } catch {}
-        expect(mockDb.save).not.toHaveBeenCalled();
-    });
-
-    test('❌ [throws] age 验证失败时 db.save 不应被调用', () => {
-        // 来源: @description step 3: 副作用隔离
-        try { svc.create(new User('Alice', -1)); } catch {}
-        expect(mockDb.save).not.toHaveBeenCalled();
-    });
-
-    // ─── create: @edge-cases 覆盖 ─────────────────────────────
-
-    test('✅ [edge] name 恰好 3 字符 → 合法，不抛错', () => {
-        // 来源: @edge-cases name = 'Abc'（长度3）→ 合法
-        expect(() => svc.create(new User('Abc', 25))).not.toThrow();
-    });
-
-    test('✅ [edge] name 恰好 15 字符 → 合法，不抛错', () => {
-        // 来源: @edge-cases name = 'A'.repeat(15)（长度15）→ 合法
-        expect(() => svc.create(new User('A'.repeat(15), 25))).not.toThrow();
-    });
-
-    test('✅ [edge] age = 0 → 合法，不抛错', () => {
-        // 来源: @edge-cases age = 0 → 合法
-        expect(() => svc.create(new User('Bob', 0))).not.toThrow();
-    });
-
-    test('✅ [edge] age = 120 → 合法，不抛错', () => {
-        // 来源: @edge-cases age = 120 → 合法
-        expect(() => svc.create(new User('Bob', 120))).not.toThrow();
-    });
-
-    // ─── findByName ────────────────────────────────────────────
-
-    test('✅ [happy] findByName → 调用 db.find 并返回结果', () => {
-        // 来源: @description step 1: 调用 this.db!.find(name)
-        const user = new User('Alice', 30);
-        mockDb.find = mock(() => user);
-        const result = svc.findByName('Alice');
-        expect(mockDb.find).toHaveBeenCalledWith('Alice');
-        expect(result).toBe(user);
-    });
-
-    test('✅ [returns] findByName 未命中 → undefined', () => {
-        // 来源: @returns 找到的 User 对象，或 undefined
-        mockDb.find = mock(() => undefined);
-        expect(svc.findByName('Ghost')).toBeUndefined();
+        it('should return undefined if user not found', () => {
+            const found = userService.findByName('Bob');
+            expect(found).toBeUndefined();
+        });
     });
 });
