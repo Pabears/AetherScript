@@ -326,6 +326,22 @@ function main() {
 
     console.log(`\n${allOk ? '✅ All files validated successfully.' : '❌ Some files have errors. Please review.'}`);
     if (!allOk) process.exit(1);
+
+    // Print postGenHints from scan JSON (if present)
+    const scanJsonPath = path.join(projectDir, '.aesc-scan.json');
+    if (fs.existsSync(scanJsonPath)) {
+        const scanResult = JSON.parse(fs.readFileSync(scanJsonPath, 'utf-8'));
+        const allHints: string[] = [];
+        for (const cls of (scanResult.classes ?? [])) {
+            for (const hint of (cls.moduleConfig?.postGenHints ?? [])) {
+                if (!allHints.includes(hint)) allHints.push(hint);
+            }
+        }
+        if (allHints.length > 0) {
+            console.log('\n💡 Post-generation hints:');
+            allHints.forEach(h => console.log(`   ${h}`));
+        }
+    }
 }
 
 if (import.meta.url.endsWith(process.argv[1] ?? '')) {

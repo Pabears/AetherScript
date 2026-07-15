@@ -46,17 +46,36 @@ export function generateContainer(projectDir: string): void {
         return;
     }
 
-    // ── Step 1: Collect all .impl.ts files ──
+    // ── Step 1: Determine which impl files participate in DI ──
+    // Read .aesc-scan.json to honour generateDI:false per class.
+    // Falls back to scanning all *.impl.ts in src/generated/ if no scan JSON.
+    const scanJsonPath = path.join(projectDir, '.aesc-scan.json');
+    const diExcludedBaseNames = new Set<string>();
+
+    if (fs.existsSync(scanJsonPath)) {
+        const scanResult = JSON.parse(fs.readFileSync(scanJsonPath, 'utf-8'));
+        for (const cls of (scanResult.classes ?? [])) {
+            if (cls.moduleConfig?.generateDI === false) {
+                diExcludedBaseNames.add(cls.className);
+            }
+        }
+        if (diExcludedBaseNames.size > 0) {
+            console.log(`ℹ️  Skipping DI for: ${[...diExcludedBaseNames].join(', ')} (generateDI: false)`);
+        }
+    }
+
+    // ── Step 2: Collect .impl.ts files from src/generated/ only ──
+    // (frontend impls live elsewhere and are excluded via generateDI:false)
     const implFiles = fs.readdirSync(generatedDir)
         .filter(f => f.endsWith('.impl.ts') && f !== 'container.ts')
-        .sort();  // 确定性排序，保证每次生成结果一致
+        .sort();
 
     if (implFiles.length === 0) {
-        console.log('⚠️  No impl files found in src/generated/.');
+        console.log('⚠️  No impl files found in src/generated/');
         return;
     }
 
-    // ── Step 2: For each impl, find the base class and its @AutoGen props ──
+    // ── Step 3: For each impl, find the base class — skip if generateDI:false ──
     const services: GeneratedService[] = [];
 
     for (const implFile of implFiles) {
@@ -76,6 +95,9 @@ export function generateContainer(projectDir: string): void {
                 : undefined;
 
             if (!baseName) continue;
+
+            // Skip classes marked generateDI:false
+            if (diExcludedBaseNames.has(baseName)) continue;
 
             // Find the base class to get @AutoGen properties
             const baseClass = findClassByName(project, baseName);
@@ -105,11 +127,11 @@ export function generateContainer(projectDir: string): void {
     }
 
     if (services.length === 0) {
-        console.log('⚠️  No exported Impl classes found. Container not generated.');
+        console.log('⚠️  No exported DI-eligible Impl classes found. Container not generated.');
         return;
     }
 
-    // ── Step 3: Generate container code ──
+    // ── Step 4: Generate container code ──
     const containerCode = buildContainerCode(services);
     const containerPath = path.join(generatedDir, 'container.ts');
     fs.writeFileSync(containerPath, containerCode, 'utf-8');

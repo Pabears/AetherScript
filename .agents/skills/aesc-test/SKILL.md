@@ -40,12 +40,18 @@ TARGET_PROJECT="/path/to/your-project" # 修改为实际路径
 bun $AESC_ROOT/src/scanner.ts --project $TARGET_PROJECT
 ```
 
-读取 `.aesc-scan.json`，提取：
-- 每个 class 的 `sourceCode`（完整 abstract class 源文件）
-- 每个 method 的 `jsDoc`
+读取 `.aesc-scan.json`，提取每个 class 的：
+- `sourceCode`（完整 abstract class 源文件）
+- `methods[].jsDoc`
 - `autoGenDependencies`（需要 Mock 的依赖类型）
+- **`moduleConfig.testType`** — `"unit"` 或 `"e2e"`，决定生成哪种测试框架
 
 > ✅ 只从这里获取信息，不读其他任何 impl 文件
+
+> [!IMPORTANT]
+> **根据 `moduleConfig.testType` 选择不同路径：**
+> - `"unit"`（默认）→ 继续执行 Step 2-4（bun test 格式）
+> - `"e2e"` → 跳转到 **Step 2E**（Playwright 格式）
 
 ---
 
@@ -198,3 +204,97 @@ UserService:
 - 测试文件顶部必须有 `// ⛔ 本文件编写时未读取任何 impl 代码` 声明
 - 如果 JSDoc 描述不够充分（缺少 @throws/@edge-cases），告知用户补充 JSDoc，不要凭空推断
 - 发现 impl bug 后**不自动修复**，描述给用户后停止
+
+---
+
+## Step 2E：e2e 测试路径（testType: "e2e"）
+
+> 适用于 `moduleConfig.testType === "e2e"` 的 class（前端浏览器插件）。
+> 这类 class 的方法在 DOM 环境中运行，无法用 bun test 直接调用，必须用 Playwright。
+
+### 分析契约，推导 E2E 场景
+
+从 abstract class 的方法和 JSDoc 中提取：
+
+| 方法 | 对应 Playwright 测试 |
+|---|---|
+| `start()` | 输入触发命令（如 `/chat`）→ 断言 DOM 出现插件界面 |
+| `handleInput(val)` | 在插件活跃时输入各种值 → 断言 DOM 响应 |
+| `onExit()` | 输入 `/back` → 断言插件卸载，返回主 shell |
+| `@throws` / `@edge-cases` | 输入边界值 → 断言错误提示出现在 DOM |
+
+### 生成测试文件
+
+输出到 `moduleConfig.testDir`（默认 `test/`），文件名：`[classname].e2e.ts`
+
+**E2E 测试模板：**
+
+```typescript
+// test/iterminalplugin.e2e.ts
+// 📋 来源: ITerminalPlugin JSDoc 契约
+// ⛔ 本文件编写时未读取任何 impl 代码
+
+import { test, expect, type Page } from '@playwright/test';
+
+// Helper：向终端输入一条命令并等待处理完成
+async function typeCommand(page: Page, cmd: string) {
+    await page.locator('#cmd').fill(cmd);
+    await page.locator('#cmd').press('Enter');
+    // 等待 terminal 处理完成（setProcessing(false) 时 readOnly 变 false）
+    await page.waitForFunction(() => {
+        const el = document.querySelector('#cmd') as HTMLInputElement | null;
+        return el ? !el.readOnly : false;
+    }, { timeout: 10000 });
+}
+
+test.describe('ITerminalPlugin 黑盒契约测试 (E2E)', () => {
+    test.beforeEach(async ({ page }) => {
+        // Mock Turnstile to bypass challenge
+        await page.addInitScript(() => {
+            (window as any).turnstile = {
+                render: (_el: string, opts: any) => { opts?.callback?.('mock-token'); return 'mock-widget'; },
+                remove: () => {},
+            };
+        });
+        await page.goto('/');
+        // Wait for boot to complete
+        await page.waitForFunction(() => {
+            const el = document.querySelector('#cmd') as HTMLInputElement | null;
+            return el ? !el.readOnly : false;
+        }, { timeout: 15000 });
+    });
+
+    // ─── start() ──────────────────────────────────────────────
+    // 来源: @description — plugin 启动时渲染初始 UI
+
+    test('✅ [start] 输入触发命令 → 插件界面出现', async ({ page }) => {
+        await typeCommand(page, '/COMMAND_HERE');
+        // Assert plugin-specific prompt or output element exists
+        // await expect(page.locator('#output')).toContainText('EXPECTED_TEXT');
+    });
+
+    // ─── handleInput() ────────────────────────────────────────
+    // 来源: @description — 处理用户在插件内的输入
+
+    test('✅ [handleInput] 合法输入 → 正确响应', async ({ page }) => {
+        await typeCommand(page, '/COMMAND_HERE');
+        await typeCommand(page, 'VALID_INPUT');
+        // await expect(page.locator('#output')).toContainText('EXPECTED_RESPONSE');
+    });
+
+    // ─── onExit() ─────────────────────────────────────────────
+    // 来源: @description — /back 命令触发插件卸载
+
+    test('✅ [onExit] 输入 /back → 返回主 shell', async ({ page }) => {
+        await typeCommand(page, '/COMMAND_HERE');
+        await typeCommand(page, '/back');
+        await expect(page.locator('#prompt')).toHaveText('pip-boy>');
+    });
+});
+```
+
+**注意事项（E2E 模式）：**
+- 必须有 `beforeEach` 中的 Turnstile mock（参考项目现有 `test/frontend.e2e.ts`）
+- 使用 `waitForFunction` 检测 `#cmd.readOnly === false` 来等待 typeWriter 完成
+- `COMMAND_HERE`、`EXPECTED_TEXT` 等占位符需根据实际 abstract class 名称和 JSDoc 填写
+- 运行命令：`bun run test:e2e`（会自动启动 wrangler dev）
