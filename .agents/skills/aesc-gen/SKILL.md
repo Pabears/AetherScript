@@ -85,7 +85,34 @@ bun $AESC_ROOT/src/post-processor.ts --project $TARGET_PROJECT
 
 ---
 
-### Step 4：生成 DI 容器
+### Step 4：⚠️ 运行 aesc-test（必须，不得跳过）
+
+> [!CAUTION]
+> **aesc-test 是流程防线，不是可选项。**
+> 跳过此步骤 = 向生产环境部署未经测试的代码。
+> `/note` 插件正是因为跳过了 aesc-test，才在生产环境暴露了 `CryptoKey` 类型 bug。
+
+读取 `.aesc-scan.json` 中每个 class 的 `moduleConfig.testType`，选择测试路径：
+
+| testType | 动作 |
+|---|---|
+| `"unit"`（默认） | 激活 `aesc-test` skill → 生成 `test/[classname].test.ts` → `bun test` |
+| `"e2e"` | 激活 `aesc-test` skill → 生成 `test/[classname].e2e.ts` → `bun run test:e2e` |
+
+```bash
+# aesc-test skill 会自动读取 .aesc-scan.json，无需额外参数
+# 激活方式：在对话中调用 aesc-test skill，或手动触发
+# 生成测试文件后必须运行，确保所有测试通过再继续
+```
+
+**如果测试失败：**
+- 测试本身逻辑有误 → 修正测试（不改 impl）
+- impl 有 bug → 修正 impl（回到 Step 2 重新生成）
+- **不得在测试失败的情况下继续部署**
+
+---
+
+### Step 5：生成 DI 容器
 
 ```bash
 bun $AESC_ROOT/src/container-gen.ts --project $TARGET_PROJECT
@@ -93,7 +120,7 @@ bun $AESC_ROOT/src/container-gen.ts --project $TARGET_PROJECT
 
 ---
 
-### Step 5：验证
+### Step 6：验证
 
 ```bash
 # 如果目标项目有入口文件，运行一下
