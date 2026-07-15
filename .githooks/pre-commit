@@ -65,4 +65,73 @@ if [ ${#UNLOCKED_IMPLS[@]} -gt 0 ]; then
 fi
 
 echo "✅ aesc: impl lock 状态检查通过"
+
+# ─────────────────────────────────────────────────────────────────
+# PRD Append-Only 检查
+# docs/prd/*.md 文件不允许删除已有行（物理 append-only）
+# 例外1: commit message 以 "prd-amend:" 开头  → 允许修改（需声明意图）
+# 例外2: commit message 以 "prd-compaction:" 开头 → 年度归档，跳过所有检查
+# ─────────────────────────────────────────────────────────────────
+
+STAGED_PRDS=$(git diff --cached --name-only | grep -E '^docs/prd/[^/]+\.md$' || true)
+
+if [ -z "$STAGED_PRDS" ]; then
+    exit 0  # 没有 PRD 文件变更，直接放行
+fi
+
+# 读取 commit message（通过 COMMIT_EDITMSG 或 -m 参数）
+COMMIT_MSG_FILE="$REPO_ROOT/.git/COMMIT_EDITMSG"
+COMMIT_MSG=""
+if [ -f "$COMMIT_MSG_FILE" ]; then
+    COMMIT_MSG=$(cat "$COMMIT_MSG_FILE")
+fi
+
+# 检查豁免前缀
+if echo "$COMMIT_MSG" | grep -qE '^prd-compaction:'; then
+    echo "✅ aesc: PRD compaction 模式，跳过 append-only 检查"
+    exit 0
+fi
+
+ALLOW_AMEND=false
+if echo "$COMMIT_MSG" | grep -qE '^prd-amend:'; then
+    ALLOW_AMEND=true
+fi
+
+# 检测是否有 PRD 行被删除
+PRD_VIOLATIONS=()
+while IFS= read -r prd_file; do
+    [ -z "$prd_file" ] && continue
+    # 检查 diff 中是否有被删除的行（以 - 开头，排除 diff header）
+    DELETED_LINES=$(git diff --cached -- "$prd_file" | grep -E '^-[^-]' || true)
+    if [ -n "$DELETED_LINES" ]; then
+        PRD_VIOLATIONS+=("$prd_file")
+    fi
+done <<< "$STAGED_PRDS"
+
+if [ ${#PRD_VIOLATIONS[@]} -gt 0 ]; then
+    if [ "$ALLOW_AMEND" = true ]; then
+        echo "⚠️  aesc: PRD 文件有行被删除/修改（prd-amend: 模式，已放行）"
+        for f in "${PRD_VIOLATIONS[@]}"; do
+            echo "   - $f"
+        done
+        echo "   请确保在文件末尾追加了 <!-- AMENDMENT [date]: reason --> 注释"
+    else
+        echo ""
+        echo "🚫 aesc: PRD Append-Only 违规！以下文件有行被删除："
+        echo ""
+        for f in "${PRD_VIOLATIONS[@]}"; do
+            echo "   - $f"
+        done
+        echo ""
+        echo "   PRD 文件物理上不允许删除已有行。可选方案："
+        echo "   【追加】在文件末尾新增内容（推荐）"
+        echo "   【修正】使用 prd-amend: 前缀声明修改意图："
+        echo "   git commit -m 'prd-amend: fix typo in outputPath description'"
+        echo "   【归档】年度归档使用 prd-compaction: 前缀"
+        echo ""
+        exit 1
+    fi
+fi
+
+echo "✅ aesc: PRD append-only 检查通过"
 exit 0
