@@ -277,10 +277,28 @@ function main() {
 
     if (targetFile) {
         filesToProcess.push(targetFile);
-    } else if (fs.existsSync(generatedDir)) {
-        for (const f of fs.readdirSync(generatedDir)) {
-            if (f.endsWith('.impl.ts')) {
-                filesToProcess.push(path.join(generatedDir, f));
+    } else {
+        // Prefer reading outputPaths from .aesc-scan.json for multi-target support
+        const scanJsonPath = path.join(projectDir, '.aesc-scan.json');
+        if (fs.existsSync(scanJsonPath)) {
+            const scanResult = JSON.parse(fs.readFileSync(scanJsonPath, 'utf-8'));
+            const seen = new Set<string>();
+            for (const cls of (scanResult.classes ?? [])) {
+                const outputPath: string = cls.outputPath ?? '';
+                if (!outputPath) continue;
+                const absImplPath = path.resolve(projectDir, outputPath);
+                if (!seen.has(absImplPath) && fs.existsSync(absImplPath)) {
+                    seen.add(absImplPath);
+                    filesToProcess.push(absImplPath);
+                }
+            }
+        }
+        // Fallback: scan src/generated/ if no scan json or no paths found there
+        if (filesToProcess.length === 0 && fs.existsSync(generatedDir)) {
+            for (const f of fs.readdirSync(generatedDir)) {
+                if (f.endsWith('.impl.ts')) {
+                    filesToProcess.push(path.join(generatedDir, f));
+                }
             }
         }
     }

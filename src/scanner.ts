@@ -11,6 +11,10 @@
 import { Project, Node, type InterfaceDeclaration, type ClassDeclaration } from 'ts-morph';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { IModuleConfigLoaderImpl } from './generated/imoduleconfigloader.impl.ts';
+import type { AescModuleConfig } from './module-config.ts';
+
+const configLoader = new IModuleConfigLoaderImpl();
 
 // ────────────────────────────────────────────────────────────
 // Types
@@ -44,6 +48,7 @@ export interface ScannedClass {
     properties: ScannedProperty[];
     autoGenDependencies: ScannedDependency[];  // @AutoGen 属性的类型的源码
     outputPath: string;      // 建议的输出路径，e.g. src/generated/userservice.impl.ts
+    moduleConfig: AescModuleConfig;  // 从 aesccfg.json 读取的模块配置（含默认值）
 }
 
 export interface ScanResult {
@@ -205,6 +210,11 @@ function extractClassInfo(
 
     const implFileName = `${name.toLowerCase()}.impl.ts`;
 
+    // Read aesccfg.json from the class's directory (bubble-up)
+    const absFilePath = cls.getSourceFile().getFilePath();
+    const moduleConfig = configLoader.load(absFilePath, projectRoot);
+    const outputPath = path.join(moduleConfig.outputPath, implFileName).replace(/\\/g, '/');
+
     return {
         className: name,
         filePath,
@@ -214,7 +224,8 @@ function extractClassInfo(
         methods,
         properties,
         autoGenDependencies: autoGenDeps,
-        outputPath: `${outputDir}/${implFileName}`,
+        outputPath,
+        moduleConfig,
     };
 }
 
@@ -241,6 +252,11 @@ function extractInterfaceInfo(
 
     const implFileName = `${name.toLowerCase()}.impl.ts`;
 
+    // Read aesccfg.json from the interface's directory (bubble-up)
+    const absFilePath = iface.getSourceFile().getFilePath();
+    const moduleConfig = configLoader.load(absFilePath, projectRoot);
+    const outputPath = path.join(moduleConfig.outputPath, implFileName).replace(/\\/g, '/');
+
     return {
         className: name,
         filePath,
@@ -250,7 +266,8 @@ function extractInterfaceInfo(
         methods,
         properties,
         autoGenDependencies: [],
-        outputPath: `${outputDir}/${implFileName}`,
+        outputPath,
+        moduleConfig,
     };
 }
 
