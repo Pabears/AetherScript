@@ -1,8 +1,8 @@
-import { DB } from '../service/db-service';
 import { User } from '../entity/user';
+import { DB } from '../service/db-service';
 
 export class DBImpl extends DB {
-    private storage = new Map<string, any>();
+    private store = new Map<string, any>();
 
     /**
      * 保存用户到数据库
@@ -14,7 +14,10 @@ export class DBImpl extends DB {
      * @param user - 要保存的用户对象，name 不能为空
      */
     public save(user: User): void {
-        this.storage.set(user.name, user);
+        if (!user.name) {
+            throw new Error('User name cannot be empty');
+        }
+        this.store.set(user.name, user);
     }
 
     /**
@@ -25,10 +28,10 @@ export class DBImpl extends DB {
      * 2. 找到则返回 User 对象，否则返回 undefined
      *
      * @param name - 用户名，区分大小写
-     * @returns 找到 of User 对象，或 undefined
+     * @returns 找到的 User 对象，或 undefined
      */
     public find(name: string): User | undefined {
-        return this.storage.get(name);
+        return this.store.get(name);
     }
 
     /**
@@ -42,7 +45,7 @@ export class DBImpl extends DB {
      * @param data - 任意数据对象
      */
     public saveObject(key: string, data: any): void {
-        this.storage.set(key, data);
+        this.store.set(key, data);
     }
 
     /**
@@ -56,7 +59,7 @@ export class DBImpl extends DB {
      * @returns 存储的数据，或 undefined
      */
     public findObject(key: string): any {
-        return this.storage.get(key);
+        return this.store.get(key);
     }
 
     /**
@@ -68,7 +71,7 @@ export class DBImpl extends DB {
      * @returns 所有 key 的字符串数组
      */
     public getAllKeys(): string[] {
-        return Array.from(this.storage.keys());
+        return Array.from(this.store.keys());
     }
 
     /**
@@ -82,6 +85,6 @@ export class DBImpl extends DB {
      * @returns 删除成功返回 true，key 不存在返回 false
      */
     public deleteObject(key: string): boolean {
-        return this.storage.delete(key);
+        return this.store.delete(key);
     }
 }

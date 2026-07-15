@@ -41,12 +41,12 @@ export class CacheServiceImpl extends CacheService {
      * @returns 成功返回 true
      */
     public async clearUserCache(key: string): Promise<boolean> {
-        const count = this.redisLikeCache.del(key);
-        return count > 0;
+        const deletedCount = this.redisLikeCache.del(key);
+        return deletedCount > 0;
     }
 
     /**
-     * 缓存任意数据
+     * 缓存任意 data
      *
      * @description
      * 1. 调用 this.redisLikeCache.set(key, data)
@@ -83,7 +83,7 @@ export class CacheServiceImpl extends CacheService {
      * @returns 成功返回 true
      */
     public async clearCache(key: string): Promise<boolean> {
-        const count = this.redisLikeCache.del(key);
-        return count > 0;
+        const deletedCount = this.redisLikeCache.del(key);
+        return deletedCount > 0;
     }
 }

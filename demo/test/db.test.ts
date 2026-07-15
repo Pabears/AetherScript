@@ -1,100 +1,100 @@
-import { describe, it, expect, beforeEach } from 'bun:test';
+// 📋 来源: DB JSDoc 契约（src/service/db-service.ts）
+// ⛔ 本文件编写时未读取任何 impl 代码
+
+import { describe, test, expect, beforeEach } from 'bun:test';
 import { DBImpl } from '../src/generated/db.impl';
 import { User } from '../src/entity/user';
 
-describe('DBImpl', () => {
+describe('DB 黑盒契约测试', () => {
     let db: DBImpl;
 
     beforeEach(() => {
         db = new DBImpl();
     });
 
-    describe('save and find', () => {
-        it('should save a user with name as key and find it back', () => {
-            const user = new User('Alice', 25);
-            db.save(user);
-            const found = db.find('Alice');
-            expect(found).toBe(user);
-        });
+    // ─── save / find ──────────────────────────────────────────
 
-        it('should overwrite old user data if the key already exists', () => {
-            const user1 = new User('Alice', 25);
-            const user2 = new User('Alice', 30);
-            db.save(user1);
-            db.save(user2);
-            const found = db.find('Alice');
-            expect(found).toBe(user2);
-            expect(found?.age).toBe(30);
-        });
-
-        it('should return undefined if user is not found', () => {
-            const found = db.find('NonExistent');
-            expect(found).toBeUndefined();
-        });
-
-        it('should be case sensitive when finding a user', () => {
-            const user = new User('Alice', 25);
-            db.save(user);
-            expect(db.find('alice')).toBeUndefined();
-            expect(db.find('ALICE')).toBeUndefined();
-            expect(db.find('Alice')).toBe(user);
-        });
+    test('✅ [happy] save → find 能取回同一个 user', () => {
+        // 来源: @description save step1: 以 user.name 为 key 存入
+        const user = new User('Alice', 30);
+        db.save(user);
+        const found = db.find('Alice');
+        expect(found).toBeDefined();
+        expect(found?.name).toBe('Alice');
+        expect(found?.age).toBe(30);
     });
 
-    describe('saveObject and findObject', () => {
-        it('should save an arbitrary object with key and retrieve it', () => {
-            const data = { id: 1, val: 'test' };
-            db.saveObject('myKey', data);
-            const found = db.findObject('myKey');
-            expect(found).toBe(data);
-        });
-
-        it('should overwrite old object data if the key already exists', () => {
-            const data1 = { val: 'first' };
-            const data2 = { val: 'second' };
-            db.saveObject('myKey', data1);
-            db.saveObject('myKey', data2);
-            const found = db.findObject('myKey');
-            expect(found).toBe(data2);
-        });
-
-        it('should return undefined if object is not found', () => {
-            const found = db.findObject('missing');
-            expect(found).toBeUndefined();
-        });
-
-        it('should be case sensitive when finding an object', () => {
-            const data = { val: 'test' };
-            db.saveObject('MyKey', data);
-            expect(db.findObject('mykey')).toBeUndefined();
-            expect(db.findObject('MYKEY')).toBeUndefined();
-            expect(db.findObject('MyKey')).toBe(data);
-        });
+    test('✅ [happy] save 覆盖旧数据', () => {
+        // 来源: @description save step2: 如果 key 已存在，覆盖旧数据
+        db.save(new User('Bob', 25));
+        db.save(new User('Bob', 99));
+        expect(db.find('Bob')?.age).toBe(99);
     });
 
-    describe('getAllKeys', () => {
-        it('should return all stored keys', () => {
-            expect(db.getAllKeys()).toEqual([]);
-            db.save(new User('Alice', 25));
-            db.saveObject('customKey', { a: 1 });
-            const keys = db.getAllKeys();
-            expect(keys).toContain('Alice');
-            expect(keys).toContain('customKey');
-            expect(keys.length).toBe(2);
-        });
+    test('✅ [returns] find 未命中 → undefined', () => {
+        // 来源: @returns 找到的 User 对象，或 undefined
+        expect(db.find('NonExistent')).toBeUndefined();
     });
 
-    describe('deleteObject', () => {
-        it('should delete object and return true if key exists', () => {
-            db.saveObject('toDelete', { val: 1 });
-            const deleteResult = db.deleteObject('toDelete');
-            expect(deleteResult).toBe(true);
-            expect(db.findObject('toDelete')).toBeUndefined();
-        });
+    test('✅ [happy] find 区分大小写', () => {
+        // 来源: @description find: 以 name 为 key 查找，区分大小写
+        db.save(new User('Alice', 30));
+        expect(db.find('alice')).toBeUndefined();
+        expect(db.find('ALICE')).toBeUndefined();
+        expect(db.find('Alice')).toBeDefined();
+    });
 
-        it('should return false if key does not exist', () => {
-            const deleteResult = db.deleteObject('nonExistent');
-            expect(deleteResult).toBe(false);
-        });
+    // ─── saveObject / findObject ───────────────────────────────
+
+    test('✅ [happy] saveObject → findObject 能取回', () => {
+        // 来源: @description saveObject step1: 以 key 为键存入
+        const data = { x: 42, label: 'test' };
+        db.saveObject('my-key', data);
+        expect(db.findObject('my-key')).toEqual(data);
+    });
+
+    test('✅ [happy] saveObject 覆盖旧值', () => {
+        // 来源: @description saveObject step2: 如果 key 已存在，覆盖旧数据
+        db.saveObject('k', 'old');
+        db.saveObject('k', 'new');
+        expect(db.findObject('k')).toBe('new');
+    });
+
+    test('✅ [returns] findObject 未命中 → undefined', () => {
+        // 来源: @returns 存储的数据，或 undefined
+        expect(db.findObject('no-such-key')).toBeUndefined();
+    });
+
+    // ─── getAllKeys ────────────────────────────────────────────
+
+    test('✅ [happy] getAllKeys 返回所有已存入的 key', () => {
+        // 来源: @description getAllKeys: 返回所有 key 的数组
+        db.saveObject('a', 1);
+        db.saveObject('b', 2);
+        db.save(new User('Charlie', 20)); // user key = 'Charlie'
+        const keys = db.getAllKeys();
+        expect(keys).toContain('a');
+        expect(keys).toContain('b');
+        expect(keys).toContain('Charlie');
+    });
+
+    test('✅ [edge] 空 DB getAllKeys 返回空数组', () => {
+        // 来源: @returns 所有 key 的字符串数组
+        expect(db.getAllKeys()).toHaveLength(0);
+    });
+
+    // ─── deleteObject ─────────────────────────────────────────
+
+    test('✅ [happy] deleteObject 存在的 key → true，并删除', () => {
+        // 来源: @description deleteObject step2: 存在并删除返回 true
+        db.saveObject('del-me', 'value');
+        const result = db.deleteObject('del-me');
+        expect(result).toBe(true);
+        expect(db.findObject('del-me')).toBeUndefined();
+    });
+
+    test('❌ [returns] deleteObject 不存在的 key → false', () => {
+        // 来源: @returns 删除成功返回 true，key 不存在返回 false
+        expect(db.deleteObject('ghost')).toBe(false);
     });
 });

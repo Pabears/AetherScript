@@ -1,70 +1,92 @@
-import { describe, it, expect, beforeEach } from 'bun:test';
+// 📋 来源: CacheService JSDoc 契约（src/service/cache-service.ts）
+// ⛔ 本文件编写时未读取任何 impl 代码
+
+import { describe, test, expect, spyOn, beforeEach } from 'bun:test';
 import { CacheServiceImpl } from '../src/generated/cacheservice.impl';
 import { User } from '../src/entity/user';
 
-describe('CacheServiceImpl', () => {
-    let cacheService: CacheServiceImpl;
+describe('CacheService 黑盒契约测试', () => {
+    let svc: CacheServiceImpl;
 
     beforeEach(() => {
-        cacheService = new CacheServiceImpl();
+        svc = new CacheServiceImpl();
     });
 
-    describe('cacheUser and getCachedUser', () => {
-        it('should cache a user and retrieve it back', async () => {
-            const user = new User('Bob', 30);
-            await cacheService.cacheUser('user:bob', user);
-            const cached = await cacheService.getCachedUser('user:bob');
-            expect(cached).toBe(user); // useClones is false, so it should be the same object reference
-        });
+    // ─── cacheUser / getCachedUser ─────────────────────────────
 
-        it('should return null if user cache does not exist', async () => {
-            const cached = await cacheService.getCachedUser('user:nonexistent');
-            expect(cached).toBeNull();
-        });
+    test('✅ [happy] cacheUser → getCachedUser 能取回同一个 user', async () => {
+        const user = new User('Alice', 30);
+        const setSpy = spyOn(svc['redisLikeCache'], 'set');
+        const getSpy = spyOn(svc['redisLikeCache'], 'get');
+
+        await svc.cacheUser('user-1', user);
+        expect(setSpy).toHaveBeenCalledWith('user-1', user);
+
+        const found = await svc.getCachedUser('user-1');
+        expect(getSpy).toHaveBeenCalledWith('user-1');
+        expect(found).toBe(user); // useClones: false so it should be the same object reference
     });
 
-    describe('clearUserCache', () => {
-        it('should clear cached user and return true if existed', async () => {
-            const user = new User('Bob', 30);
-            await cacheService.cacheUser('user:bob', user);
-            const cleared = await cacheService.clearUserCache('user:bob');
-            expect(cleared).toBe(true);
-            const cached = await cacheService.getCachedUser('user:bob');
-            expect(cached).toBeNull();
-        });
-
-        it('should return false when clearing non-existent user cache', async () => {
-            const cleared = await cacheService.clearUserCache('user:nonexistent');
-            expect(cleared).toBe(false);
-        });
+    test('✅ [returns] getCachedUser 未命中 → null', async () => {
+        const found = await svc.getCachedUser('ghost-user');
+        expect(found).toBeNull();
     });
 
-    describe('cacheData and getCachedData', () => {
-        it('should cache arbitrary data and retrieve it back', async () => {
-            const data = { token: 'xyz', roles: ['admin'] };
-            await cacheService.cacheData('session:123', data);
-            const cached = await cacheService.getCachedData('session:123');
-            expect(cached).toBe(data);
-        });
+    // ─── clearUserCache ────────────────────────────────────────
 
-        it('should return undefined if data cache does not exist', async () => {
-            const cached = await cacheService.getCachedData('session:nonexistent');
-            expect(cached).toBeUndefined();
-        });
+    test('✅ [happy] clearUserCache 存在的 key → true，并删除', async () => {
+        const user = new User('Bob', 25);
+        await svc.cacheUser('user-2', user);
+
+        const delSpy = spyOn(svc['redisLikeCache'], 'del');
+        const result = await svc.clearUserCache('user-2');
+        expect(delSpy).toHaveBeenCalledWith('user-2');
+        expect(result).toBe(true);
+
+        const found = await svc.getCachedUser('user-2');
+        expect(found).toBeNull();
     });
 
-    describe('clearCache', () => {
-        it('should clear cached data and return true if existed', async () => {
-            await cacheService.cacheData('key1', 'val1');
-            const cleared = await cacheService.clearCache('key1');
-            expect(cleared).toBe(true);
-            const cached = await cacheService.getCachedData('key1');
-            expect(cached).toBeUndefined();
-        });
+    test('❌ [returns] clearUserCache 不存在的 key → false', async () => {
+        const result = await svc.clearUserCache('ghost-user');
+        expect(result).toBe(false);
+    });
 
-        it('should return false when clearing non-existent cache', async () => {
-            const cleared = await cacheService.clearCache('key-missing');
-            expect(cleared).toBe(false);
-        });
+    // ─── cacheData / getCachedData ─────────────────────────────
+
+    test('✅ [happy] cacheData → getCachedData 能取回', async () => {
+        const data = { x: 42 };
+        const setSpy = spyOn(svc['redisLikeCache'], 'set');
+        const getSpy = spyOn(svc['redisLikeCache'], 'get');
+
+        await svc.cacheData('data-1', data);
+        expect(setSpy).toHaveBeenCalledWith('data-1', data);
+
+        const found = await svc.getCachedData('data-1');
+        expect(getSpy).toHaveBeenCalledWith('data-1');
+        expect(found).toBe(data);
+    });
+
+    test('✅ [returns] getCachedData 未命中 → undefined', async () => {
+        const found = await svc.getCachedData('ghost-data');
+        expect(found).toBeUndefined();
+    });
+
+    // ─── clearCache ────────────────────────────────────────────
+
+    test('✅ [happy] clearCache 存在的 key → true，并删除', async () => {
+        await svc.cacheData('data-2', 'val');
+        const delSpy = spyOn(svc['redisLikeCache'], 'del');
+        const result = await svc.clearCache('data-2');
+        expect(delSpy).toHaveBeenCalledWith('data-2');
+        expect(result).toBe(true);
+
+        const found = await svc.getCachedData('data-2');
+        expect(found).toBeUndefined();
+    });
+
+    test('❌ [returns] clearCache 不存在的 key → false', async () => {
+        const result = await svc.clearCache('ghost-data');
+        expect(result).toBe(false);
     });
 });

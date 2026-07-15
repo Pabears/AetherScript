@@ -1,6 +1,5 @@
-import crypto from 'crypto';
-import { CustomerService } from '../service/customer-service';
 import { Customer } from '../entity/customer';
+import { CustomerService } from '../service/customer-service';
 
 export class CustomerServiceImpl extends CustomerService {
     /**
@@ -22,19 +21,23 @@ export class CustomerServiceImpl extends CustomerService {
      * @throws Error 如果 email 已被其他客户使用
      */
     public createCustomer(name: string, email: string, phone?: string, address?: string): Customer {
-        if (!name || name.length <= 0) {
-            throw new Error('Customer name must not be empty.');
+        if (!name || name.length === 0) {
+            throw new Error('Name cannot be empty');
         }
         if (!email || !email.includes('@')) {
-            throw new Error('Invalid email format.');
+            throw new Error('Invalid email format');
         }
-        if (this.findCustomerByEmail(email)) {
-            throw new Error('Email already in use.');
+
+        const existing = this.findCustomerByEmail(email);
+        if (existing) {
+            throw new Error('Email is already in use');
         }
 
         const customerId = crypto.randomUUID();
         const customer = new Customer(customerId, name, email, phone, address);
+        
         this.db!.saveObject(customerId, customer);
+        
         return customer;
     }
 
@@ -49,7 +52,11 @@ export class CustomerServiceImpl extends CustomerService {
      * @returns Customer 对象或 undefined
      */
     public findCustomerById(customerId: string): Customer | undefined {
-        return this.db!.findObject(customerId);
+        const obj = this.db!.findObject(customerId);
+        if (obj) {
+            return obj as Customer;
+        }
+        return undefined;
     }
 
     /**
@@ -57,15 +64,15 @@ export class CustomerServiceImpl extends CustomerService {
      *
      * @description
      * 1. 获取所有客户（getAllCustomers）
-     * 2. 找到 email 匹配 of 客户
+     * 2. 找到 email 匹配的客户
      * 3. 返回该客户或 undefined
      *
      * @param email - 邮箱地址
      * @returns Customer 对象或 undefined
      */
     public findCustomerByEmail(email: string): Customer | undefined {
-        const all = this.getAllCustomers();
-        return all.find(customer => customer.email === email);
+        const customers = this.getAllCustomers();
+        return customers.find(c => c.email === email);
     }
 
     /**

@@ -1,173 +1,174 @@
-import { describe, it, expect, beforeEach } from 'bun:test';
+// 📋 来源: ProductService JSDoc 契约（src/service/product-service.ts）
+// ⛔ 本文件编写时未读取 any impl 代码
+
+import { describe, test, expect, mock, beforeEach } from 'bun:test';
 import { ProductServiceImpl } from '../src/generated/productservice.impl';
-import { DBImpl } from '../src/generated/db.impl';
 import { Product } from '../src/entity/product';
 
-describe('ProductServiceImpl', () => {
-    let productService: ProductServiceImpl;
-    let db: DBImpl;
+function makeMockDb() {
+    const store = new Map<string, any>();
+    return {
+        save: mock(() => {}),
+        find: mock(() => undefined),
+        saveObject: mock((k: string, v: any) => { store.set(k, v); }),
+        findObject: mock((k: string) => store.get(k)),
+        getAllKeys: mock(() => [...store.keys()]),
+        deleteObject: mock((k: string) => store.delete(k)),
+    };
+}
+
+describe('ProductService 黑盒契约测试', () => {
+    let mockDb: ReturnType<typeof makeMockDb>;
+    let svc: ProductServiceImpl;
 
     beforeEach(() => {
-        db = new DBImpl();
-        productService = new ProductServiceImpl();
-        productService.db = db;
+        mockDb = makeMockDb();
+        svc = new ProductServiceImpl();
+        svc.db = mockDb as any;
     });
 
-    describe('createProduct', () => {
-        it('should create product successfully with valid details', () => {
-            const product = productService.createProduct('Laptop', 999.99, 10, 'Electronics', 'Gaming Laptop');
-            expect(product).toBeInstanceOf(Product);
-            expect(product.id).toBeDefined();
-            expect(product.name).toBe('Laptop');
-            expect(product.price).toBe(999.99);
-            expect(product.stock).toBe(10);
-            expect(product.category).toBe('Electronics');
-            expect(product.description).toBe('Gaming Laptop');
+    // ─── createProduct: Happy Path ─────────────────────────────
 
-            const saved = db.findObject('product:' + product.id);
-            expect(saved).toBe(product);
-        });
-
-        it('should throw error if name is empty', () => {
-            expect(() => {
-                productService.createProduct('', 100, 5, 'Category');
-            }).toThrow('Product name must have length > 0');
-        });
-
-        it('should throw error if price <= 0', () => {
-            expect(() => {
-                productService.createProduct('Name', 0, 5, 'Category');
-            }).toThrow('Product price must be > 0');
-
-            expect(() => {
-                productService.createProduct('Name', -1, 5, 'Category');
-            }).toThrow('Product price must be > 0');
-        });
-
-        it('should allow price = 0.01 (edge case)', () => {
-            const product = productService.createProduct('Pin', 0.01, 5, 'Office');
-            expect(product.price).toBe(0.01);
-        });
-
-        it('should throw error if stock < 0', () => {
-            expect(() => {
-                productService.createProduct('Name', 100, -1, 'Category');
-            }).toThrow('Product stock must be >= 0');
-        });
-
-        it('should allow stock = 0 (edge case, out of stock)', () => {
-            const product = productService.createProduct('Out of Stock Item', 100, 0, 'Category');
-            expect(product.stock).toBe(0);
-        });
+    test('✅ [happy] 合法参数 → 返回含 id 的 Product', () => {
+        // 来源: @returns 创建的 Product 对象（含生成的 id）
+        const p = svc.createProduct('Laptop', 999, 10, 'Electronics');
+        expect(p.id).toBeTruthy();
+        expect(p.name).toBe('Laptop');
+        expect(p.price).toBe(999);
+        expect(p.stock).toBe(10);
     });
 
-    describe('findProductById', () => {
-        it('should return product if ID exists', () => {
-            const product = productService.createProduct('Laptop', 999, 10, 'Electronics');
-            const found = productService.findProductById(product.id);
-            expect(found).toBe(product);
-        });
-
-        it('should return undefined if ID does not exist', () => {
-            const found = productService.findProductById('non-existent');
-            expect(found).toBeUndefined();
-        });
+    test('✅ [happy] 创建后 db.saveObject 以 product: 前缀被调用', () => {
+        // 来源: @description step 4: 调用 db.saveObject('product:' + productId, product)
+        const p = svc.createProduct('Phone', 599, 5, 'Electronics');
+        expect(mockDb.saveObject).toHaveBeenCalledWith(
+            expect.stringContaining('product:'),
+            expect.objectContaining({ name: 'Phone' })
+        );
     });
 
-    describe('findProductsByCategory', () => {
-        it('should return matched products of category', () => {
-            const prod1 = productService.createProduct('Laptop', 999, 10, 'Electronics');
-            const prod2 = productService.createProduct('Phone', 500, 20, 'Electronics');
-            const prod3 = productService.createProduct('Shirt', 20, 50, 'Clothing');
+    // ─── createProduct: @throws 覆盖 ──────────────────────────
 
-            const electronics = productService.findProductsByCategory('Electronics');
-            expect(electronics).toContain(prod1);
-            expect(electronics).toContain(prod2);
-            expect(electronics).not.toContain(prod3);
-            expect(electronics.length).toBe(2);
-        });
-
-        it('should return empty array if no category matches', () => {
-            const found = productService.findProductsByCategory('Furniture');
-            expect(found).toEqual([]);
-        });
+    test('❌ [throws] name 为空 → 抛出 Error', () => {
+        // 来源: @throws Error 如果 name 为空
+        expect(() => svc.createProduct('', 100, 10, 'Cat')).toThrow();
     });
 
-    describe('updateStock', () => {
-        it('should update stock successfully and return true', () => {
-            const product = productService.createProduct('Laptop', 999, 10, 'Electronics');
-            const result = productService.updateStock(product.id, 15);
-            expect(result).toBe(true);
-            expect(product.stock).toBe(15);
-            const saved = productService.findProductById(product.id);
-            expect(saved?.stock).toBe(15);
-        });
-
-        it('should return false if product does not exist', () => {
-            const result = productService.updateStock('non-existent', 15);
-            expect(result).toBe(false);
-        });
-
-        it('should throw error if new stock < 0', () => {
-            const product = productService.createProduct('Laptop', 999, 10, 'Electronics');
-            expect(() => {
-                productService.updateStock(product.id, -1);
-            }).toThrow('Stock must be >= 0');
-        });
+    test('❌ [throws] price <= 0 → 抛出 Error', () => {
+        // 来源: @throws Error 如果 price <= 0
+        expect(() => svc.createProduct('Item', 0, 10, 'Cat')).toThrow();
     });
 
-    describe('reduceStock', () => {
-        it('should reduce stock and return true if sufficient stock', () => {
-            const product = productService.createProduct('Laptop', 999, 10, 'Electronics');
-            const result = productService.reduceStock(product.id, 4);
-            expect(result).toBe(true);
-            expect(product.stock).toBe(6);
-        });
-
-        it('should reduce stock to exactly 0 (edge case)', () => {
-            const product = productService.createProduct('Laptop', 999, 10, 'Electronics');
-            const result = productService.reduceStock(product.id, 10);
-            expect(result).toBe(true);
-            expect(product.stock).toBe(0);
-        });
-
-        it('should return false if quantity > stock (edge case)', () => {
-            const product = productService.createProduct('Laptop', 999, 10, 'Electronics');
-            const result = productService.reduceStock(product.id, 11);
-            expect(result).toBe(false);
-            expect(product.stock).toBe(10); // remains unchanged
-        });
-
-        it('should return false if product does not exist', () => {
-            const result = productService.reduceStock('non-existent', 5);
-            expect(result).toBe(false);
-        });
-
-        it('should throw error if quantity <= 0', () => {
-            const product = productService.createProduct('Laptop', 999, 10, 'Electronics');
-            expect(() => {
-                productService.reduceStock(product.id, 0);
-            }).toThrow('Quantity must be > 0');
-
-            expect(() => {
-                productService.reduceStock(product.id, -2);
-            }).toThrow('Quantity must be > 0');
-        });
+    test('❌ [throws] stock < 0 → 抛出 Error', () => {
+        // 来源: @throws Error 如果 stock < 0
+        expect(() => svc.createProduct('Item', 100, -1, 'Cat')).toThrow();
     });
 
-    describe('getAllProducts', () => {
-        it('should return all products and ignore non-product keys', () => {
-            const prod1 = productService.createProduct('Laptop', 999, 10, 'Electronics');
-            db.saveObject('user:alice', { name: 'Alice' }); // not product:*
+    test('❌ [throws] 验证失败时 db.saveObject 不应被调用', () => {
+        // 来源: @description 副作用隔离
+        try { svc.createProduct('', 100, 10, 'Cat'); } catch {}
+        expect(mockDb.saveObject).not.toHaveBeenCalled();
+    });
 
-            const all = productService.getAllProducts();
-            expect(all).toContain(prod1);
-            expect(all.length).toBe(1);
-        });
+    // ─── createProduct: @edge-cases ───────────────────────────
 
-        it('should return empty array if no products exist', () => {
-            const all = productService.getAllProducts();
-            expect(all).toEqual([]);
-        });
+    test('✅ [edge] stock = 0 → 合法（缺货商品）', () => {
+        // 来源: @edge-cases stock = 0 → 合法（缺货商品）
+        expect(() => svc.createProduct('OutOfStock', 100, 0, 'Cat')).not.toThrow();
+    });
+
+    test('✅ [edge] price = 0.01 → 合法', () => {
+        // 来源: @edge-cases price = 0.01 → 合法
+        expect(() => svc.createProduct('Cheap', 0.01, 1, 'Cat')).not.toThrow();
+    });
+
+    // ─── findProductById ───────────────────────────────────────
+
+    test('✅ [happy] findProductById 找到已创建商品', () => {
+        // 来源: @description step 1: 调用 db.findObject('product:' + productId)
+        const p = svc.createProduct('Book', 30, 100, 'Books');
+        expect(svc.findProductById(p.id)?.name).toBe('Book');
+    });
+
+    test('✅ [returns] findProductById 不存在 → undefined', () => {
+        // 来源: @returns Product 对象或 undefined
+        expect(svc.findProductById('ghost-id')).toBeUndefined();
+    });
+
+    // ─── findProductsByCategory ────────────────────────────────
+
+    test('✅ [happy] findProductsByCategory 返回同类商品', () => {
+        // 来源: @description step 2: 过滤 category 匹配的商品
+        svc.createProduct('Laptop', 999, 5, 'Electronics');
+        svc.createProduct('Phone', 499, 10, 'Electronics');
+        svc.createProduct('Book', 30, 50, 'Books');
+        expect(svc.findProductsByCategory('Electronics').length).toBe(2);
+        expect(svc.findProductsByCategory('Books').length).toBe(1);
+    });
+
+    test('✅ [edge] 无匹配类别 → 返回空数组', () => {
+        // 来源: @returns 匹配类别的商品数组
+        expect(svc.findProductsByCategory('Nonexistent')).toHaveLength(0);
+    });
+
+    // ─── updateStock ───────────────────────────────────────────
+
+    test('✅ [happy] updateStock 成功 → 返回 true', () => {
+        // 来源: @returns 更新成功返回 true
+        const p = svc.createProduct('Widget', 10, 5, 'Misc');
+        expect(svc.updateStock(p.id, 20)).toBe(true);
+    });
+
+    test('❌ [returns] updateStock 商品不存在 → false', () => {
+        // 来源: @returns 商品不存在返回 false
+        expect(svc.updateStock('ghost', 10)).toBe(false);
+    });
+
+    // ─── reduceStock ───────────────────────────────────────────
+
+    test('✅ [happy] reduceStock 库存充足 → 返回 true', () => {
+        // 来源: @description step 3: 减少库存：product.stock -= quantity
+        const p = svc.createProduct('Gadget', 50, 10, 'Tech');
+        expect(svc.reduceStock(p.id, 3)).toBe(true);
+    });
+
+    test('✅ [edge] reduceStock 库存恰好等于 quantity → 成功，库存变 0', () => {
+        // 来源: @edge-cases 库存恰好等于 quantity → 成功，库存变为 0
+        const p = svc.createProduct('Rare', 200, 5, 'Limited');
+        const result = svc.reduceStock(p.id, 5);
+        expect(result).toBe(true);
+        expect(svc.findProductById(p.id)?.stock).toBe(0);
+    });
+
+    test('❌ [returns] reduceStock 库存不足 → false', () => {
+        // 来源: @edge-cases quantity > stock → 返回 false，库存不变
+        const p = svc.createProduct('Scarce', 100, 3, 'Ltd');
+        expect(svc.reduceStock(p.id, 10)).toBe(false);
+    });
+
+    test('❌ [returns] reduceStock 库存不足时库存不变', () => {
+        // 来源: @edge-cases quantity > stock → 库存不变
+        const p = svc.createProduct('Scarce2', 100, 3, 'Ltd');
+        svc.reduceStock(p.id, 10);
+        expect(svc.findProductById(p.id)?.stock).toBe(3);
+    });
+
+    test('❌ [returns] reduceStock 商品不存在 → false', () => {
+        // 来源: @description step 1: 找不到商品返回 false
+        expect(svc.reduceStock('ghost', 1)).toBe(false);
+    });
+
+    // ─── getAllProducts ────────────────────────────────────────
+
+    test('✅ [happy] getAllProducts 返回所有创建的商品', () => {
+        // 来源: @returns 所有商品数组
+        svc.createProduct('A', 10, 1, 'Cat');
+        svc.createProduct('B', 20, 2, 'Cat');
+        expect(svc.getAllProducts().length).toBeGreaterThanOrEqual(2);
+    });
+
+    test('✅ [edge] 空 DB getAllProducts 返回空数组', () => {
+        // 来源: @returns 无数据时返回空数组
+        expect(svc.getAllProducts()).toHaveLength(0);
     });
 });

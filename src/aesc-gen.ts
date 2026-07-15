@@ -75,14 +75,17 @@ ${JSON.stringify(remainingClasses.map(c => ({
         }
 
         try {
-            execFileSync('agy', [
-                '--dangerously-skip-permissions',
-                '--model', 'Gemini 3.5 Flash (High)',
-                '-p', prompt
-            ], {
+            // Write prompt to a temporary file to avoid command line length limits and escaping issues
+            const tmpPromptFile = join(require('os').tmpdir(), `prompt-${Date.now()}-${Math.random().toString(36).substring(7)}.txt`);
+            require('fs').writeFileSync(tmpPromptFile, prompt);
+            
+            execSync(`agy --dangerously-skip-permissions --model "Gemini 3.5 Flash (High)" -p "$(cat ${tmpPromptFile})"`, {
                 cwd: projectPath,
-                stdio: 'inherit'
+                stdio: 'inherit',
+                shell: '/bin/bash'
             });
+            
+            require('fs').unlinkSync(tmpPromptFile);
         } catch (error: any) {
             console.error(`\n⚠️ Agent 批处理执行中途退出。Exit Code: ${error.status || 'unknown'}`);
         }

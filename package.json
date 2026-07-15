@@ -15,6 +15,7 @@
     "gen-container": "bun src/container-gen.ts",
     "aesc-test": "bun src/aesc-test.ts",
     "test": "bun test test/",
+    "test:e2e-demo": "./test/e2e-demo.sh",
     "test:demo": "cd demo && bun test",
     "test:all": "bun test test/ && cd demo && bun test"
   },

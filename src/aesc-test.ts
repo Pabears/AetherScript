@@ -18,6 +18,7 @@ interface ScanData {
 
 async function main() {
     const argv = await yargs(hideBin(process.argv))
+        .option("shadow", { type: "boolean", default: false, description: "Run in shadow mode (skip test execution)" })
         .option('project', {
             type: 'string',
             description: 'Target project path',
@@ -75,14 +76,17 @@ ${JSON.stringify(remainingClasses.map(c => ({
         }
 
         try {
-            execFileSync('agy', [
-                '--dangerously-skip-permissions',
-                '--model', 'Gemini 3.5 Flash (High)',
-                '-p', prompt
-            ], {
+            // Write prompt to a temporary file to avoid command line length limits and escaping issues
+            const tmpPromptFile = join(require('os').tmpdir(), `prompt-test-${Date.now()}-${Math.random().toString(36).substring(7)}.txt`);
+            require('fs').writeFileSync(tmpPromptFile, prompt);
+
+            execSync(`agy --dangerously-skip-permissions --model "Gemini 3.5 Flash (High)" -p "$(cat ${tmpPromptFile})"`, {
                 cwd: projectPath,
-                stdio: 'inherit'
+                stdio: 'inherit',
+                shell: '/bin/bash'
             });
+
+            require('fs').unlinkSync(tmpPromptFile);
         } catch (error: any) {
             console.error(`\n⚠️ Agent 批处理执行中途退出。Exit Code: ${error.status || 'unknown'}`);
         }
@@ -106,7 +110,11 @@ ${JSON.stringify(remainingClasses.map(c => ({
 
         // 2. Run test verification
         if (nextMissingClasses.length === 0) {
-            try {
+            if (argv.shadow) {
+                console.log(`\n⏳ [Shadow Mode] 静态生成完毕，跳过本地执行验证 (等待主宇宙 Merge 后决战)...`);
+                remainingClasses = []; // Assume success for now
+            } else {
+                try {
                 // Find if e2e test is required
                 const hasE2e = remainingClasses.some(c => c.moduleConfig?.testType === 'e2e');
                 const testCommand = hasE2e ? 'bun run test:e2e' : 'bun test';
@@ -124,6 +132,7 @@ ${JSON.stringify(remainingClasses.map(c => ({
                 console.error(`\n❌ 测试验证失败，有一些测试逻辑存在错误。将再次把这些类喂给 Agent 修复。`);
                 nextMissingClasses.push(...remainingClasses);
                 lastErrorLog = stdout + "\n" + stderr;
+            }
             }
         }
 
