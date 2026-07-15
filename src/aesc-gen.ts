@@ -21,6 +21,10 @@ async function main() {
             description: 'Target project path',
             demandOption: true,
         })
+        .option('feedback', {
+            type: 'string',
+            description: 'Judge feedback from a failed integration test',
+        })
         .argv;
 
     const projectPath = resolve(argv.project);
@@ -58,9 +62,14 @@ Target Project Root: ${projectPath}
 3. **Logic**: Every numbered step in the JSDoc must be implemented. Every \`@throws\` must have a guard. Every \`@edge-cases\` must be handled.
 4. **Imports**: Use relative paths from the \`outputPath\` to import the base class and any dependencies. Do not use absolute paths.
 5. **Batch Generation**: Generate ALL implementation files for the classes listed below in this single session. Write each to its specified \`outputPath\`.
-6. **Autonomy**: You have YOLO mode enabled.
+`;
 
-# Classes to Process in this Batch:
+        if (argv.feedback) {
+            prompt += `\n6. **⚠️ REWORK OPERATION**: This is a counter-attack rework operation! The previous implementation you generated failed during integration arbitration. The Blind Judge has provided the following verdict:\n\n<JUDGE_VERDICT>\n${argv.feedback}\n</JUDGE_VERDICT>\n\nYou MUST modify the existing implementation files to fix the issues pointed out by the Judge. Do NOT blindly regenerate from scratch if the file exists, modify it to maintain continuity!`;
+        }
+
+        prompt += `
+# Classes to Generate in this Batch:
 ${JSON.stringify(remainingClasses.map(c => ({
     className: c.className,
     sourceCode: c.sourceCode,
@@ -70,8 +79,8 @@ ${JSON.stringify(remainingClasses.map(c => ({
         `.trim();
 
         if (lastErrorLog) {
-            prompt += `\n\n# Previous Attempt Failed!\nHere is the compiler/validation error from your previous attempt. You MUST fix these errors in the implementation:\n\`\`\`text\n${lastErrorLog}\n\`\`\``;
-            lastErrorLog = ""; // reset for next attempt
+            prompt += `\n\n# Previous Attempt Failed!\nHere is the compiler/AST error from your previous attempt. You MUST fix these errors:\n\`\`\`text\n${lastErrorLog}\n\`\`\``;
+            lastErrorLog = "";
         }
 
         try {

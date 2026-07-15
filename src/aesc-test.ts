@@ -24,6 +24,10 @@ async function main() {
             description: 'Target project path',
             demandOption: true,
         })
+        .option('feedback', {
+            type: 'string',
+            description: 'Judge feedback from a failed integration test',
+        })
         .argv;
 
     const projectPath = resolve(argv.project);
@@ -61,7 +65,13 @@ Target Project Root: ${projectPath}
 3. **Logic**: You MUST NOT look at the implementation file. Write tests that verify the \`@edge-cases\`, \`@throws\`, and numbered logic steps defined in the abstract class JSDoc.
 4. **Batch Generation**: Generate ALL test files for the classes listed below in this single session. Write each to the \`test/\` directory in the project root.
 5. **Autonomy**: You have YOLO mode enabled.
+`;
 
+        if (argv.feedback) {
+            prompt += `\n6. **⚠️ REWORK OPERATION**: This is a counter-attack rework operation! The previous tests you generated failed during integration arbitration. The Blind Judge has provided the following verdict:\n\n<JUDGE_VERDICT>\n${argv.feedback}\n</JUDGE_VERDICT>\n\nYou MUST modify the existing test files to fix the issues pointed out by the Judge. Do NOT blindly regenerate from scratch if the file exists, modify it to maintain continuity!`;
+        }
+
+        prompt += `
 # Classes to Test in this Batch:
 ${JSON.stringify(remainingClasses.map(c => ({
     className: c.className,
