@@ -159,6 +159,18 @@ async function main() {
             console.log(`\n--- [PHASE 5: Blind Arbitration (Judge)] ---`);
             console.log(`🧑‍⚖️ Summoning Judge Agent...`);
             
+            // 读取所有的契约文件内容提供给裁判
+            let contractContents = "";
+            try {
+                const serviceFiles = require('fs').readdirSync(join(projectPath, 'src', 'service')).filter((f: string) => f.endsWith('.ts'));
+                for (const f of serviceFiles) {
+                    contractContents += `\n--- [CONTRACT: ${f}] ---\n`;
+                    contractContents += require('fs').readFileSync(join(projectPath, 'src', 'service', f), 'utf-8');
+                }
+            } catch (e: any) {
+                console.error(`Failed to read contracts for judge: ${e.message}`);
+            }
+
             // Construct Judge Prompt
             const prompt = `
 You are the AetherScript Blind Arbitration Judge.
@@ -169,6 +181,9 @@ RULES:
 1. If the test asserts behavior that is NOT defined in the contract JSDoc, the test is WRONG (hallucinated requirements).
 2. If the implementation fails to meet a requirement explicitly defined in the contract, the implementation is WRONG.
 3. You must output your decision strictly and briefly. State who is wrong ("TEST is wrong" or "IMPL is wrong") and give a clear, 1-2 sentence instruction on what they must change to align with the contract. DO NOT write code.
+
+# Contracts:
+${contractContents}
 
 # Test Failure Output:
 ${errorOutput}
